@@ -1,0 +1,304 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "CompanyID": {
+            "type": "string",
+            "metadata": {
+                "description": "numeric identification of company"
+            }
+        },
+        "VMPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "password of administrator VM"
+            }
+        }
+    },
+    "variables": {
+        "CompanyID": "[parameters('CompanyID')]",
+        "ResourceGroup": "[resourceGroup().name]", // "[concat('Company', padleft(variables('CompanyID'), 2, '0') )]",
+        "location": "[resourceGroup().location]",
+        "VMUserName": "[concat('Company', variables('CompanyID'),  'User')]",
+        "VMPassword": "[ parameters('VMPassword')]",
+        "IPSecondOctet": "10",
+        "IPThirdOctet": "[concat('1' , padLeft(variables('CompanyID'), 2, '0'))]",
+        "VNetHubName": "Hub01-VNet01",
+        "VNetSpoke1Name": "Spoke01-VNet01",
+        "AddressSpaceSpoke1": "[concat('10.', variables('IPSecondOctet'),'.', variables('IPThirdOctet'),'.128/26')]",
+        "SubnetSpoke1Name": "Tenant",
+        "SubnetSpoke1Space": "[concat('10.', variables('IPSecondOctet'),'.', variables('IPThirdOctet'),'.128/28')]",
+        "lbFrontEndIP": "[concat('10.', variables('IPSecondOctet'),'.', variables('IPThirdOctet'),'.142')]",
+        "peeringHubToSpokeName": "Hub01toSpoke01",
+        "peeringSpokeToHubName": "Spoke01toHub01",
+        "loadBalancerName": "Spoke01-lb",
+        "lbFrontEndConfigName": "LB-Frontend",
+        "lbBackEndAddressPoolName": "LB-Backend",
+        "lbInboundNatPoolsName" : "RDP",
+        "lbprobe": "HealthProbe",
+        "lbVnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('VNetSpoke1Name'))]",
+        "lbSubnetRef": "[concat(variables('lbVnetID'),'/subnets/', variables('SubnetSpoke1Name'))]",
+        "lbID": "[resourceId('Microsoft.Network/loadBalancers',variables('loadBalancerName'))]",
+        "frontEndIPConfigID": "[concat(variables('lbID'),'/frontendIPConfigurations/',variables('lbFrontEndConfigName') )]",
+        "VMSize": "Standard_A4_v2",
+        "VMSSName": "Spoke01VM",
+        "VMSSInstanceCount": 2,
+        "imagePublisher": "MicrosoftWindowsServer",
+        "imageOffer": "WindowsServer",
+        "OSVersion": "2016-Datacenter",
+        "VMSSNICName" : "NIC1",
+        "VMSSIPConfigName": "VMSSIPConfig",
+        "ExtensionName" : "BuildFS",
+        "ScriptStorageAccount": "vdcworkshop",
+        "scriptLocation": "[concat('https://',variables('ScriptStorageAccount'),'.blob.core.windows.net/scripts')]",
+//        "scriptLocationSasToken": "",
+        "scriptFolder": ".",
+        "scriptFileName": "FSBuild.ps1",
+ //       "scriptParameters": "[concat('-artifactsLocation ', variables('scriptLocation'), ' -artifactsLocationSasToken \"', variables('scriptLocationSasToken'), '\" -folderName ', variables('scriptFolder'))]"
+    },
+    "resources": [
+        {
+            "comments": "Create Virtual Network and subnets for the Spoke",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[variables('VNetSpoke1Name')]",
+            "location": "[variables('location')]",
+            "dependsOn": [],
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[variables('AddressSpaceSpoke1')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('SubnetSpoke1Name')]",
+                        "properties": {
+                            "addressPrefix": "[variables('SubnetSpoke1Space')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "comments": "This is the peering from Hub01 to Spoke01",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+            "name": "[concat(variables('VNetHubName'),'/',variables('peeringHubToSpokeName'))]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('VNetSpoke1Name'))]"
+            ],
+            "properties": {
+                "allowVirtualNetworkAccess": "true",
+                "allowForwardedTraffic": "true",
+                "allowGatewayTransit": "true",
+                "useRemoteGateways": "false",
+                "remoteVirtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks',variables('VNetSpoke1Name'))]"
+                }
+            }
+        },
+        {
+            "comments": "This is the peering from Spoke01 to Hub01",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+            "name": "[concat(variables('VNetSpoke1Name'),'/',variables('peeringSpokeToHubName'))]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('VNetSpoke1Name'))]"
+            ],
+            "properties": {
+                "allowVirtualNetworkAccess": "true",
+                "allowForwardedTraffic": "true",
+                "allowGatewayTransit": "false",
+                "useRemoteGateways": "true",
+                "remoteVirtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks',variables('VNetHubName'))]"
+                }
+            }
+        },
+        {
+            "comments": "internat load balancer in Spoke01",
+            "apiVersion": "2018-06-01",
+            "name": "[variables('loadBalancerName')]",
+            "type": "Microsoft.Network/loadBalancers",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('VNetSpoke1Name'))]"
+            ],
+            "properties": {
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('lbFrontEndConfigName')]",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('lbSubnetRef')]"
+                            },
+                            "privateIPAddress": "[variables('lbFrontEndIP')]",
+                            "privateIPAllocationMethod": "Static"
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('lbBackEndAddressPoolName')]"
+                    }
+                ],
+                "loadBalancingRules": [
+                    {
+                        "name": "SMB445",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/frontendIpConfigurations/',variables('lbFrontEndConfigName'))]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/backendAddressPools/',variables('lbBackEndAddressPoolName'))]"
+                            },
+                            "probe": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/probes/',variables('lbprobe') )]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 445,
+                            "backendPort": 445,
+                            "idleTimeoutInMinutes": 15
+                        }
+                    },
+                    {
+                        "name": "SMB137",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/frontendIpConfigurations/',variables('lbFrontEndConfigName'))]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/backendAddressPools/',variables('lbBackEndAddressPoolName'))]"
+                            },
+                            "probe": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/probes/',variables('lbprobe') )]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 137,
+                            "backendPort": 137,
+                            "idleTimeoutInMinutes": 15
+                        }
+                    },
+                    {
+                        "name": "SMB139",
+                        "properties": {
+                            "frontendIPConfiguration": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/frontendIpConfigurations/',variables('lbFrontEndConfigName'))]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/backendAddressPools/',variables('lbBackEndAddressPoolName'))]"
+                            },
+                            "probe": {
+                                "id": "[concat(resourceId('Microsoft.Network/loadBalancers', variables('loadBalancerName')), '/probes/',variables('lbprobe') )]"
+                            },
+                            "protocol": "Tcp",
+                            "frontendPort": 139,
+                            "backendPort": 139,
+                            "idleTimeoutInMinutes": 15
+                        }
+                    }
+                ],
+                "probes": [
+                    {
+                        "name": "[variables('lbprobe')]",
+                        "properties": {
+                            "protocol": "Tcp",
+                            "port": 445,
+                            "intervalInSeconds": 15,
+                            "numberOfProbes": 2
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.Compute/virtualMachineScaleSets",
+            "name": "[variables('VMSSName')]",
+            "location": "[variables('location')]",
+            "apiVersion": "2018-06-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('VNetSpoke1Name'))]",
+                "[resourceId('Microsoft.Network/loadBalancers/', variables('loadBalancerName'))]"
+            ],
+            "sku": {
+                "name": "[variables('VMSize')]",
+                "capacity": "[variables('VMSSInstanceCount')]"
+            },
+            "properties": {
+                "overprovision": true,
+                "upgradePolicy": {
+                    "mode": "Automatic" //"Manual"
+                },
+                "virtualMachineProfile": {
+                    "storageProfile": {
+                        "osDisk": {
+                            "createOption": "FromImage"
+                        },
+                        "imageReference": {
+                            "publisher": "[variables('imagePublisher')]",
+                            "offer": "[variables('imageOffer')]",
+                            "sku": "[variables('OSVersion')]",
+                            "version": "latest"
+                        }
+                    },
+                    "osProfile": {
+                        "computerNamePrefix": "[variables('VMSSName')]",
+                        "adminUsername": "[variables('VMUserName')]",
+                        "adminPassword": "[variables('VMPassword')]"
+                    },
+                    "networkProfile": {
+                        "networkInterfaceConfigurations": [
+                            {
+                                "name": "[variables('VMSSNICName')]",
+                                "properties": {
+                                    "primary": true,
+                                    "ipConfigurations": [
+                                        {
+                                            "name": "[variables('VMSSIPConfigName')]",
+                                            "properties": {
+                                                "subnet": {
+                                                    "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/virtualNetworks/', variables('VNetSpoke1Name'), '/subnets/', variables('SubnetSpoke1Name'))]"
+                                                },
+                                                "loadBalancerBackendAddressPools": [
+                                                    {
+                                                        "id": "[concat('/subscriptions/', subscription().subscriptionId,'/resourceGroups/', resourceGroup().name, '/providers/Microsoft.Network/loadBalancers/', variables('loadBalancerName'), '/backendAddressPools/', variables('lbBackEndAddressPoolName'))]"
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "extensionProfile": {
+                        "extensions": [
+                          {
+                            "name": "[variables('ExtensionName')]",
+                            "properties": {
+                              "publisher": "Microsoft.Compute",
+                              "settings": {
+                                "fileUris": [
+                               //   "[concat(variables('scriptLocation'), '/', variables('ScriptFolder'), '/', variables('ScriptFileName'), variables('scriptLocationSasToken'))]"
+                                  "[concat(variables('scriptLocation'), '/', variables('ScriptFolder'), '/', variables('ScriptFileName')  )]"
+                                ]
+                              },
+                              "typeHandlerVersion": "1.9",
+                              "autoUpgradeMinorVersion": true,
+                              "protectedSettings": {
+                              //  "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptFolder'), '/', variables('scriptFileName'), ' ', variables('scriptParameters'))]"
+                             "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptFolder'), '/', variables('scriptFileName') )]"
+                              },
+                              "type": "CustomScriptExtension"
+                            }
+                          }
+                        ]
+            }
+                }
+            }
+        }
+    ]
+}

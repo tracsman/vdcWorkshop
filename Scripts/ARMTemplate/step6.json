@@ -1,0 +1,366 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "CompanyID": {
+            "type": "string",
+            "metadata": {
+                "description": "numeric identification of company"
+            }
+        },
+        "VMPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "password of administrator VM"
+            }
+        }
+    },
+    "variables": {
+        "CompanyID": "[parameters('CompanyID')]",
+        "ResourceGroup": "[resourceGroup().name]", 
+        "location": "[resourceGroup().location]",
+        "VMUserName": "[concat('Company', variables('CompanyID'),  'User')]",
+        "VMPassword": "[ parameters('VMPassword')]",
+        "IPSecondOctet": "10",
+        "IPThirdOctet": "[concat('1' , padLeft(variables('CompanyID'), 2, '0'))]",
+        "VNetHubName": "Hub01-VNet01",
+        "VNetSpoke2Name": "Spoke02-VNet01",
+        "AddressSpaceSpoke2": "[concat('10.', variables('IPSecondOctet'),'.', variables('IPThirdOctet'),'.192/26')]",
+        "Subnet1Spoke2Name": "Tenant",
+        "Subnet2Spoke2Name": "AppGateway",
+        "Subnet1Spoke2Space": "[concat('10.', variables('IPSecondOctet'),'.', variables('IPThirdOctet'),'.192/28')]",
+        "Subnet2Spoke2Space": "[concat('10.', variables('IPSecondOctet'),'.', variables('IPThirdOctet'),'.208/28')]",
+        "VMSize": "Standard_A4_v2",
+        "VMNamePrefix": "Spoke02-VM",
+        "peeringHubToSpokeName": "Hub01toSpoke02",
+        "peeringSpokeToHubName": "Spoke02toHub01",
+        "InstanceCount": 3,
+        "imagePublisher": "MicrosoftWindowsServer",
+        "imageOffer": "WindowsServer",
+        "OSVersion": "2016-Datacenter",
+        "ExtensionName": "BuildIIS",
+        "ScriptStorageAccount": "vdcworkshop",
+        "scriptLocation": "[concat('https://',variables('ScriptStorageAccount'),'.blob.core.windows.net/scripts')]",
+        "scriptFolder": ".",
+        "scriptFileName": "IISBuild.ps1",
+        "scriptParameters": "[concat('-theAdmin ', variables('VMUserName'), ' -theSecret ', variables('VMPassword'))]",
+        "appGWName": "Spoke02-AppGw",
+        "appGWpubIPName": "[concat(variables('appGWName'), '-pip')]",
+        "appGWskuName": "WAF_Medium",
+        "appGWcapacity": 2,
+        "appGWsubnetRef": "[resourceId('Microsoft.Network/virtualNetworks/subnets', variables('VNetSpoke2Name'), variables('Subnet2Spoke2Name'))]",
+        "appGWpubIP": "[resourceId('Microsoft.Network/publicIPAddresses',  variables('appGWpubIPName'))]",
+        "appGWID": "[resourceId('Microsoft.Network/applicationGateways',variables('appGWName'))]",
+        "appGWFrontEndConfigName": "AppGWFrontendIP",
+        "appGWBackEndAddressPoolName": "AppGWBackendPool",
+        "appGWFrontEndPortName": "AppGWFrontendPort",
+        "appGWHttpListeners": "AppGWHttpListener",
+        "appGWBackendHttpSettings": "AppGWBackendHttpSettings"
+    },
+    "resources": [
+        {
+            "comments": "Create Virtual Network and subnets for the Spoke",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Network/virtualNetworks",
+            "name": "[variables('VNetSpoke2Name')]",
+            "location": "[variables('location')]",
+            "dependsOn": [],
+            "properties": {
+                "AddressSpace": {
+                    "addressPrefixes": [
+                        "[variables('AddressSpaceSpoke2')]"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "[variables('Subnet1Spoke2Name')]",
+                        "properties": {
+                            "addressPrefix": "[variables('Subnet1Spoke2Space')]"
+                        }
+                    },
+                    {
+                        "name": "[variables('Subnet2Spoke2Name')]",
+                        "properties": {
+                            "addressPrefix": "[variables('Subnet2Spoke2Space')]"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "comments": "This is the peering from Hub01 to Spoke02",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+            "name": "[concat(variables('VNetHubName'),'/',variables('peeringHubToSpokeName'))]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('VNetSpoke2Name'))]"
+            ],
+            "properties": {
+                "allowVirtualNetworkAccess": "true",
+                "allowForwardedTraffic": "true",
+                "allowGatewayTransit": "true",
+                "useRemoteGateways": "false",
+                "remoteVirtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks',variables('VNetSpoke2Name'))]"
+                }
+            }
+        },
+        {
+            "comments": "This is the peering from Spoke02 to Hub01",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Network/virtualNetworks/virtualNetworkPeerings",
+            "name": "[concat(variables('VNetSpoke2Name'),'/',variables('peeringSpokeToHubName'))]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('VNetSpoke2Name'))]"
+            ],
+            "properties": {
+                "allowVirtualNetworkAccess": "true",
+                "allowForwardedTraffic": "true",
+                "allowGatewayTransit": "false",
+                "useRemoteGateways": "true",
+                "remoteVirtualNetwork": {
+                    "id": "[resourceId('Microsoft.Network/virtualNetworks',variables('VNetHubName'))]"
+                }
+            }
+        },
+        {
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "name": "[concat( variables('VMNamePrefix'), padLeft(copyIndex(1), 2, '0' ),'-nic-nsg' )]",
+            "location": "[variables('location')]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "myNSGRuleRDP",
+                        "properties": {
+                            "description": "allow RDP",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "3389",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "VirtualNetwork",
+                            "access": "Allow",
+                            "priority": 1000,
+                            "direction": "Inbound"
+                        }
+                    }
+                ]
+            },
+            "copy": {
+                "name": "nsgCopy",
+                "count": "[variables('InstanceCount')]"
+            }
+        },
+        {
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Network/networkInterfaces",
+            "name": "[concat( variables('VMNamePrefix'), padLeft(copyIndex(1), 2, '0' ),'-nic' )]",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/virtualNetworks', variables('VNetSpoke2Name'))]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups',concat( variables('VMNamePrefix'), padLeft(copyIndex(1), 2, '0' ),'-nic-nsg' ) )]",
+                "[resourceId('Microsoft.Network/applicationGateways',variables('appGWName') )]"
+            ],
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipconfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets',variables('VNetSpoke2Name'), variables('Subnet1Spoke2Name')  )]"
+                            },
+
+                            "applicationGatewayBackendAddressPools": [
+                                {
+                                    "id": "[concat(variables('appGWID'), '/backendAddressPools/', variables('appGWBackEndAddressPoolName') )]",
+                                }
+                            ]
+                        }
+                    }
+                ],
+                "enableIPForwarding": false,
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat( variables('VMNamePrefix'), padLeft(copyIndex(1), 2, '0' ),'-nic-nsg' )   )]"
+                }
+            },
+            "copy": {
+                "name": "nicCopy",
+                "count": "[variables('InstanceCount')]"
+            }
+        },
+        {
+            "comments": "spin up the VM",
+            "type": "Microsoft.Compute/virtualMachines",
+            "name": "[concat( variables('VMNamePrefix'), padLeft(copyIndex(1), 2, '0' ) )]",
+            "apiVersion": "2018-06-01",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', concat( variables('VMNamePrefix'), padLeft(copyIndex(1), 2, '0' ),'-nic' )  )]"
+            ],
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[variables('VMSize')]"
+                },
+                "osProfile": {
+                    "computerName": "[concat( variables('VMNamePrefix'), padLeft(copyIndex(1), 2, '0' ) )]",
+                    "adminUsername": "[variables('VMUserName')]",
+                    "adminPassword": "[variables('VMPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "[variables('imagePublisher')]",
+                        "offer": "[variables('imageOffer')]",
+                        "sku": "[variables('OSVersion')]",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "createOption": "FromImage"
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat( variables('VMNamePrefix'), padLeft(copyIndex(1), 2, '0' ),'-nic' ) )]"
+                        }
+                    ]
+                }
+            },
+            "copy": {
+                "name": "vmCopy",
+                "count": "[variables('InstanceCount')]"
+            }
+        },
+        {
+            "comments": "Custom script extension to allow ICMP",
+            "name": "[concat( variables('VMNamePrefix'), padLeft(copyIndex(1), 2, '0' ) ,'/CustomScriptExtension' )]",
+            "type": "Microsoft.Compute/virtualMachines/extensions",
+            "location": "[variables('location')]",
+            "apiVersion": "2018-06-01",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', concat( variables('VMNamePrefix'), padLeft(copyIndex(1), 2, '0' ) )  )]"
+            ],
+            "properties": {
+                "publisher": "Microsoft.Compute",
+                "type": "CustomScriptExtension",
+                "typeHandlerVersion": "1.9",
+                "autoUpgradeMinorVersion": true,
+                "settings": {
+                    "fileUris": [
+                        "[concat(variables('scriptLocation'), '/', variables('ScriptFolder'), '/', variables('scriptFileName'))]"
+                    ],
+                    "commandToExecute": "[concat('powershell -ExecutionPolicy Unrestricted -File ', variables('scriptFolder'), '/', variables('scriptFileName'), ' ', variables('scriptParameters') )]"
+                }
+            },
+            "copy": {
+                "name": "scriptCopy",
+                "count": "[variables('InstanceCount')]"
+            }
+        },
+        {
+            "comments": "public IP address of the Application Gateway",
+            "apiVersion": "2018-06-01",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "name": "[variables('appGWpubIPName')]",
+            "location": "[variables('location')]",
+            "properties": {
+                "publicIPAllocationMethod": "Dynamic"
+            }
+        },
+        {
+            "apiVersion": "2018-06-01",
+            "name": "[variables('appGWName')]",
+            "type": "Microsoft.Network/applicationGateways",
+            "location": "[variables('location')]",
+            "dependsOn": [
+                "[concat('Microsoft.Network/virtualNetworks/', variables('VNetSpoke2Name'))]",
+                "[concat('Microsoft.Network/publicIPAddresses/', variables('appGWpubIPName'))]"
+            ],
+            "properties": {
+                "sku": {
+                    "name": "[variables('appGWskuName')]",
+                    "tier": "WAF",
+                    "capacity": "[variables('appGWcapacity')]"
+                },
+                "gatewayIPConfigurations": [
+                    {
+                        "name": "AppGWIpConfig",
+                        "properties": {
+                            "subnet": {
+                                "id": "[variables('appGWsubnetRef')]"
+                            }
+                        }
+                    }
+                ],
+                "frontendIPConfigurations": [
+                    {
+                        "name": "[variables('appGWFrontEndConfigName')]",
+                        "properties": {
+                            "PublicIPAddress": {
+                                "id": "[variables('appGWpubIP')]"
+                            }
+                        }
+                    }
+                ],
+                "frontendPorts": [
+                    {
+                        "name": "[variables('appGWFrontEndPortName')]",
+                        "properties": {
+                            "Port": 80
+                        }
+                    }
+                ],
+                "backendAddressPools": [
+                    {
+                        "name": "[variables('appGWBackEndAddressPoolName')]"
+                    }
+                ],
+                "backendHttpSettingsCollection": [
+                    {
+                        "name": "[variables('appGWBackendHttpSettings')]",
+                        "properties": {
+                            "Port": 80,
+                            "Protocol": "Http",
+                            "CookieBasedAffinity": "Enabled",
+                            "requestTimeout": 120
+                        }
+                    }
+                ],
+                "httpListeners": [
+                    {
+                        "name": "[variables('appGWHttpListeners')]",
+                        "properties": {
+                            "FrontendIPConfiguration": {
+                                "Id": "[concat(variables('appGWID'), '/frontendIPConfigurations/', variables('appGWFrontEndConfigName') )]"
+                            },
+                            "FrontendPort": {
+                                "Id": "[concat(variables('appGWID'), '/frontendPorts/', variables('appGWFrontEndPortName') )]"
+                            },
+                            "Protocol": "Http",
+                            "SslCertificate": null
+                        }
+                    }
+                ],
+                "requestRoutingRules": [
+                    {
+                        "Name": "rule1",
+                        "properties": {
+                            "RuleType": "Basic",
+                            "httpListener": {
+                                "id": "[concat(variables('appGWID'), '/httpListeners/',variables('appGwHttpListeners') )]"
+                            },
+                            "backendAddressPool": {
+                                "id": "[concat(variables('appGWID'), '/backendAddressPools/', variables('appGWBackEndAddressPoolName') )]"
+                            },
+                            "backendHttpSettings": {
+                                "id": "[concat(variables('appGWID'), '/backendHttpSettingsCollection/', variables('appGWBackendHttpSettings') )]"
+                            }
+                        }
+                    }
+                ]
+            }
+        }
+    ]
+}
