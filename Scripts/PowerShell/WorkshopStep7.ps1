@@ -89,14 +89,12 @@ Try {$HubLB = Get-AzureRmLoadBalancer -Name $VMNamePrefix"-lb" -ResourceGroupNam
 Catch {$FrontEndIPConfig = New-AzureRmLoadBalancerFrontendIpConfig -Name LB-Frontend -PrivateIpAddress $HubLBIP -SubnetId $sn.Id
        $BackEndPool = New-AzureRmLoadBalancerBackendAddressPoolConfig -Name "LB-backend"
        $HealthProbe = New-AzureRmLoadBalancerProbeConfig -Name "HealthProbe" -RequestPath ".noindex.html" -Protocol http -Port 80 -IntervalInSeconds 15 -ProbeCount 2
-       $InboundNATPool= New-AzureRmLoadBalancerInboundNatPoolConfig -Name "AllowSSH" -FrontendIpConfiguration $FrontEndIPConfig -Protocol TCP `
-								    -FrontendPortRangeStart 3400 -FrontendPortRangeEnd 3410 -BackendPort 22
        $LBRule = New-AzureRmLoadBalancerRuleConfig -Name "HAPortsRule" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
 	                                           -Probe $HealthProbe -Protocol "All" -FrontendPort 0 -BackendPort 0 -IdleTimeoutInMinutes 15 `
 	                                           -LoadDistribution SourceIP -EnableFloatingIP
 
        $HubLB = New-AzureRmLoadBalancer -ResourceGroupName $rg.ResourceGroupName -Location $rg.Location -Name $VMNamePrefix"-lb" -FrontendIpConfiguration $FrontEndIPConfig `
-					-InboundNatPool $InboundNATPool -LoadBalancingRule $LBRule -BackendAddressPool $BackEndPool -Probe $HealthProbe -Sku Standard
+					-LoadBalancingRule $LBRule -BackendAddressPool $BackEndPool -Probe $HealthProbe -Sku Standard
        $HubLB = Get-AzureRmLoadBalancer -ResourceGroupName $rg.ResourceGroupName -Name $VMNamePrefix"-lb" -ErrorAction Stop}
 
 # 2.2. Create NSG

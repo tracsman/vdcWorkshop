@@ -1,0 +1,105 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "CompanyID": {
+      "type": "string",
+      "metadata": {
+        "description": "numeric identification of company"
+      }
+    }
+  },
+  "variables": {
+    "CompanyID": "[parameters('CompanyID')]",
+    "ResourceGroup": "[resourceGroup().name]", // "[concat('Company', padleft(variables('CompanyID'), 2, '0') )]",
+    "location": "[resourceGroup().location]",
+    "ERCircuitName": "[concat(variables('ResourceGroup'),'-er')]",
+    "VNetName": "Hub01-VNet01",
+    "GWName": "[concat(variables('VNetName'),'-gw')]",
+    "PIPName": "[concat(variables('GWName'), '-ip')]",
+    "ConnectionName": "[concat(variables('GWName') ,'-conn')]",
+    "peerASN": "65021",
+    "IPThirdOctet": "[concat('1' , padLeft(variables('CompanyID'), 2, '0'))]",
+    "primaryPeerAddressPrefix": "[concat('192.168.',variables('IPThirdOctet'),'.','16/30')]",
+    "secondaryPeerAddressPrefix": "[concat('192.168.',variables('IPThirdOctet'),'.','20/30')]",
+    "peeringType": "AzurePrivatePeering",
+    "vlanId": "[concat('1',padLeft(variables('CompanyID'), 2, '0'),'0')]",
+    "gatewaySubnetRef": "[resourceId(variables('ResourceGroup'), 'Microsoft.Network/virtualNetworks/subnets/', variables('VNetName'),'GatewaySubnet')]",
+    "gatewayType": "Expressroute",
+    "gatewaySku": "Standard"
+  },
+  "resources": [
+    {
+      "apiVersion": "2018-06-01",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('PIPName')]",
+      "location": "[variables('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic"
+      }
+    },
+    {
+      "apiVersion": "2018-06-01",
+      "type": "Microsoft.Network/virtualNetworkGateways",
+      "name": "[variables('GWName')]",
+      "location": "[variables('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('PIPName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[variables('gatewaySubnetRef')]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('PIPName'))]"
+              }
+            },
+            "name": "vnetGatewayConfig"
+          }
+        ],
+        "gatewayType": "[variables('gatewayType')]",
+        "sku": {
+          "name": "[variables('gatewaySku')]",
+          "tier": "[variables('gatewaySku')]"
+        }
+      }
+    },
+    {
+      "comments": "Create an Expressroute circuit",
+      "apiVersion": "2018-06-01",
+      "type": "Microsoft.Network/expressRouteCircuits/peerings",
+      "name": "[concat( variables('ERCircuitName'), '/', variables('peeringType'))]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "peeringType": "[variables('peeringType')]",
+        "peerASN": "[variables('peerASN')]",
+        "primaryPeerAddressPrefix": "[variables('primaryPeerAddressPrefix')]",
+        "secondaryPeerAddressPrefix": "[variables('secondaryPeerAddressPrefix')]",
+        "vlanId": "[variables('vlanId')]"
+      }
+    },
+    {
+      "apiVersion": "2018-06-01",
+      "type": "Microsoft.Network/connections",
+      "name": "[variables('connectionName')]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworkGateways', variables('GWName'))]",
+        "[concat('Microsoft.Network/expressRouteCircuits/',variables('ERCircuitName'),'/peerings/', variables('peeringType') )]"
+      ],
+      "properties": {
+        "virtualNetworkGateway1": {
+          "id": "[resourceId('Microsoft.Network/virtualNetworkGateways',variables('GWName'))]"
+        },
+        "peer": {
+          "id": "[resourceId('Microsoft.Network/expressRouteCircuits',variables('ERCircuitName'))]"
+        },
+        "connectionType": "ExpressRoute"
+      }
+    }
+  ]
+}

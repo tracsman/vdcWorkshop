@@ -105,7 +105,7 @@ Write-Host 'Creating Private Peering' -ForegroundColor Cyan
 Try {Get-AzureRmExpressRouteCircuitPeeringConfig -Name AzurePrivatePeering -ExpressRouteCircuit $circuit -ErrorAction Stop | Out-Null
      Write-Host '  resource exists, skipping'}
 Catch {Add-AzureRmExpressRouteCircuitPeeringConfig -Name AzurePrivatePeering -ExpressRouteCircuit $circuit `
-       -PrimaryPeerAddressPrefix "192.168.$IPThirdOctet.0/30" -SecondaryPeerAddressPrefix "192.168.$IPThirdOctet.4/30" `
+       -PrimaryPeerAddressPrefix "192.168.$IPThirdOctet.16/30" -SecondaryPeerAddressPrefix "192.168.$IPThirdOctet.20/30" `
        -PeeringType AzurePrivatePeering -PeerASN $ASN -VlanId $VLANTag
 }
 
