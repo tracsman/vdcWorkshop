@@ -11,7 +11,7 @@ In the Scripts directory you'll find the ARM Templates with the associated Power
 
 > NOTE: In both the template and PowerShell scripts there is an INIT.TXT file that must be set to your assigned Company number. If you're running this outside of the class, any company number can be used. Default is 1.
 
-To deploy [ARM Templates][ARM, example for Step 1:
+To deploy [ARM Templates][ARM], example for Step 1:
 
 ```` PowerShell
     # Navigate to the directory where the scripts are stored, only run
@@ -34,7 +34,7 @@ To deploy from [PowerShell Scripts][PS], example for Step 1:
 
 ````
 
-Also contained in the Script directory is a "ServerSideScripts" folder, this contains that server side scripts that are run as a part of some of the deployements here. You can use those a model for deploying your applications or settings. For more complex deployments Chef, Puppet, Ansible, etc can be used.
+Also contained in the Scripts directory is a "[ServerSideScripts][Server]" folder, this contains scripts that are push to the newly build Azure VMs and run as a part of some of the deployments. You can use these as model for deploying your applications or settings. For more complex deployments Chef, Puppet, Ansible, etc can be used.
 
 <!--Link References-->
 [Docs]: ./Documents/
