@@ -34,8 +34,11 @@ To deploy from [PowerShell Scripts][PS], example for Step 1:
 
 ````
 
+Also contained in the Script directory is a "Server" folder, this contains that server side scripts that are run as a part of some of the deployements here. You can use those a model for deploying your applications or settings. For more complex deployments Chef, Puppet, Ansible, etc can be used.
+
 <!--Link References-->
 [Docs]: ./Documents/
 [Scripts]: ./Scripts/
 [ARM]: ./Scripts/ARMTemplates
-[PS]: ./Scripts/PowerShell
+[PS]: ./Scripts/PowerShell/User
+[Server]: ./Scripts/Server
