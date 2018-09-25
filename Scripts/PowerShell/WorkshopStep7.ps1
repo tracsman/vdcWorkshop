@@ -15,8 +15,7 @@
 
 # Step 7 
 # In Hub, deploy load balancer, NVA Firewall, NSGs, and UDR, build firewall
-# Description: In this script we will create a Network Virtual Application (NVA) in the the Hub behind a Standard
-               Load Balancer, then create NSGs and UDRs to allow/deny traffic.
+# Description: In this script we will create a Network Virtual Application (NVA) in the the Hub behind a Standard Load Balancer, then create NSGs and UDRs to allow/deny traffic.
 
 # Detailed steps:
 # 1. Create Subnet NSGs
