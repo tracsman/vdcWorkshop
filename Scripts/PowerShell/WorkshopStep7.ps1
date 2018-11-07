@@ -181,14 +181,14 @@ Try {$Spoke1RT = Get-AzureRmRouteTable -Name $Spoke1Name'-rt' -ResourceGroupName
      Write-Host "  $Spoke1Name route table exists, skipping"}
 Catch {$Spoke1RT = New-AzureRmRouteTable -Name $Spoke1Name'-rt' -ResourceGroupName $rg.ResourceGroupName -location $rg.Location
        Get-AzureRmRouteTable -ResourceGroupName $rg.ResourceGroupName -Name $Spoke1Name'-rt' | `
-                Add-AzureRmRouteConfig -Name "Spoke01ToIIS" -AddressPrefix $Spoke2VNet.Subnets[0].AddressPrefix -NextHopType "VirtualAppliance" -NextHopIpAddress $HubLBIP | `
+                Add-AzureRmRouteConfig -Name "Spoke01ToIIS" -AddressPrefix $Spoke2VNet.Subnets[0].AddressPrefix[0] -NextHopType "VirtualAppliance" -NextHopIpAddress $HubLBIP | `
                 Set-AzureRmRouteTable | Out-Null }
 
 Try {$Spoke2RT = Get-AzureRmRouteTable -Name $Spoke2Name'-rt' -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop
      Write-Host "  $Spoke2Name route table exists, skipping"}
 Catch {$Spoke2RT = New-AzureRmRouteTable -Name $Spoke2Name'-rt' -ResourceGroupName $rg.ResourceGroupName -location $rg.Location
        Get-AzureRmRouteTable -ResourceGroupName $rg.ResourceGroupName -Name $Spoke2Name'-rt' | `
-                Add-AzureRmRouteConfig -Name "Spoke02ToFS" -AddressPrefix $Spoke1VNet.Subnets[0].AddressPrefix -NextHopType "VirtualAppliance" -NextHopIpAddress $HubLBIP | `
+                Add-AzureRmRouteConfig -Name "Spoke02ToFS" -AddressPrefix $Spoke1VNet.Subnets[0].AddressPrefix[0] -NextHopType "VirtualAppliance" -NextHopIpAddress $HubLBIP | `
                 Set-AzureRmRouteTable | Out-Null}
 
 Write-Host (Get-Date)' - ' -NoNewline
