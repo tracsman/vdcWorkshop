@@ -11,9 +11,9 @@
 # Step 4 Create an Azure Front Door to geo-load balance across the two sites
 #
 
-# Step 1
-# Create two ExpressRoute Circuits, one in Seattle, one in Washington, DC (incl provisioning)
-# Description: In this script we will create two ExpressRoute circuits in your resource group
+# Step 2
+# Establish ExpressRoute Global Peering between the two circuits
+# Description: In this script we will peer the two circuits created to allow on-prem to on-prem communication
 
 # Load Initialization Variables
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
@@ -27,18 +27,15 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 
 # Non-configurable Variable Initialization (ie don't modify these)
 $SubID = 'e4a176ec-f695-407c-8eeb-185fb94076b8'
-$EastRegion = "eastus"
-$WestRegion = "west2us"
 $ResourceGroup = "Company" + $CompanyID.PadLeft(2,"0")
 $ERCircuit1Name = $ResourceGroup + "-ASH-er"
-$ERCircuit1Location = 'Washington DC'
 $ERCircuit2Name = $ResourceGroup + "-SEA-er"
-$ERCircuit2Location = 'Seattle'
+$GlobalReachP2P = "192.168." + $CompanyID ".224/29"
 
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 1, estimated total time 6 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 1, estimated total time 5 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
@@ -52,31 +49,27 @@ Catch {# Login and set subscription for ARM
         Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"
         Try {$rg = Get-AzureRmResourceGroup -Name $ResourceGroup -ErrorAction Stop}
         Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
-                Return}
+               Return}
 }
 
-# Create ExpressRoute Circuit 1
+# Get Circuit Info
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host 'Creating ExpressRoute Circuit in Washington DC' -ForegroundColor Cyan
-Try {Get-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit1Name -ErrorAction Stop | Out-Null
-        Write-Host '  resource exists, skipping'}
-Catch {New-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit1Name -Location $EastRegion `
-                                      -ServiceProviderName Equinix -PeeringLocation $ERCircuit1Location `
-                                      -BandwidthInMbps 50 -SkuFamily MeteredData -SkuTier Standard | Out-Null
-}
+Write-Host 'Pulling circuit information' -ForegroundColor Cyan
+Try {$ckt1 = Get-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit1Name -ErrorAction Stop | Out-Null
+     $ckt2 = Get-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit2Name -ErrorAction Stop | Out-Null}
+Catch {Write-Warning "One or both circuits weren't found, please ensure step one is successful before running this script."
+       Return}
 
-# Create ExpressRoute Circuit 2
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host 'Creating ExpressRoute Circuit in Seattle' -ForegroundColor Cyan
-Try {Get-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit2Name -ErrorAction Stop
-        Write-Host '  resource exists, skipping'}
-Catch {New-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit2Name -Location $WestRegion `
-                                        -ServiceProviderName Equinix -PeeringLocation $ERCircuit2Location `
-                                        -BandwidthInMbps 50 -SkuFamily MeteredData -SkuTier Standard | Out-Null
+# Ensure both circuits are provisioned and ready to go
+If ($ckt.provisioned -eq "Provisioned" -and $ckt.Provisioned -eq "Provisioned") {
+    Add-AzureRmExpressRouteCircuitConnectionConfig -Name 'SEAtoASH' -ExpressRouteCircuit $ckt1 -PeerExpressRouteCircuitPeering $ckt2.Peerings[0].Id -AddressPrefix $GlobalReachP2P
+}
+Else {Write-Warning "One or both circuits aren't in the provisioned state. Please ensure your proctor has provisioned both circuits before running this script."
+      Return
 }
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 1 completed successfully" -ForegroundColor Green
-Write-Host "Wait for the proctor to notify you that your ExpressRoute circuits have been provisioned by the Service Provider before continuing."
+Write-Host "Step 2 completed successfully" -ForegroundColor Green
+Write-Host "Please proceed with the step 2 validation"
 Write-Host
