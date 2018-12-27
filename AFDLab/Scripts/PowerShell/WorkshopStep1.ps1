@@ -15,6 +15,14 @@
 # Create two ExpressRoute Circuits, one in Seattle, one in Washington, DC (incl provisioning)
 # Description: In this script we will create two ExpressRoute circuits in your resource group
 
+# Az Module Test
+$ModCheck = Get-Module Az.Network -ListAvailable
+If ($Null -eq $ModCheck) {
+    Write-Warning "The Az PowerShell module was not found. This script uses the Az modules for PowerShell"
+    Write-Warning "See the blob post for more information at: https://azure.microsoft.com/blog/how-to-migrate-from-azurerm-to-az-in-azure-powershell/"
+    Return
+    }
+
 # Load Initialization Variables
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 If (Test-Path -Path $ScriptDir\init.txt) {
@@ -43,14 +51,14 @@ Write-Host "Starting step 1, estimated total time 6 minutes" -ForegroundColor Cy
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Checking login and permissions" -ForegroundColor Cyan
-Try {$rg = Get-AzureRmResourceGroup -Name $ResourceGroup -ErrorAction Stop}
+Try {$rg = Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop}
 Catch {# Login and set subscription for ARM
         Write-Host "Logging in to ARM"
-        Try {$Sub = (Set-AzureRmContext -Subscription $subID -ErrorAction Stop).Subscription}
-        Catch {Login-AzureRmAccount | Out-Null
-                $Sub = (Set-AzureRmContext -Subscription $subID -ErrorAction Stop).Subscription}
+        Try {$Sub = (Set-AzContext -Subscription $subID -ErrorAction Stop).Subscription}
+        Catch {Login-AzAccount | Out-Null
+                $Sub = (Set-AzContext -Subscription $subID -ErrorAction Stop).Subscription}
         Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"
-        Try {$rg = Get-AzureRmResourceGroup -Name $ResourceGroup -ErrorAction Stop}
+        Try {$rg = Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop}
         Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
                 Return}
 }
@@ -58,9 +66,9 @@ Catch {# Login and set subscription for ARM
 # Create ExpressRoute Circuit 1
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host 'Creating ExpressRoute Circuit in Washington DC' -ForegroundColor Cyan
-Try {Get-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit1Name -ErrorAction Stop | Out-Null
+Try {Get-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit1Name -ErrorAction Stop | Out-Null
         Write-Host '  resource exists, skipping'}
-Catch {New-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit1Name -Location $EastRegion `
+Catch {New-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit1Name -Location $EastRegion `
                                       -ServiceProviderName Equinix -PeeringLocation $ERCircuit1Location `
                                       -BandwidthInMbps 50 -SkuFamily MeteredData -SkuTier Standard | Out-Null
 }
@@ -68,9 +76,9 @@ Catch {New-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -
 # Create ExpressRoute Circuit 2
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host 'Creating ExpressRoute Circuit in Seattle' -ForegroundColor Cyan
-Try {Get-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit2Name -ErrorAction Stop
+Try {Get-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit2Name -ErrorAction Stop
         Write-Host '  resource exists, skipping'}
-Catch {New-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit2Name -Location $WestRegion `
+Catch {New-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuit2Name -Location $WestRegion `
                                         -ServiceProviderName Equinix -PeeringLocation $ERCircuit2Location `
                                         -BandwidthInMbps 50 -SkuFamily MeteredData -SkuTier Standard | Out-Null
 }

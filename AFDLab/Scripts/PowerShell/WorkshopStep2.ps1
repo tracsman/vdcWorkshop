@@ -15,6 +15,14 @@
 # Establish ExpressRoute Global Peering between the two circuits
 # Description: In this script we will peer the two circuits created to allow on-prem to on-prem communication
 
+# Az Module Test
+$ModCheck = Get-Module Az.Network -ListAvailable
+If ($Null -eq $ModCheck) {
+    Write-Warning "The Az PowerShell module was not found. This script uses the Az modules for PowerShell"
+    Write-Warning "See the blob post for more information at: https://azure.microsoft.com/blog/how-to-migrate-from-azurerm-to-az-in-azure-powershell/"
+    Return
+    }
+
 # Load Initialization Variables
 $ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
 If (Test-Path -Path $ScriptDir\init.txt) {
@@ -47,14 +55,14 @@ Write-Host "Starting step 2, estimated total time 10 minutes" -ForegroundColor C
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Checking login and permissions" -ForegroundColor Cyan
-Try {$rg = Get-AzureRmResourceGroup -Name $ResourceGroup -ErrorAction Stop}
+Try {$rg = Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop}
 Catch {# Login and set subscription for ARM
         Write-Host "Logging in to ARM"
-        Try {$Sub = (Set-AzureRmContext -Subscription $subID -ErrorAction Stop).Subscription}
-        Catch {Login-AzureRmAccount | Out-Null
-                $Sub = (Set-AzureRmContext -Subscription $subID -ErrorAction Stop).Subscription}
+        Try {$Sub = (Set-AzContext -Subscription $subID -ErrorAction Stop).Subscription}
+        Catch {Login-AzAccount | Out-Null
+                $Sub = (Set-AzContext -Subscription $subID -ErrorAction Stop).Subscription}
         Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"
-        Try {$rg = Get-AzureRmResourceGroup -Name $ResourceGroup -ErrorAction Stop}
+        Try {$rg = Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop}
         Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
                Return}
 }
@@ -62,8 +70,8 @@ Catch {# Login and set subscription for ARM
 # Get Circuit Info
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host 'Pulling circuit information' -ForegroundColor Cyan
-Try {$cktASH = Get-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuitNameASH -ErrorAction Stop | Out-Null
-     $cktSEA = Get-AzureRmExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuitNameSEA -ErrorAction Stop | Out-Null}
+Try {$cktASH = Get-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuitNameASH -ErrorAction Stop | Out-Null
+     $cktSEA = Get-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuitNameSEA -ErrorAction Stop | Out-Null}
 Catch {Write-Warning "One or both circuits weren't found, please ensure step one is successful before running this script."
        Return}
 
@@ -71,22 +79,22 @@ Catch {Write-Warning "One or both circuits weren't found, please ensure step one
 If ($cktASH.ServiceProviderProvisioningState -eq "Provisioned" -and $cktSEA.ServiceProviderProvisioningState -eq "Provisioned") {
     Write-Host (Get-Date)' - ' -NoNewline
     Write-Host 'Creating ASH Private Peering' -ForegroundColor Cyan
-    Try {Get-AzureRmExpressRouteCircuitPeeringConfig -Name AzurePrivatePeering -ExpressRouteCircuit $cktASH -ErrorAction Stop | Out-Null
+    Try {Get-AzExpressRouteCircuitPeeringConfig -Name AzurePrivatePeering -ExpressRouteCircuit $cktASH -ErrorAction Stop | Out-Null
          Write-Host '  resource exists, skipping'}
-    Catch {Add-AzureRmExpressRouteCircuitPeeringConfig -Name AzurePrivatePeering -ExpressRouteCircuit $cktASH `
+    Catch {Add-AzExpressRouteCircuitPeeringConfig -Name AzurePrivatePeering -ExpressRouteCircuit $cktASH `
                                                        -PrimaryPeerAddressPrefix $ERPvtPrimaryASH -SecondaryPeerAddressPrefix $ERPvtSecondaryASH `
                                                        -PeeringType AzurePrivatePeering -PeerASN $ASNASH -VlanId $VLANTag}
-    Try {Set-AzureRmExpressRouteCircuit -ExpressRouteCircuit $cktASH -ErrorAction Stop | Out-Null}
+    Try {Set-AzExpressRouteCircuit -ExpressRouteCircuit $cktASH -ErrorAction Stop | Out-Null}
     Catch {Write-Warning '  saving the changes to the Ashburn circuit failed. Use the Azure Portal to manually verify and correct.'}
 
     Write-Host (Get-Date)' - ' -NoNewline
     Write-Host 'Creating SEA Private Peering' -ForegroundColor Cyan
-    Try {Get-AzureRmExpressRouteCircuitPeeringConfig -Name AzurePrivatePeering -ExpressRouteCircuit $cktSEA -ErrorAction Stop | Out-Null
+    Try {Get-AzExpressRouteCircuitPeeringConfig -Name AzurePrivatePeering -ExpressRouteCircuit $cktSEA -ErrorAction Stop | Out-Null
          Write-Host '  resource exists, skipping'}
-    Catch {Add-AzureRmExpressRouteCircuitPeeringConfig -Name AzurePrivatePeering -ExpressRouteCircuit $cktSEA `
+    Catch {Add-AzExpressRouteCircuitPeeringConfig -Name AzurePrivatePeering -ExpressRouteCircuit $cktSEA `
                                                        -PrimaryPeerAddressPrefix $ERPvtPrimarySEA -SecondaryPeerAddressPrefix $ERPvtSecondarySEA `
                                                        -PeeringType AzurePrivatePeering -PeerASN $ASNSEA -VlanId $VLANTag}
-    Try {Set-AzureRmExpressRouteCircuit -ExpressRouteCircuit $cktSEA -ErrorAction Stop | Out-Null}
+    Try {Set-AzExpressRouteCircuit -ExpressRouteCircuit $cktSEA -ErrorAction Stop | Out-Null}
     Catch {Write-Warning '  saving the changes to the Seattle circuit failed. Use the Azure Portal to manually verify and correct.'}
 }
 Else {Write-Warning "One or both circuits aren't in the provisioned state. Please ensure your proctor has provisioned both circuits before running this script."
@@ -94,11 +102,11 @@ Else {Write-Warning "One or both circuits aren't in the provisioned state. Pleas
 }
 
 # Ensure Private Peering is enabled, then enbale Global Reach
-Try {Get-AzureRmExpressRouteCircuitPeeringConfig -ExpressRouteCircuit $cktASH -Name AzurePrivatePeering -ErrorAction Stop | Out-Null
-     Get-AzureRmExpressRouteCircuitPeeringConfig -ExpressRouteCircuit $cktSEA -Name AzurePrivatePeering -ErrorAction Stop | Out-Null}
+Try {Get-AzExpressRouteCircuitPeeringConfig -ExpressRouteCircuit $cktASH -Name AzurePrivatePeering -ErrorAction Stop | Out-Null
+     Get-AzExpressRouteCircuitPeeringConfig -ExpressRouteCircuit $cktSEA -Name AzurePrivatePeering -ErrorAction Stop | Out-Null}
 Catch {Write-Warning "Private Peering isn't enabled on one or both circuits. Please ensure private peering is enable successfully."
        Return}
-Finally {Add-AzureRmExpressRouteCircuitConnectionConfig -Name 'ASHtoSEA' -ExpressRouteCircuit $cktASH -PeerExpressRouteCircuitPeering $cktSEA.Peerings[0].Id -AddressPrefix $GlobalReachP2P}
+Finally {Add-AzExpressRouteCircuitConnectionConfig -Name 'ASHtoSEA' -ExpressRouteCircuit $cktASH -PeerExpressRouteCircuitPeering $cktSEA.Peerings[0].Id -AddressPrefix $GlobalReachP2P}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
