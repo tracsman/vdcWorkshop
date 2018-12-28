@@ -72,7 +72,7 @@ Try {$rg = Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop}
 Catch {# Login and set subscription for ARM
         Write-Host "Logging in to ARM"
         Try {$Sub = (Set-AzContext -Subscription $subID -ErrorAction Stop).Subscription}
-        Catch {Login-AzAccount | Out-Null
+        Catch {Connect-AzAccount | Out-Null
                 $Sub = (Set-AzContext -Subscription $subID -ErrorAction Stop).Subscription}
         Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"
         Try {$rg = Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop}

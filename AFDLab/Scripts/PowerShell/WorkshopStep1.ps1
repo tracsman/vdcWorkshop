@@ -36,7 +36,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # Non-configurable Variable Initialization (ie don't modify these)
 $SubID = 'e4a176ec-f695-407c-8eeb-185fb94076b8'
 $EastRegion = "eastus"
-$WestRegion = "west2us"
+$WestRegion = "westus2"
 $ResourceGroup = "Company" + $CompanyID.PadLeft(2,"0")
 $ERCircuit1Name = $ResourceGroup + "-ASH-er"
 $ERCircuit1Location = 'Washington DC'
@@ -55,7 +55,7 @@ Try {$rg = Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop}
 Catch {# Login and set subscription for ARM
         Write-Host "Logging in to ARM"
         Try {$Sub = (Set-AzContext -Subscription $subID -ErrorAction Stop).Subscription}
-        Catch {Login-AzAccount | Out-Null
+        Catch {Connect-AzAccount | Out-Null
                 $Sub = (Set-AzContext -Subscription $subID -ErrorAction Stop).Subscription}
         Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"
         Try {$rg = Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop}
