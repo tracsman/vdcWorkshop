@@ -86,5 +86,5 @@ Catch {New-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 1 completed successfully" -ForegroundColor Green
-Write-Host "Wait for the proctor to notify you that your ExpressRoute circuits have been provisioned by the Service Provider before continuing."
+Write-Host "  Wait for the proctor to notify you that your ExpressRoute circuits have been provisioned by the Service Provider before continuing."
 Write-Host

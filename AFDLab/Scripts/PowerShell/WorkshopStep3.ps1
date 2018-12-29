@@ -43,7 +43,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 $SubID = 'e4a176ec-f695-407c-8eeb-185fb94076b8'
 $ResourceGroup = "Company" + $CompanyID.PadLeft(2,"0")
 $EastRegion = "eastus"
-$WestRegion = "west2us"
+$WestRegion = "westus2"
 $ERCircuitNameASH = $ResourceGroup + "-ASH-er"
 $ERCircuitNameSEA = $ResourceGroup + "-SEA-er"
 $VNetNameASH = "ASH-VNet01"
@@ -59,6 +59,7 @@ $kvName = $ResourceGroup + '-kv'
 $VMUserName = "User01"
 $VMNameASH = "ASH-VM01"
 $VMNameSEA = "SEA-VM01"
+$VMSize = "Standard_A4_v2"
 
 # Start nicely
 Write-Host
@@ -84,7 +85,7 @@ Catch {# Login and set subscription for ARM
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Virtual Networks" -ForegroundColor Cyan
 Try {$vnetASH = Get-AzVirtualNetwork -ResourceGroupName $ResourceGroup -Name $VNetNameASH -ErrorAction Stop
-     Write-Host "Resource exsists, skipping"}
+     Write-Host "  resource exsists, skipping"}
 Catch {$vnetASH = New-AzVirtualNetwork -ResourceGroupName $ResourceGroup -Name $VNetNameASH -AddressPrefix $AddressSpaceASH -Location $EastRegion  
        Write-Host (Get-Date)' - ' -NoNewline
        Write-Host "Adding subnets" -ForegroundColor Cyan
@@ -93,7 +94,7 @@ Catch {$vnetASH = New-AzVirtualNetwork -ResourceGroupName $ResourceGroup -Name $
        Set-AzVirtualNetwork -VirtualNetwork $vnetASH | Out-Null
        }
 Try {$vnetSEA = Get-AzVirtualNetwork -ResourceGroupName $ResourceGroup -Name $VNetNameSEA -ErrorAction Stop
-     Write-Host "Resource exsists, skipping"}
+     Write-Host "  resource exsists, skipping"}
 Catch {$vnetSEA = New-AzVirtualNetwork -ResourceGroupName $ResourceGroup -Name $VNetNameSEA -AddressPrefix $AddressSpaceSEA -Location $WestRegion  
        Write-Host (Get-Date)' - ' -NoNewline
        Write-Host "Adding subnets" -ForegroundColor Cyan
@@ -106,7 +107,7 @@ Catch {$vnetSEA = New-AzVirtualNetwork -ResourceGroupName $ResourceGroup -Name $
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating gateways" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkGateway -Name $VNetNameASH'-gw' -ResourceGroupName $ResourceGroup -ErrorAction Stop | Out-Null
-     Write-Host "Resource exsists, skipping"}
+     Write-Host "  resource exsists, skipping"}
 Catch {
     $vnetASH = Get-AzVirtualNetwork -ResourceGroupName $ResourceGroup -Name $VNetNameASH
     $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'GatewaySubnet' -VirtualNetwork $vnetASH
@@ -116,7 +117,7 @@ Catch {
     New-AzVirtualNetworkGateway -Name $VNetNameASH'-gw' -ResourceGroupName $ResourceGroup -Location $EastRegion -IpConfigurations $ipconf -GatewayType Expressroute -GatewaySku Standard -AsJob
     }
 Try {Get-AzVirtualNetworkGateway -Name $VNetNameSEA'-gw' -ResourceGroupName $ResourceGroup -ErrorAction Stop | Out-Null
-    Write-Host "Resource exsists, skipping"}
+     Write-Host "  resource exsists, skipping"}
 Catch {
    $vnetSEA = Get-AzVirtualNetwork -ResourceGroupName $ResourceGroup -Name $VNetNameSEA
    $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'GatewaySubnet' -VirtualNetwork $vnetSEA
@@ -129,66 +130,64 @@ Catch {
 # 3.3 Create Public IPs, Web servers, install web app, attach to Public IPs
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating VMs" -ForegroundColor Cyan
-
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "  pulling KeyVault Secret" -ForegroundColor Cyan
-$kvs = Get-AzureKeyVaultSecret -VaultName $kvName -Name $VMUserName -ErrorAction Stop 
+Write-Host "  Pulling KeyVault Secret"
+$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $VMUserName -ErrorAction Stop 
 $cred = New-Object System.Management.Automation.PSCredential ($kvs.Name, $kvs.SecretValue)
 
-Write-Host "Building $VMNameASH"
-Write-Host "  creating Public IP address" -ForegroundColor Cyan
+Write-Host "  Building $VMNameASH" -ForegroundColor Cyan
+Write-Host "    creating Public IP address"
 Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $ResourceGroup -Name $VMNameASH'-pip' -ErrorAction Stop
-     Write-Host "    resource exsists, skipping"}
+     Write-Host "      resource exsists, skipping"}
 Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $ResourceGroup -Location $EastRegion -AllocationMethod Dynamic -Name $VMNameASH'-pip'}
 
-Write-Host "  creating NSG and RDP rule"
+Write-Host "    creating NSG and RDP rule"
+$nsgRuleRDP = New-AzNetworkSecurityRuleConfig -Name myNSGRuleRDP -Protocol Tcp -Direction Inbound `
+                                              -Priority 1000 -SourceAddressPrefix * -SourcePortRange * `
+                                              -DestinationAddressPrefix * -DestinationPortRange 3389 -Access Allow
+$nsgRuleHTTP = New-AzNetworkSecurityRuleConfig -Name myNSGRuleHTTP -Protocol Tcp -Direction Inbound `
+                                               -Priority 1010 -SourceAddressPrefix * -SourcePortRange * `
+                                               -DestinationAddressPrefix * -DestinationPortRange 80 -Access Allow
 Try {$nsg = Get-AzNetworkSecurityGroup -Name $VMNameASH"-nic-nsg" -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop
-     Write-Host "    resource exists, skipping"}
-Catch {$nsgRuleRDP = New-AzNetworkSecurityRuleConfig -Name myNSGRuleRDP -Protocol Tcp -Direction Inbound `
-                                                          -Priority 1000 -SourceAddressPrefix * -SourcePortRange * `
-                                                          -DestinationAddressPrefix * -DestinationPortRange 3389 -Access Allow
-       $nsg = New-AzNetworkSecurityGroup -ResourceGroupName $rg.ResourceGroupName -Location $EastRegion -Name $VMNameASH"-nic-nsg" -SecurityRules $nsgRuleRDP}
-Write-Host "  creating NIC"
+     Write-Host "      resource exists, skipping"}
+Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $rg.ResourceGroupName -Location $EastRegion -Name $VMNameASH"-nic-nsg" -SecurityRules $nsgRuleRDP, $nsgRuleHTTP}
+Write-Host "    creating NIC"
 Try {$nic = Get-AzNetworkInterface -Name $VMNameASH'-nic' -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop
-     Write-Host "    resource exists, skipping"}
+     Write-Host "      resource exists, skipping"}
 Catch {$nic = New-AzNetworkInterface -Name $VMNameASH'-nic' -ResourceGroupName $rg.ResourceGroupName -Location $EastRegion `
                                           -SubnetId $vnetASH.Subnets[0].Id -NetworkSecurityGroupId $nsg.Id -PublicIpAddressId $pip.Id -ErrorAction Stop}
-Write-Host "  creating VM"
+Write-Host "    creating VM"
 Try {Get-AzVM -ResourceGroupName $rg.ResourceGroupName -Name $VMNameASH -ErrorAction Stop | Out-Null
-          Write-Host "    VM exists, skipping"}
+          Write-Host "      VM exists, skipping"}
 Catch {$vmConfig = New-AzVMConfig -VMName $VMNameASH -VMSize $VMSize -ErrorAction Stop| `
           Set-AzVMOperatingSystem -Windows -ComputerName $VMNameASH -Credential $cred -EnableAutoUpdate -ProvisionVMAgent | `
           Set-AzVMSourceImage -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2016-Datacenter -Version latest | `
           Add-AzVMNetworkInterface -Id $nic.Id | Set-AzVMBootDiagnostics -Disable
-          Write-Host "    queuing VM build job"
+          Write-Host "      queuing VM build job"
           New-AzVM -ResourceGroupName $rg.ResourceGroupName -Location $EastRegion -VM $vmConfig -AsJob | Out-Null}
 
-Write-Host "Building $VMNameSEA"
-Write-Host "  creating Public IP address" -ForegroundColor Cyan
+Write-Host "  Building $VMNameSEA" -ForegroundColor Cyan
+Write-Host "    creating Public IP address"
 Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $ResourceGroup -Name $VMNameSEA'-pip' -ErrorAction Stop
-     Write-Host "    resource exsists, skipping"}
+     Write-Host "      resource exsists, skipping"}
 Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $ResourceGroup -Location $WestRegion -AllocationMethod Dynamic -Name $VMNameSEA'-pip'}
 
-Write-Host "  creating NSG and RDP rule"
+Write-Host "    creating NSG and RDP rule"
 Try {$nsg = Get-AzNetworkSecurityGroup -Name $VMNameSEA"-nic-nsg" -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop
-     Write-Host "    resource exists, skipping"}
-Catch {$nsgRuleRDP = New-AzNetworkSecurityRuleConfig -Name myNSGRuleRDP -Protocol Tcp -Direction Inbound `
-                                                            -Priority 1000 -SourceAddressPrefix * -SourcePortRange * `
-                                                            -DestinationAddressPrefix * -DestinationPortRange 3389 -Access Allow
-          $nsg = New-AzNetworkSecurityGroup -ResourceGroupName $rg.ResourceGroupName -Location $WestRegion -Name $VMNameSEA"-nic-nsg" -SecurityRules $nsgRuleRDP}
-Write-Host "  creating NIC"
+     Write-Host "      resource exists, skipping"}
+Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $rg.ResourceGroupName -Location $WestRegion -Name $VMNameSEA"-nic-nsg" -SecurityRules $nsgRuleRDP,$nsgRuleHTTP}
+Write-Host "    creating NIC"
 Try {$nic = Get-AzNetworkInterface -Name $VMNameSEA'-nic' -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop
-     Write-Host "    resource exists, skipping"}
+     Write-Host "      resource exists, skipping"}
 Catch {$nic = New-AzNetworkInterface -Name $VMNameSEA'-nic' -ResourceGroupName $rg.ResourceGroupName -Location $WestRegion `
                                              -SubnetId $vnetSEA.Subnets[0].Id -NetworkSecurityGroupId $nsg.Id -PublicIpAddressId $pip.Id -ErrorAction Stop}
-Write-Host "  creating VM"
+Write-Host "    creating VM"
 Try {Get-AzVM -ResourceGroupName $rg.ResourceGroupName -Name $VMNameSEA -ErrorAction Stop | Out-Null
-          Write-Host "    VM exists, skipping"}
+          Write-Host "      VM exists, skipping"}
 Catch {$vmConfig = New-AzVMConfig -VMName $VMNameSEA -VMSize $VMSize -ErrorAction Stop| `
           Set-AzVMOperatingSystem -Windows -ComputerName $VMNameSEA -Credential $cred -EnableAutoUpdate -ProvisionVMAgent | `
           Set-AzVMSourceImage -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2016-Datacenter -Version latest | `
           Add-AzVMNetworkInterface -Id $nic.Id | Set-AzVMBootDiagnostics -Disable
-          Write-Host "    queuing VM build job"
+          Write-Host "      queuing VM build job"
           New-AzVM -ResourceGroupName $rg.ResourceGroupName -Location $WestRegion -VM $vmConfig -AsJob | Out-Null}
 
 Write-Host (Get-Date)' - ' -NoNewline
@@ -219,11 +218,15 @@ Catch {Write-Host "  queuing IIS build job for $VMNameSEA"
 
 
 # 3.4 Create connection objects connecting the Gateways and Circuits
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Wait for ER Gateway Build Jobs to finish, this script will continue after 10 minutes or when gateways are built, whichever is first." -ForegroundColor Cyan
+Get-Job -Command "New-AzVirtualNetworkGateway" | wait-job -Timeout 600 | Out-Null
+
 # Get Circuit Info
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host 'Pulling ExpressRoute circuit information' -ForegroundColor Cyan
-Try {$cktASH = Get-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuitNameASH -ErrorAction Stop | Out-Null
-     $cktSEA = Get-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuitNameSEA -ErrorAction Stop | Out-Null}
+Try {$cktASH = Get-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuitNameASH -ErrorAction Stop
+     $cktSEA = Get-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupName -Name $ERCircuitNameSEA -ErrorAction Stop}
 Catch {Write-Warning "One or both circuits weren't found, please ensure step one is successful before running this script."
        Return}
 
@@ -232,22 +235,26 @@ Try {Get-AzExpressRouteCircuitPeeringConfig -ExpressRouteCircuit $cktASH -Name A
      Get-AzExpressRouteCircuitPeeringConfig -ExpressRouteCircuit $cktSEA -Name AzurePrivatePeering -ErrorAction Stop | Out-Null}
 Catch {Write-Warning "Private Peering isn't enabled on one or both circuits. Please ensure private peering is enable successfully."
        Return}
-Finally {Write-Host 'Connecting Gateway to ExpressRoute in Ashburn' -ForegroundColor Cyan
-         Try {Get-AzVirtualNetworkGatewayConnection -Name $VNetNameASH"-gw-conn" -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop | Out-Null
-              Write-Host '  resource exists, skipping'}
-         Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetNameASH"-gw" -ResourceGroupName $rg.ResourceGroupName
-                New-AzVirtualNetworkGatewayConnection -Name $VNetNameASH"-gw-conn" -ResourceGroupName $rg.ResourceGroupName -Location $EastRegion `
-                                                           -VirtualNetworkGateway1 $gw -PeerId $cktASH.Id -ConnectionType ExpressRoute | Out-Null}
-         Write-Host 'Connecting Gateway to ExpressRoute in Seattle' -ForegroundColor Cyan
-         Try {Get-AzVirtualNetworkGatewayConnection -Name $VNetNameSEA"-gw-conn" -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop | Out-Null
-              Write-Host '  resource exists, skipping'}
-         Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetNameSEA"-gw" -ResourceGroupName $rg.ResourceGroupName
-                New-AzVirtualNetworkGatewayConnection -Name $VNetNameSEA"-gw-conn" -ResourceGroupName $rg.ResourceGroupName -Location $WestRegion `
-                                                           -VirtualNetworkGateway1 $gw -PeerId $cktSEA.Id -ConnectionType ExpressRoute | Out-Null}
-         }
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host 'Connecting Gateway to ExpressRoute in Ashburn' -ForegroundColor Cyan
+Try {Get-AzVirtualNetworkGatewayConnection -Name $VNetNameASH"-gw-conn" -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop | Out-Null
+    Write-Host '  resource exists, skipping'}
+Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetNameASH"-gw" -ResourceGroupName $rg.ResourceGroupName
+    New-AzVirtualNetworkGatewayConnection -Name $VNetNameASH"-gw-conn" -ResourceGroupName $rg.ResourceGroupName -Location $EastRegion `
+                                          -VirtualNetworkGateway1 $gw -PeerId $cktASH.Id -ConnectionType ExpressRoute | Out-Null}
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host 'Connecting Gateway to ExpressRoute in Seattle' -ForegroundColor Cyan
+Try {Get-AzVirtualNetworkGatewayConnection -Name $VNetNameSEA"-gw-conn" -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop | Out-Null
+    Write-Host '  resource exists, skipping'}
+Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetNameSEA"-gw" -ResourceGroupName $rg.ResourceGroupName
+    New-AzVirtualNetworkGatewayConnection -Name $VNetNameSEA"-gw-conn" -ResourceGroupName $rg.ResourceGroupName -Location $WestRegion `
+                                          -VirtualNetworkGateway1 $gw -PeerId $cktSEA.Id -ConnectionType ExpressRoute | Out-Null}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Wait for All Build Jobs to finish, this script will continue after 10 minutes or when all jobs complete, whichever is first." -ForegroundColor Cyan
+Get-Job | wait-job -Timeout 600 | Out-Null
+Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 3 completed successfully" -ForegroundColor Green
-Write-Host "Please proceed with the step 3 validation"
+Write-Host "  Please proceed with the step 3 validation"
 Write-Host
