@@ -4,8 +4,8 @@ $ResourceGroup = "Company" + $CompanyID.PadLeft(2,"0")
 $VNetNameASH = "ASH-VNet01"
 $VNetNameSEA = "SEA-VNet01"
 $fdFEName = "afd" + $ResourceGroup + ".azurefd.net"
-$pipASH = Get-AzPublicIpAddress -Name $VNetNameASH'-gw-pip' -ResourceGroupName $ResourceGroup
-$pipSEA = Get-AzPublicIpAddress -Name $VNetNameSEA'-gw-pip' -ResourceGroupName $ResourceGroup
+$pipASH = Get-AzPublicIpAddress -Name 'ASH-VM01-pip' -ResourceGroupName $ResourceGroup
+$pipSEA = Get-AzPublicIpAddress -Name 'SEA-VM01-pip' -ResourceGroupName $ResourceGroup
 
 # Create AFD Public IP
 #Try {$pipFD = Get-AzPublicIpAddress -Name $ResourceGroup'-fd-pip'  -ResourceGroupName $ResourceGroup -ErrorAction Stop}
@@ -34,3 +34,4 @@ $fdRR = New-AzFrontDoorRoutingRuleObject -ResourceGroupName $ResourceGroup -Name
 
 # Create Front Door
 New-AzFrontDoor -ResourceGroupName $ResourceGroup -Name $ResourceGroup"-fd" -BackendPool $fdBEPool -FrontendEndpoint $fdFE -HealthProbeSetting $fdHP -LoadBalancingSetting $fdLB -RoutingRule $fdRR
+#Get-AzFrontDoor
