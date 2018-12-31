@@ -198,7 +198,7 @@ Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Running post VM deploy build scripts" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "IISBuild.ps1"
+$ScriptName = "AFDIISBuild.ps1"
 $ExtensionName = 'BuildIIS'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
