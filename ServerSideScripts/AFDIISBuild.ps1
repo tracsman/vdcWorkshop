@@ -3,7 +3,11 @@
 Param(
 [Parameter()]
 [string]$theAdmin,
-[string]$theSecret)
+[string]$theSecret,
+[string]$User2,
+[string]$Pass2,
+[string]$User3,
+[string]$Pass3)
 
 # Turn On ICMPv4
 Write-Host "Opening ICMPv4 Port"
@@ -13,7 +17,7 @@ Catch {New-NetFirewallRule -DisplayName "Allow ICMPv4" -Name Allow_ICMPv4_in -Ac
        Write-Host "Port opened"}
 
 # Install IIS
-Write-Host "Installing IIS and .Net 4.5, this can take some time, around 5+ minutes..." -ForegroundColor Cyan
+Write-Host "Installing IIS and .Net 4.5" -ForegroundColor Cyan
 add-windowsfeature Web-Server, Web-WebServer, Web-Common-Http, Web-Default-Doc, Web-Dir-Browsing, Web-Http-Errors, Web-Static-Content, Web-Health, Web-Http-Logging, Web-Performance, Web-Stat-Compression, Web-Security, Web-Filtering, Web-App-Dev, Web-ISAPI-Ext, Web-ISAPI-Filter, Web-Net-Ext, Web-Net-Ext45, Web-Asp-Net45, Web-Mgmt-Tools, Web-Mgmt-Console
 
 # Create Web App PagesWeb
@@ -98,6 +102,13 @@ c:\windows\system32\inetsrv\appcmd.exe set config "Default Web Site/" /section:s
 # Make sure the IIS settings take
 Write-Host "Restarting the W3SVC" -ForegroundColor Cyan
 Restart-Service -Name W3SVC
+
+# Add additional local Admin accounts
+New-LocalUser -Name $User2 -Password $Pass2 -FullName $User2 -AccountNeverExpires -PasswordNeverExpires
+Add-LocalGroupMember -Group 'Administrators' -Member $User2
+New-LocalUser -Name $User3 -Password $Pass3 -FullName $User3 -AccountNeverExpires -PasswordNeverExpires
+Add-LocalGroupMember -Group 'Administrators' -Member $User3
+Write-Host "Additional Local Accounts added" -ForegroundColor Cyan
 
 Write-Host
 Write-Host "Web App Creation Successfull!" -ForegroundColor Green

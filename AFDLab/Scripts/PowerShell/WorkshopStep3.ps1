@@ -56,7 +56,9 @@ $TenantSpaceSEA = "10.17." + $CompanyID + ".0/25"
 $GatewaySpaceSEA = "10.17." + $CompanyID + ".224/27"
 
 $kvName = $ResourceGroup + '-kv'
-$VMUserName = "User01"
+$VMUserName01 = "User01"
+$VMUserName02 = "User02"
+$VMUserName03 = "User03"
 $VMNameASH = "ASH-VM01"
 $VMNameSEA = "SEA-VM01"
 $VMSize = "Standard_A4_v2"
@@ -131,8 +133,10 @@ Catch {
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating VMs" -ForegroundColor Cyan
 Write-Host "  Pulling KeyVault Secret"
-$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $VMUserName -ErrorAction Stop 
-$cred = New-Object System.Management.Automation.PSCredential ($kvs.Name, $kvs.SecretValue)
+$kvs01 = Get-AzKeyVaultSecret -VaultName $kvName -Name $VMUserName01 -ErrorAction Stop
+$kvs02 = Get-AzKeyVaultSecret -VaultName $kvName -Name $VMUserName02 -ErrorAction Stop 
+$kvs03 = Get-AzKeyVaultSecret -VaultName $kvName -Name $VMUserName03 -ErrorAction Stop 
+$cred = New-Object System.Management.Automation.PSCredential ($kvs01.Name, $kvs01.SecretValue)
 
 Write-Host "  Building $VMNameASH" -ForegroundColor Cyan
 Write-Host "    creating Public IP address"
@@ -202,7 +206,7 @@ $ScriptName = "AFDIISBuild.ps1"
 $ExtensionName = 'BuildIIS'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName -theAdmin '$VMUserName' -theSecret '" + $kvs.SecretValueText + "')"
+$ScriptExe = "(.\$ScriptName -theAdmin '$VMUserName01' -theSecret '" + $kvs01.SecretValueText + "' -User2 '$VMUserName02' -Pass2 '" + $kvs02.SecretValue + "' -User3 '$VMUserName03' -Pass3 '" + $kvs03.SecretValue + "')"
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 
 Try {Get-AzVMExtension -ResourceGroupName $rg.ResourceGroupName -VMName $VMNameASH -Name $ExtensionName -ErrorAction Stop | Out-Null}
