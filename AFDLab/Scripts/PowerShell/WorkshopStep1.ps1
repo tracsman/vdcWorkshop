@@ -46,7 +46,7 @@ $ERCircuit2Location = 'Seattle'
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 1, estimated total time 6 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 1, estimated total time 4 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline

@@ -50,7 +50,7 @@ $GlobalReachP2P = "192.168." + $CompanyID + ".224/29"
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 2, estimated total time 10 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 2, estimated total time 4 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline

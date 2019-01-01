@@ -66,7 +66,7 @@ $VMSize = "Standard_A4_v2"
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 3, estimated total time 35 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 3, estimated total time 30 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
@@ -116,7 +116,7 @@ Catch {
     Try {$pipASH = Get-AzPublicIpAddress -Name $VNetNameASH'-gw-pip'  -ResourceGroupName $ResourceGroup -ErrorAction Stop}
     Catch {$pipASH = New-AzPublicIpAddress -Name $VNetNameASH'-gw-pip' -ResourceGroupName $ResourceGroup -Location $EastRegion -AllocationMethod Dynamic}
     $ipconf = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf" -Subnet $subnet -PublicIpAddress $pipASH
-    New-AzVirtualNetworkGateway -Name $VNetNameASH'-gw' -ResourceGroupName $ResourceGroup -Location $EastRegion -IpConfigurations $ipconf -GatewayType Expressroute -GatewaySku Standard -AsJob
+    New-AzVirtualNetworkGateway -Name $VNetNameASH'-gw' -ResourceGroupName $ResourceGroup -Location $EastRegion -IpConfigurations $ipconf -GatewayType Expressroute -GatewaySku Standard -AsJob | Out-Null
     }
 Try {Get-AzVirtualNetworkGateway -Name $VNetNameSEA'-gw' -ResourceGroupName $ResourceGroup -ErrorAction Stop | Out-Null
      Write-Host "  resource exsists, skipping"}
@@ -126,7 +126,7 @@ Catch {
    Try {$pipSEA = Get-AzPublicIpAddress -Name $VNetNameSEA'-gw-pip'  -ResourceGroupName $ResourceGroup -ErrorAction Stop}
    Catch {$pipSEA = New-AzPublicIpAddress -Name $VNetNameSEA'-gw-pip' -ResourceGroupName $ResourceGroup -Location $WestRegion -AllocationMethod Dynamic}
    $ipconf = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf" -Subnet $subnet -PublicIpAddress $pipSEA
-   New-AzVirtualNetworkGateway -Name $VNetNameSEA'-gw' -ResourceGroupName $ResourceGroup -Location $WestRegion -IpConfigurations $ipconf -GatewayType Expressroute -GatewaySku Standard -AsJob
+   New-AzVirtualNetworkGateway -Name $VNetNameSEA'-gw' -ResourceGroupName $ResourceGroup -Location $WestRegion -IpConfigurations $ipconf -GatewayType Expressroute -GatewaySku Standard -AsJob | Out-Null
    }
 
 # 3.3 Create Public IPs, Web servers, install web app, attach to Public IPs
