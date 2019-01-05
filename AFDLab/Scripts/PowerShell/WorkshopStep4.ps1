@@ -39,6 +39,7 @@ If (Test-Path -Path $ScriptDir\init.txt) {
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
 # Initialize
+$SubID = 'e4a176ec-f695-407c-8eeb-185fb94076b8'
 $ResourceGroup = "Company" + $CompanyID.PadLeft(2,"0")
 $VNetNameASH = "ASH-VNet01"
 $VNetNameSEA = "SEA-VNet01"
@@ -48,6 +49,21 @@ $fdFEName = $ResourceGroup + "-fd.azurefd.net"
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Starting step 4, estimated total time 3 minutes" -ForegroundColor Cyan
+
+# Login and permissions check
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Checking login and permissions" -ForegroundColor Cyan
+Try {$rg = Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop}
+Catch {# Login and set subscription for ARM
+        Write-Host "Logging in to ARM"
+        Try {$Sub = (Set-AzContext -Subscription $subID -ErrorAction Stop).Subscription}
+        Catch {Connect-AzAccount | Out-Null
+                $Sub = (Set-AzContext -Subscription $subID -ErrorAction Stop).Subscription}
+        Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"
+        Try {$rg = Get-AzResourceGroup -Name $ResourceGroup -ErrorAction Stop}
+        Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
+                Return}
+}
 
 # Create Front Door
 Write-Host (Get-Date)' - ' -NoNewline

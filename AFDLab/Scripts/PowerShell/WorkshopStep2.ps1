@@ -41,10 +41,10 @@ $ERCircuitNameSEA = $ResourceGroup + "-SEA-er"
 $ASNASH = "65021"
 $ASNSEA = "65020"
 $VLANTag = "20" + $CompanyID.PadLeft(2,"0")
-$ERPvtPrimaryASH = "192.168." + $CompanyID + ".208/30"
-$ERPvtSecondaryASH = "192.168." + $CompanyID + ".212/30"
-$ERPvtPrimarySEA = "192.168." + $CompanyID + ".216/30"
-$ERPvtSecondarySEA = "192.168." + $CompanyID + ".220/30"
+$ERPvtPrimaryASH = "192.168." + $CompanyID + ".216/30"
+$ERPvtSecondaryASH = "192.168." + $CompanyID + ".220/30"
+$ERPvtPrimarySEA = "192.168." + $CompanyID + ".208/30"
+$ERPvtSecondarySEA = "192.168." + $CompanyID + ".212/30"
 $GlobalReachP2P = "192.168." + $CompanyID + ".224/29"
 
 # Start nicely
