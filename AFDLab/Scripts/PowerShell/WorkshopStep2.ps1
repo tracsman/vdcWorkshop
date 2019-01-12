@@ -112,13 +112,13 @@ Try {$cktASH = Get-AzExpressRouteCircuit -ResourceGroupName $rg.ResourceGroupNam
      Get-AzExpressRouteCircuitPeeringConfig -ExpressRouteCircuit $cktSEA -Name AzurePrivatePeering -ErrorAction Stop | Out-Null}
 Catch {Write-Warning "Private Peering isn't enabled on one or both circuits. Please ensure private peering is enable successfully."
        Return}
-Finally {Try {Get-AzExpressRouteCircuitConnectionConfig -ExpressRouteCircuit $cktASH -Name 'ASHtoSEA' -ErrorAction Stop | Out-Null
+Finally {Try {Get-AzExpressRouteCircuitConnectionConfig -ExpressRouteCircuit $cktSEA -Name 'SEAtoASH' -ErrorAction Stop | Out-Null
               Write-Host '  resource exists, skipping'}
-         Catch {Add-AzExpressRouteCircuitConnectionConfig -Name 'ASHtoSEA' -ExpressRouteCircuit $cktASH -PeerExpressRouteCircuitPeering $cktSEA.Peerings[0].Id -AddressPrefix $GlobalReachP2P | Out-Null
-                Try {Set-AzExpressRouteCircuit -ExpressRouteCircuit $cktASH -ErrorAction Stop | Out-Null}
+         Catch {Add-AzExpressRouteCircuitConnectionConfig -Name 'SEAtoASH' -ExpressRouteCircuit $cktSEA -PeerExpressRouteCircuitPeering $cktASH.Peerings[0].Id -AddressPrefix $GlobalReachP2P | Out-Null
+                Try {Set-AzExpressRouteCircuit -ExpressRouteCircuit $cktSEA -ErrorAction Stop | Out-Null}
                 Catch {Write-Warning '  saving the changes for Global Reach failed. Use the Azure Portal to manually verify and correct.'}
                }
-}
+        }
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
