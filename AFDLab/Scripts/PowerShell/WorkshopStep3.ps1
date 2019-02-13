@@ -206,7 +206,7 @@ $ScriptName = "AFDIISBuild.ps1"
 $ExtensionName = 'BuildIIS'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName -theAdmin '$VMUserName01' -theSecret '" + $kvs01.SecretValueText + "' -User2 '$VMUserName02' -Pass2 '" + $kvs02.SecretValue + "' -User3 '$VMUserName03' -Pass3 '" + $kvs03.SecretValue + "')"
+$ScriptExe = "(.\$ScriptName -theAdmin '$VMUserName01' -theSecret '" + $kvs01.SecretValueText + "' -User2 '$VMUserName02' -Pass2 '" + $kvs02.SecretValueText + "' -User3 '$VMUserName03' -Pass3 '" + $kvs03.SecretValueText + "')"
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 
 Try {Get-AzVMExtension -ResourceGroupName $rg.ResourceGroupName -VMName $VMNameASH -Name $ExtensionName -ErrorAction Stop | Out-Null}

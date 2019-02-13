@@ -9,6 +9,9 @@ Param(
 [string]$User3,
 [string]$Pass3)
 
+$Pass2 = ConvertTo-SecureString $Pass2 -AsPlainText -Force
+$Pass3 = ConvertTo-SecureString $Pass3 -AsPlainText -Force
+
 # Turn On ICMPv4
 Write-Host "Opening ICMPv4 Port"
 Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
