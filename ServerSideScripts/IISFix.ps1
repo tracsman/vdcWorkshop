@@ -8,6 +8,7 @@ Param(
 $Decode = [System.Web.HttpUtility]::UrlDecode($theSecret)
 
 Write-Host "Here is comes"
+Write-Host $theSecret
 Write-Host $Decode
 Write-Host "There is was"
 
