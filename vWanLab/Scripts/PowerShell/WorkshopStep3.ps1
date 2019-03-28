@@ -14,14 +14,21 @@
 # (Not included) Step 8 Configure and Connect ExpressRoute to vWAN Hub
 # 
 
-# Step 1 - Create a vWAN, a vWAN Hub, and vWAN VPN Gateway
-# 1.1 Validate and Initialize
-# 1.2 Create a vWAN
-# 1.3 Create a vWAN Hub
-# 1.4 Create a vWAN VPN Gateway
-#
+# Step 3 - Create a Cisco CSR Virtual Appliance
+# 3.1 Accept Marketplace Terms
+# 3.2 Validate and Initialize
+# 3.3 Create the NetFoundry Virtual Appliance
+# 4.3.1 Create Public IP
+# 4.3.2 Create NSG
+# 4.3.3 Create NIC
+# 4.3.4 Build VM
+# 4.4 Create UDR Route Table
 
-# 1.1 Validate and Initialize
+# 3.1 Accept Marketplace Terms
+##  To run the script you need to accept the terms. Run one time in the target Azure subscription:
+##  Get-AzureRmMarketplaceTerms  -Publisher "cisco" -Product "cisco-csr-1000v"  -Name "csr-azure-byol" | Set-AzureRmMarketplaceTerms -Accept
+
+# 3.1 Validate and Initialize
 # Az Module Test
 $ModCheck = Get-Module Az.Network -ListAvailable
 If ($Null -eq $ModCheck) {
@@ -72,20 +79,6 @@ Write-Host "Creating vWAN" -ForegroundColor Cyan
 Try {$wan = Get-AzVirtualWan -ResourceGroupName $RGName -Name $vWANName -ErrorAction Stop
      Write-Host "  vWAN exists, skipping"}
 Catch {$wan = New-AzVirtualWan -ResourceGroupName $RGName -Name $vWANName -Location $ShortRegion -AllowBranchToBranchTraffic -AllowVNetToVNetTraffic}
-
-# 1.3 Create a vWAN Hub
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating Hub" -ForegroundColor Cyan
-Try {$hub= Get-AzVirtualHub -ResourceGroupName $RGName -Name $vWANName'-Hub01' -ErrorAction Stop
-     Write-Host "  Hub exists, skipping"}
-Catch {$hub = New-AzVirtualHub -ResourceGroupName $RGName -Name $vWANName'-Hub01' -Location $ShortRegion -VirtualWan $wan -AddressPrefix $HubPrefix}
-
-# 1.4 Create a vWAN VPN Gateway
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating VPN Gateway" -ForegroundColor Cyan
-Try {Get-AzVpnGateway -ResourceGroupName $RGName -Name $vWANName'-Hub01-gw-vpn' -ErrorAction Stop | Out-Null
-     Write-Host "  VPN Gateway exists, skipping"}
-Catch {New-AzVpnGateway -ResourceGroupName $RGName -Name $vWANName'-Hub01-gw-vpn' -VpnGatewayScaleUnit 1 -VirtualHub $hub}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
