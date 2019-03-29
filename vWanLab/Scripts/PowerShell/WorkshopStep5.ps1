@@ -14,14 +14,14 @@
 # (Not included) Step 8 Configure and Connect ExpressRoute to vWAN Hub
 # 
 
-# Step 1 - Create a vWAN, a vWAN Hub, and vWAN VPN Gateway
-# 1.1 Validate and Initialize
-# 1.2 Create a vWAN
-# 1.3 Create a vWAN Hub
-# 1.4 Create a vWAN VPN Gateway
+# Step 5 Configure and Connect Site 1 (NetFoundry) using the partner experience
+# 5.1 Validate and Initialize
+# 5.2 Create Site 01 in the Hub
+# 5.3 Create a connect from the Hub to Site 01 (neither the tunnel nor BGP will come up until step 5.4 is completed)
+# 5.4 Configure the NetFoundry device
 #
 
-# 1.1 Validate and Initialize
+# 5.1 Validate and Initialize
 # Az Module Test
 $ModCheck = Get-Module Az.Network -ListAvailable
 If ($Null -eq $ModCheck) {
@@ -42,14 +42,17 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegion = "westus2"
-$RGName = "Company" + $CompanyID + "-Hub01"
-$vWANName = "C" + $CompanyID + "-vWAN01"
-$HubPrefix = "172.16." + $Company10 + ".0/24"
+$hubRGName = "Company" + $CompanyID + "-Hub01"
+$vnet01RGName = "Company" + $CompanyID + "-Azure01"
+$vnet02RGName = "Company" + $CompanyID + "-Azure02"
+$hubName = "C" + $CompanyID + "-vWAN01-Hub01"
+$vnet01Name = "C" + $CompanyID + "-Site01-VNet01"
+$vnet02Name = "C" + $CompanyID + "-Site01-VNet01"
 
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 1, estimated total time 30 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 4, estimated total time 5 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
@@ -66,29 +69,35 @@ Catch {# Login and set subscription for ARM
               Return}
 }
 
-# 1.2 Create a vWAN
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating vWAN" -ForegroundColor Cyan
-Try {$wan = Get-AzVirtualWan -ResourceGroupName $RGName -Name $vWANName -ErrorAction Stop
-     Write-Host "  vWAN exists, skipping"}
-Catch {$wan = New-AzVirtualWan -ResourceGroupName $RGName -Name $vWANName -Location $ShortRegion -AllowBranchToBranchTraffic -AllowVNetToVNetTraffic}
+# Initialize vWAN Hub, VNet01, and VNet02 variables
+Try {$hub=Get-AzVirtualHub -ResourceGroupName $hubRGName -Name $hubName -ErrorAction Stop}
+Catch {Write-Warning "vWAN Hub wasn't found, please run step 1 before running this script"
+       Return}
 
-# 1.3 Create a vWAN Hub
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating Hub" -ForegroundColor Cyan
-Try {$hub= Get-AzVirtualHub -ResourceGroupName $RGName -Name $vWANName'-Hub01' -ErrorAction Stop
-     Write-Host "  Hub exists, skipping"}
-Catch {$hub = New-AzVirtualHub -ResourceGroupName $RGName -Name $vWANName'-Hub01' -Location $ShortRegion -VirtualWan $wan -AddressPrefix $HubPrefix}
+Try {$vnet01=Get-AzureRmVirtualHub -ResourceGroupName $vnet01RGName -Name $vnet01Name -ErrorAction Stop}
+Catch {Write-Warning "Azure Site 1 wasn't found, please run step 0 before running this script"
+       Return}
 
-# 1.4 Create a vWAN VPN Gateway
+Try {$vnet02=Get-AzureRmVirtualHub -ResourceGroupName $vnet02RGName -Name $vnet02Name -ErrorAction Stop}
+Catch {Write-Warning "Azure Site 2 wasn't found, please run step 0 before running this script"
+       Return}
+
+# 4.2 Connect Azure Site 01
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating VPN Gateway" -ForegroundColor Cyan
-Try {Get-AzVpnGateway -ResourceGroupName $RGName -Name $vWANName'-Hub01-gw-vpn' -ErrorAction Stop | Out-Null
-     Write-Host "  VPN Gateway exists, skipping"}
-Catch {New-AzVpnGateway -ResourceGroupName $RGName -Name $vWANName'-Hub01-gw-vpn' -VpnGatewayScaleUnit 1 -VirtualHub $hub}
+Write-Host "Connection Azure Site 01 to the vWAN hub" -ForegroundColor Cyan
+Try {Get-AzVirtualHubVnetConnection -ResourceGroupName $hubRGName -Name $hubName'-conn-vnet01' -ErrorAction Stop | Out-Null
+     Write-Host "  Azure Site 01 connection exists, skipping"}
+Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-vnet01' -ParentObject $hub -RemoteVirtualNetwork $vnet01}
+
+# 4.3 Connect Azure Site 01
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Connection Azure Site 02 to the vWAN hub" -ForegroundColor Cyan
+Try {Get-AzVirtualHubVnetConnection -ResourceGroupName $hubRGName -Name $hubName'-conn-vnet02' -ErrorAction Stop | Out-Null
+     Write-Host "  Azure Site 02 connection exists, skipping"}
+Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-vnet01' -ParentObject $hub -RemoteVirtualNetwork $vnet02}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 1 completed successfully" -ForegroundColor Green
-Write-Host "  Explore your new vWAN, Hub, and Gateway in the Azure Portal."
+Write-Host "Step 4 completed successfully" -ForegroundColor Green
+Write-Host "  Checkout the new connections in the vWAN Hub in the Azure portal."
 Write-Host

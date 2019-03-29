@@ -46,7 +46,6 @@ If (Test-Path -Path $ScriptDir\init.txt) {
         Catch {Set-Variable -Name $var[0].Trim() -Value $var[1].Trim()}}}
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
-
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegion = "westus2"
 $RGName = "Company" + $CompanyID + "-Site01"
@@ -64,14 +63,14 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Checking login and permissions" -ForegroundColor Cyan
 Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null}
 Catch {# Login and set subscription for ARM
-        Write-Host "Logging in to ARM"
-        Try {$Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
-        Catch {Connect-AzAccount | Out-Null
-                $Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
-        Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"
-        Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null}
-        Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
-                Return}
+       Write-Host "Logging in to ARM"
+       Try {$Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
+       Catch {Connect-AzAccount | Out-Null
+              $Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
+       Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"
+       Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null}
+       Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
+              Return}
 }
 
 # 2.3 Create the NetFoundry Virtual Appliance
@@ -105,7 +104,7 @@ Try {Get-AzVM -ResourceGroupName $RGName -Name $NameStub'-Router01' -ErrorAction
 Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
        Set-AzVMPlan -VM $VMConfig -Publisher "tata_communications" -Product "netfoundry_cloud_gateway" -Name "netfoundry-cloud-gateway"
        $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $NameStub'-Router01' -Credential $cred
-       $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $NameStub'-VM01-disk-os' -Linux
+       $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $NameStub'-VM01-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
        $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "tata_communications" -Offer "netfoundry_cloud_gateway" -Skus "netfoundry-cloud-gateway" -Version "2.13.0"
        $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic
        $VMConfig = Set-AzVMBootDiagnostics -VM $VMConfig -Disable
@@ -114,16 +113,38 @@ Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
 
 # 2.4 Create UDR Route Table
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating vWAN" -ForegroundColor Cyan
-Try { -ErrorAction Stop
-        Write-Host "  xxx exists, skipping"}
-   Catch {}
+Write-Host "Creating VNet Route Table" -ForegroundColor Cyan
+Try {$rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $NameStub'-VNet01-rt' -ErrorAction Stop
+     Write-Host "  Route Table exists, skipping"}
+Catch {$rt = New-AzureRmRouteTable -ResourceGroupName $RGName -Name $NameStub'-VNet01-rt' -location $ShortRegion
+       $rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $NameStub'-VNet01-rt' }
 
+# Add routes to the route table
+Try {Get-AzRouteConfig -RouteTable $rt -Name "ToHub" -ErrorAction Stop | Out-Null
+     Write-Host "  Hub Route exists, skipping"}
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToHub" -AddressPrefix "172.16.$CompanyID.0/24" -NextHopType VirtualAppliance -NextHopIpAddress "172.16.$CompanyID.133"
+       Set-AzureRmRouteTable -RouteTable $rt}
+Try {Get-AzRouteConfig -RouteTable $rt -Name "ToAz01" -ErrorAction Stop | Out-Null
+     Write-Host "  Az01 route exists, skipping"}
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz01" -AddressPrefix "10.17.$CompanyID.0/27"  -NextHopType VirtualAppliance -NextHopIpAddress "172.16.$CompanyID.133"
+       Set-AzureRmRouteTable -RouteTable $rt}
+Try {Get-AzRouteConfig -RouteTable $rt -Name "ToAz02" -ErrorAction Stop | Out-Null
+     Write-Host "  Az02 route exists, skipping"}
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz02" -AddressPrefix "10.17.$CompanyID.32/27" -NextHopType VirtualAppliance -NextHopIpAddress "172.16.$CompanyID.133"
+       Set-AzureRmRouteTable -RouteTable $rt}
 
-
+# Assign Route Table to the subnet
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $NameStub'-VNet01'
+$sn =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
+if ($null -eq $sn.RouteTable) {
+    $sn.RouteTable = $rt
+    Set-AzVirtualNetwork -VirtualNetwork $vnet}
+Else {Write-Host "  Route Table already assigned to subnet, skipping"}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 1 completed successfully" -ForegroundColor Green
-Write-Host "  Explore your new vWAN, Hub, and Gateway in the Azure Portal."
+Write-Host "Step 2 completed successfully" -ForegroundColor Green
+Write-Host "  Navigate to https://pathlab.nfconsole.io/signup to configure your VPN device"
+Write-Host "  Your VPN Device Public IP is " -NoNewline
+Write-Host (Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $NameStub'-Router01-pip').IpAddress
 Write-Host
