@@ -45,9 +45,11 @@ $ShortRegion = "westus2"
 $hubRGName = "Company" + $CompanyID + "-Hub01"
 $hubNameStub = "C" + $CompanyID + "-vWAN01"
 $hubName = $hubNameStub + "-Hub01"
-$vnet01RGName = "Company" + $CompanyID + "-Azure01"
-$vnet01NameStub = "C" + $CompanyID + "-Site01"
-$vnet01Name = $vnet01NameStub + "-VNet01"
+$site01RGName = "Company" + $CompanyID + "-Site01"
+$site01NameStub = "C" + $CompanyID + "-Site01"
+$site01VNetName = $site02NameStub + "-VNet01"
+$site01BGPASN = "65002"
+$site01BGPIP = "10.17." + $CompanyID +".133"
 
 # Start nicely
 Write-Host
@@ -69,40 +71,47 @@ Catch {# Login and set subscription for ARM
               Return}
 }
 
-# Initialize vWAN Hub, VNet01, and VNet02 variables
+# Initialize vWAN Hub and VNet01 variables
 Try {$hub=Get-AzVirtualHub -ResourceGroupName $hubRGName -Name $hubName -ErrorAction Stop}
 Catch {Write-Warning "vWAN Hub wasn't found, please run step 1 before running this script"
        Return}
 
-Try {$vnet01=Get-AzVirtualNetwork -ResourceGroupName $vnet01RGName -Name $vnet01Name -ErrorAction Stop}
-Catch {Write-Warning "Azure Site 1 wasn't found, please run step 0 before running this script"
+Try {$vnet01=Get-AzVirtualNetwork -ResourceGroupName $site01RGName -Name $site01VNetName -ErrorAction Stop}
+Catch {Write-Warning "Site 1 wasn't found, please run step 0 before running this script"
        Return}
 
 # 5.2 Create Site 01 in the Hub
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Site 01 object in the vWAN hub" -ForegroundColor Cyan
-$ipRemotePeerSite1=(Get-AzPublicIpAddress -ResourceGroupName $vnet01RGName -Name $vnet01NameStub'-Router01-pip').IpAddress
+$ipRemotePeerSite1=(Get-AzPublicIpAddress -ResourceGroupName $site01RGName -Name $site01NameStub'-Router01-pip').IpAddress
 
-Try {$vpnSite1=Get-AzVpnSite -ResourceGroupName $hubRGName -Name $vnet01NameStub  -ErrorAction Stop 
+Try {$vpnSite1=Get-AzVpnSite -ResourceGroupName $hubRGName -Name $vnet01NameStub'-vpn' -ErrorAction Stop 
      Write-Host "  Site 01 exists, skipping"}
-Catch {$vpnSite1=New-AzVpnSite -ResourceGroupName $hubRGName -Name $vnet01NameStub -Location $ShortRegion `
+Catch {$vpnSite1=New-AzVpnSite -ResourceGroupName $hubRGName -Name $site01NameStub'-vpn' -Location $ShortRegion `
                  -AddressSpace $vnet01.AddressSpace.AddressPrefixes -VirtualWanResourceGroupName $hubRGName `
-                 -VirtualWanName $hubNameStub -IpAddress $ipRemotePeerSite1 -BgpAsn $bgpRemoteAsnSite1 `
-                 -BgpPeeringAddress $bgpPeerIPSite1 -BgpPeeringWeight 0}
+                 -VirtualWanName $hubNameStub -IpAddress $ipRemotePeerSite1 -BgpAsn $site01BGPASN `
+                 -BgpPeeringAddress $site01BGPIP -BgpPeeringWeight 0}
 
-
-
-
-Try {Get-AzVirtualHubVnetConnection -ResourceGroupName $hubRGName -Name $hubName'-conn-vnet01' -ErrorAction Stop | Out-Null
-     Write-Host "  Azure Site 01 connection exists, skipping"}
-Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-vnet01' -ParentObject $hub -RemoteVirtualNetwork $vnet01}
-
-# 4.3 Connect Azure Site 01
+# 5.3 Create a connect from the Hub to Site 01 (neither the tunnel nor BGP will come up until step 5.4 is completed)
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Connection Azure Site 02 to the vWAN hub" -ForegroundColor Cyan
+Write-Host "Creating connection object between Site 02 and the vWAN hub" -ForegroundColor Cyan
+Try {Get-AzVirtualHubVnetConnection -ResourceGroupName $hubRGName -Name $hubName'-conn-vpn-Site01' -ErrorAction Stop | Out-Null
+     Write-Host "  Azure Site 01 connection exists, skipping"}
+Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-vpn-Site01' -ParentObject $hub -RemoteVirtualNetwork $vnet01}
+
+# 5.4 Configure the NetFoundry device
+# Set a new alias to access the clipboard
+New-Alias Out-Clipboard $env:SystemRoot\System32\Clip.exe -ErrorAction SilentlyContinue
+$MyOutput = @"
+Here is stuff you need to know.
+Not sure what else there is.
+Probably the device IP address $ipRemotePeerSite1
+Maybe other stuff too, not really sure yet.
+"@
+$MyOutput | Out-Clipboard
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 4 completed successfully" -ForegroundColor Green
-Write-Host "  Checkout the new connections in the vWAN Hub in the Azure portal."
+Write-Host "Step 5 completed successfully" -ForegroundColor Green
+Write-Host "  The instructions to configure the NetFoundry device have been copied to the clipboard, open Notepad and paste the instructions to configure the device. If you need the instructions again, rerun this script and the instructions will be reloaded to the clipboard."
 Write-Host

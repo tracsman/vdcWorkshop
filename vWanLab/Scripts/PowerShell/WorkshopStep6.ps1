@@ -18,7 +18,10 @@
 # 6.1 Validate and Initialize
 # 6.2 Create Site 02 in the Hub
 # 6.3 Create a connect from the Hub to Site 01 (neither the tunnel nor BGP will come up until step 6.4 is completed)
-# 6.4 Configure the NetFoundry device
+# 6.4 Create a Blob Storage Account
+# 6.5 Copy vWAN config to storage
+# 6.6 Configure the Cisco device
+# 6.7 Provide configuration instructions
 #
 
 # 6.1 Validate and Initialize
@@ -43,11 +46,15 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegion = "westus2"
 $hubRGName = "Company" + $CompanyID + "-Hub01"
-$vnet01RGName = "Company" + $CompanyID + "-Azure01"
-$vnet02RGName = "Company" + $CompanyID + "-Azure02"
-$hubName = "C" + $CompanyID + "-vWAN01-Hub01"
-$vnet01Name = "C" + $CompanyID + "-Site01-VNet01"
-$vnet02Name = "C" + $CompanyID + "-Site01-VNet01"
+$hubNameStub = "C" + $CompanyID + "-vWAN01"
+$hubName = $hubNameStub + "-Hub01"
+$site02RGName = "Company" + $CompanyID + "-Site02"
+$site02NameStub = "C" + $CompanyID + "-Site02"
+$site02VNetName = $site02NameStub + "-VNet01"
+$site02BGPASN = "65002"
+$site02BGPIP = "10.17." + $CompanyID +".165"
+$SARGName = "Company" + $CompanyID
+$SAName = "company" + $CompanyID + "vwanconfig"
 
 # Start nicely
 Write-Host
@@ -69,35 +76,85 @@ Catch {# Login and set subscription for ARM
               Return}
 }
 
-# Initialize vWAN Hub, VNet01, and VNet02 variables
+# Initialize vWAN Hub and VNet02 variables
 Try {$hub=Get-AzVirtualHub -ResourceGroupName $hubRGName -Name $hubName -ErrorAction Stop}
 Catch {Write-Warning "vWAN Hub wasn't found, please run step 1 before running this script"
        Return}
 
-Try {$vnet01=Get-AzureRmVirtualHub -ResourceGroupName $vnet01RGName -Name $vnet01Name -ErrorAction Stop}
-Catch {Write-Warning "Azure Site 1 wasn't found, please run step 0 before running this script"
+Try {$vnet02=Get-AzVirtualNetwork -ResourceGroupName $site02RGName -Name $site02VNetName -ErrorAction Stop}
+Catch {Write-Warning "Site 2 wasn't found, please run step 0 before running this script"
        Return}
 
-Try {$vnet02=Get-AzureRmVirtualHub -ResourceGroupName $vnet02RGName -Name $vnet02Name -ErrorAction Stop}
-Catch {Write-Warning "Azure Site 2 wasn't found, please run step 0 before running this script"
-       Return}
-
-# 4.2 Connect Azure Site 01
+# 6.2 Create Site 02 in the Hub
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Connection Azure Site 01 to the vWAN hub" -ForegroundColor Cyan
-Try {Get-AzVirtualHubVnetConnection -ResourceGroupName $hubRGName -Name $hubName'-conn-vnet01' -ErrorAction Stop | Out-Null
-     Write-Host "  Azure Site 01 connection exists, skipping"}
-Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-vnet01' -ParentObject $hub -RemoteVirtualNetwork $vnet01}
+Write-Host "Creating Site 02 object in the vWAN hub" -ForegroundColor Cyan
+$ipRemotePeerSite2=(Get-AzPublicIpAddress -ResourceGroupName $site02RGName -Name $site02NameStub'-Router01-pip').IpAddress
 
-# 4.3 Connect Azure Site 01
+Try {$vpnSite2=Get-AzVpnSite -ResourceGroupName $hubRGName -Name $vnet02NameStub'-vpn'  -ErrorAction Stop 
+     Write-Host "  Site 02 exists, skipping"}
+Catch {$vpnSite2=New-AzVpnSite -ResourceGroupName $hubRGName -Name $site02NameStub'-vpn' -Location $ShortRegion `
+                 -AddressSpace $vnet02.AddressSpace.AddressPrefixes -VirtualWanResourceGroupName $hubRGName `
+                 -VirtualWanName $hubNameStub -IpAddress $ipRemotePeerSite2 -BgpAsn $site02BGPASN `
+                 -BgpPeeringAddress $site02BGPIP -BgpPeeringWeight 0}
+
+# 6.3 Create a connect from the Hub to Site 02 (neither the tunnel nor BGP will come up until step 6.4 is completed)
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Connection Azure Site 02 to the vWAN hub" -ForegroundColor Cyan
-Try {Get-AzVirtualHubVnetConnection -ResourceGroupName $hubRGName -Name $hubName'-conn-vnet02' -ErrorAction Stop | Out-Null
-     Write-Host "  Azure Site 02 connection exists, skipping"}
-Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-vnet01' -ParentObject $hub -RemoteVirtualNetwork $vnet02}
+Write-Host "Creating connection object between Site 02 and the vWAN hub" -ForegroundColor Cyan
+Try {Get-AzVirtualHubVnetConnection -ResourceGroupName $hubRGName -Name $hubName'-conn-vpn-Site02' -ErrorAction Stop | Out-Null
+     Write-Host "  Site 01 connection exists, skipping"}
+Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-vpn-Site02' -ParentObject $hub -RemoteVirtualNetwork $vnet02}
+
+# 6.4 Create a Blob Storage Account
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating Storage Account" -ForegroundColor Cyan
+Try {$sa = Get-AzStorageAccount -ResourceGroupName $SARGName –StorageAccountName $SAName -ErrorAction Stop
+     Write-Host "  Storage account exists, skipping"}
+Catch {$sa =New-AzStorageAccount -ResourceGroupName $SARGName –StorageAccountName $SAName -Location $ShortRegion -Type 'Standard_LRS'}
+$ctx=$sa.Context
+
+Try {$container = Get-AzStorageContainer -Name 'config' -Context $ctx -ErrorAction Stop
+Write-Host "  Container exists, skipping"}
+Catch {$container = New-AzStorageContainer -Name 'config' -Context $ctx -Permission Blob}
+
+Try {Get-AzStorageContainerStoredAccessPolicy -Container 'config' -Policy 'vWANConfig' -Context $ctx -ErrorAction Stop | Out-Null}
+Catch {$expiryTime = (Get-Date).AddDays(2)
+       New-AzStorageContainerStoredAccessPolicy -Container 'config' -Policy 'vWANConfig' -Permission rw -ExpiryTime $expiryTime -Context $ctx | Out-Null}
+$sasToken = New-AzStorageContainerSASToken -Name 'config' -Policy 'vWANConfig' -Context $ctx
+$sasURI = $container.CloudBlobContainer.Uri.AbsoluteUri +"/"+ 'vWANConfig.json' + $sasToken
+$vpnSites = Get-AzVpnSite -ResourceGroupName $RGName
+
+# 6.5 Copy vWAN config to storage
+Get-AzVirtualWanVpnConfiguration -VirtualWan $wan -StorageSasUrl $sasURI -VpnSite $vpnSites
+
+# 6.6 Configure the Cisco device
+# Create a new alias to access the clipboard
+New-Alias Out-Clipboard $env:SystemRoot\System32\Clip.exe -ErrorAction SilentlyContinue
+
+# Get vWAN VPN Settings
+$URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
+$vWANConfig = Invoke-RestMethod $URI
+
+# 6.7 Provide configuration instructions
+$MyOutput = @"
+Here is stuff you need to know.
+Public IP 1: $($results.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance0)
+Public IP 2: $($results.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance1)
+VPN PSK:     $($results.vpnSiteConnections.connectionConfiguration.PSK)
+BGP ASN:     $($results.vpnSiteConnections.gatewayConfiguration.BgpSetting.Asn)
+BGP IP:      $($results.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0)
+BGP IP:      $($results.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1)
+
+To get the Cisco CSR Config, run the Get-CiscoConfig.ps1 script.
+When you have that script, use PuTTY to SSH to the Cisco device and configure the VPN tunnels.
+
+Not sure what else there is.
+Probably the Site 2 device IP address $ipRemotePeerSite2
+Maybe other stuff too, not really sure yet.
+"@
+$MyOutput | Out-Clipboard
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 4 completed successfully" -ForegroundColor Green
-Write-Host "  Checkout the new connections in the vWAN Hub in the Azure portal."
+Write-Host "Step 6 completed successfully" -ForegroundColor Green
+Write-Host "  The instructions to configure the Cisco device have been copied to the clipboard, open Notepad and paste the instructions to configure the device. If you need the instructions again, rerun this script and the instructions will be reloaded to the clipboard."
 Write-Host

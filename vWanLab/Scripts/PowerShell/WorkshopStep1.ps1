@@ -39,12 +39,11 @@ If (Test-Path -Path $ScriptDir\init.txt) {
         Catch {Set-Variable -Name $var[0].Trim() -Value $var[1].Trim()}}}
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
-
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegion = "westus2"
 $RGName = "Company" + $CompanyID + "-Hub01"
 $vWANName = "C" + $CompanyID + "-vWAN01"
-$HubPrefix = "172.16." + $Company10 + ".0/24"
+$HubPrefix = "172.16." + $CompanyID + ".0/24"
 
 # Start nicely
 Write-Host
@@ -75,16 +74,16 @@ Catch {$wan = New-AzVirtualWan -ResourceGroupName $RGName -Name $vWANName -Locat
 
 # 1.3 Create a vWAN Hub
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating Hub" -ForegroundColor Cyan
-Try {$hub= Get-AzVirtualHub -ResourceGroupName $RGName -Name $vWANName'-Hub01' -ErrorAction Stop
-     Write-Host "  Hub exists, skipping"}
-Catch {$hub = New-AzVirtualHub -ResourceGroupName $RGName -Name $vWANName'-Hub01' -Location $ShortRegion -VirtualWan $wan -AddressPrefix $HubPrefix}
+Write-Host "Creating vWAN Hub" -ForegroundColor Cyan
+$hub = Get-AzVirtualHub -ResourceGroupName $RGName -Name $vWANName'-Hub01' -ErrorAction Stop
+If ($null -eq $hub) {$hub = New-AzVirtualHub -ResourceGroupName $RGName -Name $vWANName'-Hub01' -Location $ShortRegion -VirtualWan $wan -AddressPrefix $HubPrefix}
+Else {Write-Host "  vWAN Hub exists, skipping"}
 
 # 1.4 Create a vWAN VPN Gateway
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating VPN Gateway" -ForegroundColor Cyan
+Write-Host "Creating Hub VPN Gateway" -ForegroundColor Cyan
 Try {Get-AzVpnGateway -ResourceGroupName $RGName -Name $vWANName'-Hub01-gw-vpn' -ErrorAction Stop | Out-Null
-     Write-Host "  VPN Gateway exists, skipping"}
+     Write-Host "  Hub VPN Gateway exists, skipping"}
 Catch {New-AzVpnGateway -ResourceGroupName $RGName -Name $vWANName'-Hub01-gw-vpn' -VpnGatewayScaleUnit 1 -VirtualHub $hub}
 
 # End nicely

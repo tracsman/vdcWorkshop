@@ -38,15 +38,14 @@ If (Test-Path -Path $ScriptDir\init.txt) {
         Catch {Set-Variable -Name $var[0].Trim() -Value $var[1].Trim()}}}
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
-
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegion = "westus2"
 $hubRGName = "Company" + $CompanyID + "-Hub01"
-$vnet01RGName = "Company" + $CompanyID + "-Azure01"
-$vnet02RGName = "Company" + $CompanyID + "-Azure02"
+$Az01RGName = "Company" + $CompanyID + "-Azure01"
+$Az02RGName = "Company" + $CompanyID + "-Azure02"
 $hubName = "C" + $CompanyID + "-vWAN01-Hub01"
-$vnet01Name = "C" + $CompanyID + "-Site01-VNet01"
-$vnet02Name = "C" + $CompanyID + "-Site01-VNet01"
+$Az01VNetName = "C" + $CompanyID + "-Az01-VNet01"
+$Az02VNetName = "C" + $CompanyID + "-Az02-VNet01"
 
 # Start nicely
 Write-Host
@@ -73,27 +72,27 @@ Try {$hub=Get-AzVirtualHub -ResourceGroupName $hubRGName -Name $hubName -ErrorAc
 Catch {Write-Warning "vWAN Hub wasn't found, please run step 1 before running this script"
        Return}
 
-Try {$vnet01=Get-AzureRmVirtualHub -ResourceGroupName $vnet01RGName -Name $vnet01Name -ErrorAction Stop}
-Catch {Write-Warning "Azure Site 1 wasn't found, please run step 0 before running this script"
+Try {$Az01VNet=Get-AzVirtualNetwork -ResourceGroupName $Az01RGName -Name $Az01VNetName -ErrorAction Stop}
+Catch {Write-Warning "Azure Site 1 Virtual Network wasn't found, please run step 0 before running this script"
        Return}
 
-Try {$vnet02=Get-AzureRmVirtualHub -ResourceGroupName $vnet02RGName -Name $vnet02Name -ErrorAction Stop}
-Catch {Write-Warning "Azure Site 2 wasn't found, please run step 0 before running this script"
+Try {$Az02VNet=Get-AzVirtualNetwork -ResourceGroupName $Az02RGName -Name $Az02VNetName -ErrorAction Stop}
+Catch {Write-Warning "Azure Site 2 Virtual Network wasn't found, please run step 0 before running this script"
        Return}
 
-# 4.2 Connect Azure Site 01
+# 4.2 Connect Azure 01 VNet
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Connection Azure Site 01 to the vWAN hub" -ForegroundColor Cyan
-Try {Get-AzVirtualHubVnetConnection -ResourceGroupName $hubRGName -Name $hubName'-conn-vnet01' -ErrorAction Stop | Out-Null
-     Write-Host "  Azure Site 01 connection exists, skipping"}
-Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-vnet01' -ParentObject $hub -RemoteVirtualNetwork $vnet01}
+Write-Host "Connecting Azure 01 VNet to the vWAN hub" -ForegroundColor Cyan
+Try {Get-AzVirtualHubVnetConnection -ParentObject $hub -Name $hubName'-conn-local-vnet01' -ErrorAction Stop | Out-Null
+     Write-Host "  Azure 01 VNet connection exists, skipping"}
+Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-local-vnet01' -ParentObject $hub -RemoteVirtualNetwork $Az01VNet | Out-Null}
 
-# 4.3 Connect Azure Site 01
+# 4.3 Connect Azure 01 VNet
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Connection Azure Site 02 to the vWAN hub" -ForegroundColor Cyan
-Try {Get-AzVirtualHubVnetConnection -ResourceGroupName $hubRGName -Name $hubName'-conn-vnet02' -ErrorAction Stop | Out-Null
-     Write-Host "  Azure Site 02 connection exists, skipping"}
-Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-vnet01' -ParentObject $hub -RemoteVirtualNetwork $vnet02}
+Write-Host "Connecting Azure 02 VNet to the vWAN hub" -ForegroundColor Cyan
+Try {Get-AzVirtualHubVnetConnection -ParentObject $hub -Name $hubName'-conn-local-vnet02' -ErrorAction Stop | Out-Null
+     Write-Host "  Azure 02 VNet connection exists, skipping"}
+Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-local-vnet02' -ParentObject $hub -RemoteVirtualNetwork $Az02VNet | Out-Null}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
