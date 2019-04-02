@@ -15,11 +15,12 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 
 # Non-configurable Variable Initialization (ie don't modify these)
 $site02BGPASN = "65002"
-$site02BGPIP = "10.17." + $CompanyID +".165"
+$site02BGPIP = "10.17." + $CompanyID +".252"
 $site02Tunnel0IP = "10.17." + $CompanyID +".250"
 $site02Tunnel1IP = "10.17." + $CompanyID +".251"
 $site02Prefix = "10.17." + $CompanyID +".160"
 $site02Subnet = "255.255.255.224" # = CIDR /27
+$site02DfGate = "10.17." + $CompanyID +".161"
 
 # Get vWAN VPN Settings
 $URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
@@ -77,7 +78,6 @@ set ikev2-profile az-PROFILE1
 crypto ipsec profile az-VTI2
 set transform-set az-IPSEC-PROPOSAL-SET
 set ikev2-profile az-PROFILE2
-exit
 
 interface Tunnel0
 ip address $site02Tunnel0IP 255.255.255.255
@@ -115,7 +115,7 @@ address-family ipv4
  neighbor $($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1) soft-reconfiguration inbound
  maximum-paths eibgp 2
 
-ip route 0.0.0.0 0.0.0.0 10.1.20.1
+ip route 0.0.0.0 0.0.0.0 $site02DfGate
 
 ip route $($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0) 255.255.255.255 Tunnel0
 ip route $($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1) 255.255.255.255 Tunnel1
