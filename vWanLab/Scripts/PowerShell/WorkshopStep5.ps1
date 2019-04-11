@@ -82,10 +82,13 @@ Try {$vnet01=Get-AzVirtualNetwork -ResourceGroupName $site01RGName -Name $site01
 Catch {Write-Warning "Site 1 wasn't found, please run step 0 before running this script"
        Return}
 
+Try {$ipRemotePeerSite1=(Get-AzPublicIpAddress -ResourceGroupName $site01RGName -Name $site01NameStub'-Router01-pip' -ErrorAction Stop).IpAddress}
+Catch {Write-Warning "Site 1 Router IP wasn't found, please run step 2 before running this script"
+       Return}
+
 # 5.2 Create Site 01 in the Hub
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Site 01 object in the vWAN hub" -ForegroundColor Cyan
-$ipRemotePeerSite1=(Get-AzPublicIpAddress -ResourceGroupName $site01RGName -Name $site01NameStub'-Router01-pip').IpAddress
 
 Try {$vpnSite1 = Get-AzVpnSite -ResourceGroupName $hubRGName -Name $site01NameStub'-vpn' -ErrorAction Stop 
      Write-Host "  Site 01 exists, skipping"}
