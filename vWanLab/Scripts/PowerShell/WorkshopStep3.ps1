@@ -122,15 +122,15 @@ Catch {$rt = New-AzRouteTable -ResourceGroupName $RGName -Name $NameStub'-VNet01
 # Add routes to the route table
 Try {Get-AzRouteConfig -RouteTable $rt -Name "ToHub" -ErrorAction Stop | Out-Null
      Write-Host "  Hub Route exists, skipping"}
-Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToHub" -AddressPrefix "172.16.$CompanyID.0/24" -NextHopType VirtualAppliance -NextHopIpAddress "172.16.$CompanyID.165" | Out-Null
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToHub" -AddressPrefix "172.16.$CompanyID.0/24" -NextHopType VirtualAppliance -NextHopIpAddress "10.17.$CompanyID.165" | Out-Null
        Set-AzRouteTable -RouteTable $rt | Out-Null}
 Try {Get-AzRouteConfig -RouteTable $rt -Name "ToAz01" -ErrorAction Stop | Out-Null
      Write-Host "  Az01 route exists, skipping"}
-Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz01" -AddressPrefix "10.17.$CompanyID.0/27"  -NextHopType VirtualAppliance -NextHopIpAddress "172.16.$CompanyID.165" | Out-Null
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz01" -AddressPrefix "10.17.$CompanyID.0/27"  -NextHopType VirtualAppliance -NextHopIpAddress "10.17.$CompanyID.165" | Out-Null
        Set-AzRouteTable -RouteTable $rt | Out-Null}
 Try {Get-AzRouteConfig -RouteTable $rt -Name "ToAz02" -ErrorAction Stop | Out-Null
      Write-Host "  Az02 route exists, skipping"}
-Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz02" -AddressPrefix "10.17.$CompanyID.32/27" -NextHopType VirtualAppliance -NextHopIpAddress "172.16.$CompanyID.165" | Out-Null
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz02" -AddressPrefix "10.17.$CompanyID.32/27" -NextHopType VirtualAppliance -NextHopIpAddress "10.17.$CompanyID.165" | Out-Null
        Set-AzRouteTable -RouteTable $rt | Out-Null}
 
 # Assign Route Table to the subnet

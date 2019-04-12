@@ -21,7 +21,8 @@
 # 2.3.1 Create Public IP
 # 2.3.2 Create NSG
 # 2.3.3 Create NIC
-# 2.3.4 Build VM
+# 2.3.4 Create Public and Private RSA keys
+# 2.3.5 Build VM
 # 2.4 Create UDR Route Table
 
 # 2.1 Accept Marketplace Terms
@@ -95,7 +96,14 @@ Try {$nic = Get-AzNetworkInterface  -ResourceGroupName $RGName -Name $NameStub'-
      Write-Host "  NIC exists, skipping"}
 Catch {$nic = New-AzNetworkInterface  -ResourceGroupName $RGName -Name $NameStub'-Router01-nic' -Location $ShortRegion -Subnet $sn -PublicIpAddress $pip -NetworkSecurityGroup $nsg -EnableIPForwarding}
 
-# 2.3.4 Build VM
+# 2.3.4 Create Public and Private RSA keys
+$FileName = "SSHKey.rsa"
+If (-not (Test-Path -Path $ScriptDir\$FileName)) {ssh-keygen.exe -t rsa -b 2048 -f $ScriptDir\$FileName -P """" | Out-Null}
+Else {Write-Host "  Key Files exists, skipping"}
+$PrivateKey =  Get-Content "$ScriptDir\SSHKey.rsa"
+$PublicKey =  Get-Content "$ScriptDir\SSHKey.rsa.pub"
+
+# 2.3.5 Build VM
 # Get-AzVMImage -Location westus2 -Offer netfoundry_cloud_gateway -PublisherName tata_communications -Skus netfoundry-cloud-gateway -Version 2.13.0
 $kvs = Get-AzKeyVaultSecret -VaultName $KVName -Name "User01" -ErrorAction Stop
 $cred = New-Object System.Management.Automation.PSCredential ($kvs.Name, $kvs.SecretValue)
@@ -106,6 +114,7 @@ Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
        $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $NameStub'-Router01' -Credential $cred
        $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $NameStub'-Router01-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
        $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "tata_communications" -Offer "netfoundry_cloud_gateway" -Skus "netfoundry-cloud-gateway" -Version "2.13.0"
+       $VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/User01/.ssh/authorized_keys"
        $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic
        $VMConfig = Set-AzVMBootDiagnostics -VM $VMConfig -Disable
        New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $VMConfig
@@ -122,15 +131,15 @@ Catch {$rt = New-AzRouteTable -ResourceGroupName $RGName -Name $NameStub'-VNet01
 # Add routes to the route table
 Try {Get-AzRouteConfig -RouteTable $rt -Name "ToHub" -ErrorAction Stop | Out-Null
      Write-Host "  Hub Route exists, skipping"}
-Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToHub" -AddressPrefix "172.16.$CompanyID.0/24" -NextHopType VirtualAppliance -NextHopIpAddress "172.16.$CompanyID.133" | Out-Null
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToHub" -AddressPrefix "172.16.$CompanyID.0/24" -NextHopType VirtualAppliance -NextHopIpAddress "10.17.$CompanyID.133" | Out-Null
        Set-AzRouteTable -RouteTable $rt | Out-Null}
 Try {Get-AzRouteConfig -RouteTable $rt -Name "ToAz01" -ErrorAction Stop | Out-Null
      Write-Host "  Az01 route exists, skipping"}
-Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz01" -AddressPrefix "10.17.$CompanyID.0/27"  -NextHopType VirtualAppliance -NextHopIpAddress "172.16.$CompanyID.133" | Out-Null
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz01" -AddressPrefix "10.17.$CompanyID.0/27"  -NextHopType VirtualAppliance -NextHopIpAddress "10.17.$CompanyID.133" | Out-Null
        Set-AzRouteTable -RouteTable $rt | Out-Null}
 Try {Get-AzRouteConfig -RouteTable $rt -Name "ToAz02" -ErrorAction Stop | Out-Null
      Write-Host "  Az02 route exists, skipping"}
-Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz02" -AddressPrefix "10.17.$CompanyID.32/27" -NextHopType VirtualAppliance -NextHopIpAddress "172.16.$CompanyID.133" | Out-Null
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz02" -AddressPrefix "10.17.$CompanyID.32/27" -NextHopType VirtualAppliance -NextHopIpAddress "10.17.$CompanyID.133" | Out-Null
        Set-AzRouteTable -RouteTable $rt | Out-Null}
 
 # Assign Route Table to the subnet
