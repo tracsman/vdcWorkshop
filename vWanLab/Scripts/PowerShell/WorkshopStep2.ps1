@@ -97,10 +97,9 @@ Try {$nic = Get-AzNetworkInterface  -ResourceGroupName $RGName -Name $NameStub'-
 Catch {$nic = New-AzNetworkInterface  -ResourceGroupName $RGName -Name $NameStub'-Router01-nic' -Location $ShortRegion -Subnet $sn -PublicIpAddress $pip -NetworkSecurityGroup $nsg -EnableIPForwarding}
 
 # 2.3.4 Create Public and Private RSA keys
-$FileName = "SSHKey.rsa"
-If (-not (Test-Path -Path $ScriptDir\$FileName)) {ssh-keygen.exe -t rsa -b 2048 -f $ScriptDir\$FileName -P """" | Out-Null}
+$FileName = "id_rsa"
+If (-not (Test-Path -Path "$HOME\.ssh\$FileName")) {ssh-keygen.exe -t rsa -b 2048 -f "$HOME\.ssh\$FileName" -P """" | Out-Null}
 Else {Write-Host "  Key Files exists, skipping"}
-$PrivateKey =  Get-Content "$ScriptDir\SSHKey.rsa"
 $PublicKey =  Get-Content "$ScriptDir\SSHKey.rsa.pub"
 
 # 2.3.5 Build VM
