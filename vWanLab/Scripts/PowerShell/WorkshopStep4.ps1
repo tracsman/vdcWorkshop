@@ -55,14 +55,14 @@ Write-Host "Starting step 4, estimated total time 5 minutes" -ForegroundColor Cy
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Checking login and permissions" -ForegroundColor Cyan
-Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null}
+Try {Get-AzResourceGroup -Name $hubRGName -ErrorAction Stop | Out-Null}
 Catch {# Login and set subscription for ARM
        Write-Host "Logging in to ARM"
        Try {$Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
        Catch {Connect-AzAccount | Out-Null
               $Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
        Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"
-       Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null}
+       Try {Get-AzResourceGroup -Name $hubRGName -ErrorAction Stop | Out-Null}
        Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
               Return}
 }

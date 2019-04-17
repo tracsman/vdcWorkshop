@@ -98,9 +98,10 @@ Catch {$nic = New-AzNetworkInterface  -ResourceGroupName $RGName -Name $NameStub
 
 # 2.3.4 Create Public and Private RSA keys
 $FileName = "id_rsa"
+If (-not (Test-Path -Path "$HOME\.ssh\")) {New-Item "$HOME\.ssh\" -ItemType Directory | Out-Null}
 If (-not (Test-Path -Path "$HOME\.ssh\$FileName")) {ssh-keygen.exe -t rsa -b 2048 -f "$HOME\.ssh\$FileName" -P """" | Out-Null}
 Else {Write-Host "  Key Files exists, skipping"}
-$PublicKey =  Get-Content "$ScriptDir\SSHKey.rsa.pub"
+$PublicKey =  Get-Content "$HOME\.ssh\$FileName.pub"
 
 # 2.3.5 Build VM
 # Get-AzVMImage -Location westus2 -Offer netfoundry_cloud_gateway -PublisherName tata_communications -Skus netfoundry-cloud-gateway -Version 2.13.0

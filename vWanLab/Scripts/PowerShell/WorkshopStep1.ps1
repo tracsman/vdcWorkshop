@@ -48,7 +48,7 @@ $HubPrefix = "172.16." + $CompanyID + ".0/24"
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 1, estimated total time 30 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 1, estimated total time 30 - 50 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline

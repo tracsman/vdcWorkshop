@@ -19,7 +19,10 @@
 # 5.2 Create Site 01 in the Hub
 # 5.3 Create a connection from the Hub to Site 01 (neither the tunnel nor BGP will come up until step 5.4 is completed)
 # 5.4 Configure the NetFoundry device
-# 5.5 Provide configuration instructions
+# 5.5 Configure the NetFoundry device
+# 5.5.1 Get NetFoundry OAuth Token and build common header
+# 5.5.2 Create NetFoundry Endpoint
+# 5.5.3 Register NetFoundry NVA device
 #
 
 # 5.1 Validate and Initialize
@@ -42,6 +45,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegion = "westus2"
+$kvName = "Company" + $CompanyID + "-kv"
 $hubRGName = "Company" + $CompanyID + "-Hub01"
 $hubNameStub = "C" + $CompanyID + "-vWAN01"
 $hubName = $hubNameStub + "-Hub01"
@@ -86,7 +90,31 @@ Try {$ipRemotePeerSite1=(Get-AzPublicIpAddress -ResourceGroupName $site01RGName 
 Catch {Write-Warning "Site 1 Router IP wasn't found, please run step 2 before running this script"
        Return}
 
-# 5.2 Create Site 01 in the Hub
+# Get the NetFoundry Client ID
+$NetFoundryClientID = (Get-AzKeyVaultSecret -VaultName $kvName -Name "NetFoundryClientID" -ErrorAction Stop).SecretValueText
+If ($null -eq $NetFoundryClientID) {Write-Warning "NetFoundry Client ID not found, please see the instructor"
+       Return}
+
+# Get the NetFoundry Secret
+$NetFoundrySecret = (Get-AzKeyVaultSecret -VaultName $kvName -Name "NetFoundrySecret" -ErrorAction Stop).SecretValueText
+If ($null -eq $NetFoundrySecret) {Write-Warning "NetFoundry Secret not found, please see the instructor"
+       Return}
+
+# Get the NetFoundry OrgID
+$NetFoundryOrgID = (Get-AzKeyVaultSecret -VaultName $kvName -Name "NetFoundryOrgID" -ErrorAction Stop).SecretValueText
+If ($null -eq $NetFoundryOrgID) {Write-Warning "NetFoundry Org ID not found, please see the instructor"
+       Return}
+
+# 5.2 Notifiy student of NetFoundry onboarding process
+Write-Host
+Write-Host "This script does many behind the scenes operations to make the onboarding process quicker and easy."
+Write-Host
+Write-Host "You can navigate to the below link to see the entire onboarding process for NetFoundry appliances"
+Write-Host "https://netfoundry.zendesk.com/hc/en-us/articles/360018137891-Create-and-Manage-Azure-Virtual-WAN-Sites" -ForegroundColor Cyan
+Write-Host
+Write-Host
+
+# 5.3 Create Site 01 in the Hub
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Site 01 object in the vWAN hub" -ForegroundColor Cyan
 
@@ -97,7 +125,7 @@ Catch {$vpnSite1 = New-AzVpnSite -ResourceGroupName $hubRGName -Name $site01Name
                    -VirtualWanName $hubNameStub -IpAddress $ipRemotePeerSite1 -BgpAsn $site01BGPASN `
                    -BgpPeeringAddress $site01BGPIP -BgpPeeringWeight 0}
 
-# 5.3 Create a connection from the Hub to Site 01 (neither the tunnel nor BGP will come up until step 5.4 is completed)
+# 5.4 Create a connection from the Hub to Site 01 (neither the tunnel nor BGP will come up until step 5.4 is completed)
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating connection object between Site 01 and the vWAN hub" -ForegroundColor Cyan
 Try {Get-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -ErrorAction Stop | Out-Null
@@ -105,16 +133,90 @@ Try {Get-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -
 Catch {New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -VpnSite $vpnSite1 `
                            -SharedKey $site01PSK -EnableBgp -VpnConnectionProtocolType IKEv2 | Out-Null}
 
-# 5.4 Configure the NetFoundry device
-# Set a new alias to access the clipboard
-New-Alias Out-Clipboard $env:SystemRoot\System32\Clip.exe -ErrorAction SilentlyContinue
-$MyOutput = @"
-Here is stuff you need to know.
-Not sure what else there is.
-Probably the device IP address $ipRemotePeerSite1
-Maybe other stuff too, not really sure yet.
+# 5.5 Configure the NetFoundry device
+# 5.5.1 Get NetFoundry OAuth Token and build common header
+Write-Host "  Getting OAuth token"
+$TokenURI = "https://netfoundry-staging.auth0.com/oauth/token"
+$TokenBody = "{" + 
+             "  ""client_id"": ""$NetFoundryClientID""," +
+             "  ""client_secret"": ""$NetFoundrySecret""," +
+             "  ""audience"": ""https://gateway.staging.netfoundry.io/""," +
+             "  ""grant_type"": ""client_credentials""" +
+             "}"
+$token = Invoke-RestMethod -Method Post -Uri $TokenURI -Body $TokenBody -ContentType application/json
+
+$ConnHeader = @{"Authorization" = "Bearer $($token.access_token)"
+                "Cache-Control" = "no-cache"
+                "NF-OrganizationId" = "$NetFoundryOrgID"}
+
+# 5.5.2 Create NetFoundry Endpoint
+# List Networks
+$ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/networks"
+$networks = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
+
+# Get Network ID
+$ConnNetURI = ""
+Foreach ($network in $networks._embedded.networks) {
+       If ($network.Name -eq ("Company" + $CompanyID)) {
+           $ConnNetURI = $network._links.Self.href
+       }
+   }
+If ($ConnNetURI -eq "") {Write-Warning "Network was not found at NetFoundry, please contact the instuctor"
+       Return}
+
+# Get Network Endpoints
+$ConnURI = $ConnNetURI + "/endpoints"
+$endpoints = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
+
+# Create Network Endpoint
+$EndPointExists = $False
+Foreach ($endpoint in $endpoints._embedded.endpoints) {
+    If ($endpoint.Name -eq "$site01NameStub-vpn") {
+              $response = $endpoints._embedded.endpoints    
+              $EndPointExists = $true}
+}
+If ($EndPointExists) {Write-Host "  Endpoint already exists, skipping"}
+Else {Write-Host "  Submitting endpoint creation request"  
+      # Get Data Center ID (Required for Endpoint Creation) 
+      $ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/dataCenters/?locationCode=$ShortRegion"
+      $datacenter = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
+      $datacenter._links.self.href
+      $DataCenterID = $datacenter._links.self.href.split("/")[6]
+
+      $ConnURI = $ConnNetURI + "/endpoints"
+      $ConnBody = "{" + 
+                  "  ""name"": ""$site01NameStub-vpn""," +
+                  "  ""endpointType"": ""AVWGW""," +
+                  "  ""geoRegionId"": null," +
+                  "  ""dataCenterId"": ""$DataCenterID""," +
+                  "  ""haEndpointType"": null" +
+                  "}"
+      $response = Invoke-RestMethod -Method Post -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -Body $ConnBody -ErrorAction Stop
+}
+# 5.5.3 Instructions to register NetFoundry NVA device
+Write-Host "  Activating NetFoundry Appliance"
+If ($response.registrationKey -eq "") {Write-Host "    Appliance is already activated, skipping"}
+Else {$RegKey = $response.registrationKey
+       # Set a new alias to access the clipboard
+       New-Alias Out-Clipboard $env:SystemRoot\System32\Clip.exe -ErrorAction SilentlyContinue
+       $MyOutput = @"
+       The NetFoundry Appliance needs to be activated.
+       To do this, open a new PowerShell window (but NOT an ISE window!)
+       Run the following three commands:
+         ssh.exe User01@$ipRemotePeerSite1
+         sudo nfnreg -a $RegKey
+         sudo systemctl status dvn | grep Active
+
+       The first command will open a Shell to the NetFoundry device
+       the Second command will register the device
+       The thrid command will show the status of the service on the device and should be "running"
+       You many now close the command window (type exit twice)
 "@
-$MyOutput | Out-Clipboard
+
+       $MyOutput | Out-Clipboard
+       $MyOutput
+}
+
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
