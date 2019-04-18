@@ -16,9 +16,9 @@
 
 # Step 5 Configure and Connect Site 1 (NetFoundry) using the partner experience
 # 5.1 Validate and Initialize
-# 5.2 Create Site 01 in the Hub
-# 5.3 Create a connection from the Hub to Site 01 (neither the tunnel nor BGP will come up until step 5.4 is completed)
-# 5.4 Configure the NetFoundry device
+# 5.2 Notifiy student of NetFoundry onboarding process
+# 5.3 Create Site 01 in the Hub
+# 5.4 Associate Site 01 to the vWAN hub (neither the tunnel nor BGP will come up until step 5.4 is completed)
 # 5.5 Configure the NetFoundry device
 # 5.5.1 Get NetFoundry OAuth Token and build common header
 # 5.5.2 Create NetFoundry Endpoint
@@ -51,7 +51,7 @@ $hubNameStub = "C" + $CompanyID + "-vWAN01"
 $hubName = $hubNameStub + "-Hub01"
 $site01RGName = "Company" + $CompanyID + "-Site01"
 $site01NameStub = "C" + $CompanyID + "-Site01"
-$site01VNetName = $site02NameStub + "-VNet01"
+$site01VNetName = $site01NameStub + "-VNet01"
 $site01BGPASN = "65002"
 $site01BGPIP = "10.17." + $CompanyID +".133"
 $site01Key = 'Th3$ecret'
@@ -110,7 +110,7 @@ Write-Host
 Write-Host "This script does many behind the scenes operations to make the onboarding process quicker and easy."
 Write-Host
 Write-Host "You can navigate to the below link to see the entire onboarding process for NetFoundry appliances"
-Write-Host "https://netfoundry.zendesk.com/hc/en-us/articles/360018137891-Create-and-Manage-Azure-Virtual-WAN-Sites" -ForegroundColor Cyan
+Write-Host "https://netfoundry.zendesk.com/hc/en-us/articles/360018137891-Create-and-Manage-Azure-Virtual-WAN-Sites" -ForegroundColor Green
 Write-Host
 Write-Host
 
@@ -125,16 +125,18 @@ Catch {$vpnSite1 = New-AzVpnSite -ResourceGroupName $hubRGName -Name $site01Name
                    -VirtualWanName $hubNameStub -IpAddress $ipRemotePeerSite1 -BgpAsn $site01BGPASN `
                    -BgpPeeringAddress $site01BGPIP -BgpPeeringWeight 0}
 
-# 5.4 Create a connection from the Hub to Site 01 (neither the tunnel nor BGP will come up until step 5.4 is completed)
+# 5.4 Associate Site 01 to the vWAN hub (neither the tunnel nor BGP will come up until step 5.4 is completed)
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating connection object between Site 01 and the vWAN hub" -ForegroundColor Cyan
+Write-Host "Associating Site 01 to the vWAN hub" -ForegroundColor Cyan
 Try {Get-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -ErrorAction Stop | Out-Null
-     Write-Host "  Site 01 connection exists, skipping"}
+     Write-Host "  Site 01 association exists, skipping"}
 Catch {New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -VpnSite $vpnSite1 `
                            -SharedKey $site01PSK -EnableBgp -VpnConnectionProtocolType IKEv2 | Out-Null}
 
 # 5.5 Configure the NetFoundry device
 # 5.5.1 Get NetFoundry OAuth Token and build common header
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Create NetFoundry Endpoint (register applicance with NetFoundry controller)" -ForegroundColor Cyan
 Write-Host "  Getting OAuth token"
 $TokenURI = "https://netfoundry-staging.auth0.com/oauth/token"
 $TokenBody = "{" + 
@@ -194,32 +196,36 @@ Else {Write-Host "  Submitting endpoint creation request"
       $response = Invoke-RestMethod -Method Post -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -Body $ConnBody -ErrorAction Stop
 }
 # 5.5.3 Instructions to register NetFoundry NVA device
-Write-Host "  Activating NetFoundry Appliance"
-If ($response.registrationKey -eq "") {Write-Host "    Appliance is already activated, skipping"}
+If ($response.registrationKey -eq "") {Write-Host "  Appliance is already activated, skipping"}
 Else {$RegKey = $response.registrationKey
        # Set a new alias to access the clipboard
        New-Alias Out-Clipboard $env:SystemRoot\System32\Clip.exe -ErrorAction SilentlyContinue
        $MyOutput = @"
-       The NetFoundry Appliance needs to be activated.
-       To do this, open a new PowerShell window (but NOT an ISE window!)
-       Run the following three commands:
-         ssh.exe User01@$ipRemotePeerSite1
-         sudo nfnreg -a $RegKey
-         sudo systemctl status dvn | grep Active
+The NetFoundry Appliance needs to be activated.
+To do this, open a new PowerShell window (but NOT an ISE window!)
+Run the following three commands:
+       ssh.exe User01@$ipRemotePeerSite1
+       sudo nfnreg -a $RegKey
+       sudo systemctl status dvn | grep Active
 
-       The first command will open a Shell to the NetFoundry device
-       the Second command will register the device
-       The thrid command will show the status of the service on the device and should be "running"
-       You many now close the command window (type exit twice)
+The first command will open a Shell to the NetFoundry device
+the Second command will register the device
+The thrid command will show the status of the service on the device and should be "running"
+You many now close the command window (type exit twice)
 "@
 
        $MyOutput | Out-Clipboard
        $MyOutput
 }
 
-
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 5 completed successfully" -ForegroundColor Green
-Write-Host "  The instructions to configure the NetFoundry device have been copied to the clipboard, open Notepad and paste the instructions to configure the device. If you need the instructions again, rerun this script and the instructions will be reloaded to the clipboard."
-Write-Host
+If ($response.registrationKey -eq "") {
+       Write-host "  Trying pinging the remote servers in Azure 01 and Azure 02."
+}
+Else {
+       Write-Host "  Follow the instructions above to configure the NetFoundry device. These instructions have also been copied to the clipboard, you may also open Notepad and paste the instructions for better readability. If you need the instructions again, rerun this script and the instructions will be reloaded to the clipboard."
+       Write-host "  Once the NetFoundry device is configured, trying pinging the remote servers in Azure 01 and Azure 02."
+}
+ Write-Host

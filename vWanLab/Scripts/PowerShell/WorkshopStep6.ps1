@@ -17,7 +17,7 @@
 # Step 6 Configure and Connect Site 2 (Cisco) using manual VPN provisioning
 # 6.1 Validate and Initialize
 # 6.2 Create Site 02 in the Hub
-# 6.3 Create a connection from the Hub to Site 02 (neither the tunnel nor BGP will come up until step 6.4 is completed)
+# 6.3 Associate Site 02 to the vWAN hub (neither the tunnel nor BGP will come up until step 6.4 is completed)
 # 6.4 Create a Blob Storage Account
 # 6.5 Copy vWAN config to storage
 # 6.6 Pull vWAN details
@@ -106,11 +106,11 @@ Catch {$vpnSite2 = New-AzVpnSite -ResourceGroupName $hubRGName -Name $site02Name
                    -VirtualWanName $hubNameStub -IpAddress $ipRemotePeerSite2 -BgpAsn $site02BGPASN `
                    -BgpPeeringAddress $site02BGPIP -BgpPeeringWeight 0}
 
-# 6.3 Create a connection from the Hub to Site 02 (neither the tunnel nor BGP will come up until step 6.4 is completed)
+# 6.3 Associate Site 02 to the vWAN hub (neither the tunnel nor BGP will come up until step 6.4 is completed)
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating connection object between Site 02 and the vWAN hub" -ForegroundColor Cyan
+Write-Host "Associating Site 02 to the vWAN hub" -ForegroundColor Cyan
 Try {Get-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site02' -ErrorAction Stop | Out-Null
-     Write-Host "  Site 02 connection exists, skipping"}
+     Write-Host "  Site 02 association exists, skipping"}
 Catch {New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site02' -VpnSite $vpnSite2 `
                            -SharedKey $site02PSK -EnableBgp -VpnConnectionProtocolType IKEv2 | Out-Null}
 
