@@ -72,6 +72,12 @@ Try {$wan = Get-AzVirtualWan -ResourceGroupName $RGName -Name $vWANName -ErrorAc
      Write-Host "  vWAN exists, skipping"}
 Catch {$wan = New-AzVirtualWan -ResourceGroupName $RGName -Name $vWANName -Location $ShortRegion -AllowBranchToBranchTraffic -AllowVNetToVNetTraffic}
 
+# Add the NetFoundry Service Principal to allow access to the vWAN to pull config
+$RoleExists = $Null
+$RoleExists = Get-AzRoleAssignment -ObjectId abf6f2a4-d951-438e-8ff7-4f9360d8973b -RoleDefinitionName "Contributor" -ResourceGroupName $RGName -ResourceName $vWANName -ResourceType Microsoft.Network/virtualWans
+If ($null -eq $RoleExists) {New-AzRoleAssignment -ObjectId abf6f2a4-d951-438e-8ff7-4f9360d8973b -RoleDefinitionName "Contributor" -ResourceGroupName $RGName -ResourceName $vWANName -ResourceType Microsoft.Network/virtualWans | Out-Null}
+Else {Write-Host "  role assingment exists, skipping"}
+
 # 1.3 Create a vWAN Hub
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating vWAN Hub" -ForegroundColor Cyan

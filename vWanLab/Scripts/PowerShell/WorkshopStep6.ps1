@@ -20,7 +20,7 @@
 # 6.3 Create a connection from the Hub to Site 02 (neither the tunnel nor BGP will come up until step 6.4 is completed)
 # 6.4 Create a Blob Storage Account
 # 6.5 Copy vWAN config to storage
-# 6.6 Configure the Cisco device
+# 6.6 Pull vWAN details
 # 6.7 Provide configuration instructions
 #
 
@@ -60,7 +60,7 @@ $SAName = "company" + $CompanyID + "vwanconfig"
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 4, estimated total time 5 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 6, estimated total time 5 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
@@ -140,41 +140,52 @@ $vpnSites = Get-AzVpnSite -ResourceGroupName $hubRGName
 # 6.5 Copy vWAN config to storage
 Get-AzVirtualWanVpnConfiguration -InputObject $wan -StorageSasUrl $sasURI -VpnSite $vpnSites -ErrorAction Stop | Out-Null
 
-# 6.6 Configure the Cisco device
-# Create a new alias to access the clipboard
-New-Alias Out-Clipboard $env:SystemRoot\System32\Clip.exe -ErrorAction SilentlyContinue
-
+# 6.6 Pull vWAN details
 # Get vWAN VPN Settings
 $URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
 $vWANConfig = Invoke-RestMethod $URI
 
 # 6.7 Provide configuration instructions
+."$ScriptDir\Get-CiscoConfig.ps1"
+
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Cisco Configuration Instructions" -ForegroundColor Cyan
+Write-Host
+Write-Host "Here is stuff you need to know!" -ForegroundColor Green
 $MyOutput = @"
-Here is stuff you need to know.
-vWAN IPs and Details
-Public IP 1: $($vWANConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance0)
-Public IP 2: $($vWANConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance1)
-VPN PSK:     $($vWANConfig.vpnSiteConnections.connectionConfiguration.PSK)
-BGP ASN:     $($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.Asn)
-BGP IP:      $($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0)
-BGP IP:      $($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1)
+  vWAN IPs and Details
+  Public IP 1: $(($vWANConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance0)[0])
+  Public IP 2: $(($vWANConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance1)[0])
+  VPN PSK:     $(($vWANConfig.vpnSiteConnections.connectionConfiguration.PSK)[0])
+  BGP ASN:     $(($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.Asn)[0])
+  BGP IP:      $(($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0)[0])
+  BGP IP:      $(($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1)[0])
 
-Site 02 IPs and Details
-Public IP: $($ipRemotePeerSite2)
-VPN PSK:   $($vWANConfig.vpnSiteConnections.connectionConfiguration.PSK)
-BGP ASN:   $($site02BGPASN)
-BGP IP:    $($site02BGPIP)
+  Site 02 IPs and Details
+  Public IP: $($ipRemotePeerSite2)
+  VPN PSK:   $(($vWANConfig.vpnSiteConnections.connectionConfiguration.PSK)[0])
+  BGP ASN:   $($site02BGPASN)
+  BGP IP:    $($site02BGPIP)
 
-To get the Cisco CSR Config, run the Get-CiscoConfig.ps1 script.
-When you have that script, use PuTTY to SSH to the Cisco device and configure the VPN tunnels.
+  You now need to SSH to the Cisco device and configure the VPN tunnels.
+  1. Open an SSH session to the Cisco router:
+     - Open a PowerShell console window (ie NOT ISE!)
+     - Type: ssh User01@$ipRemotePeerSite2 (no quotes) and hit enter
+     - You're now in the Cisco router and should see a prompt similar to ""
+  2. Enter Cisco VPN Config
+     - Get into edit mode by typing "configure terminal" (again no quotes)
+     - Right-click to paste in the config from the script above (if the clipboard doesn't have rerun the Get-CiscoConfig)
+  3. Review the pasted config for any errors, warnings are ok, if you see errors contact the instructor
+  4. Leave edit mode by typing "end"
+  5. Save your config by typing "wr"
+  6. Leave the router by typing "Exit", this will take you back to the PowerShell prompt
+  7. Close your PowerShell prompt by typing "Exit"
 
-Not sure what else there is.
-Maybe other stuff too, not really sure yet.
 "@
-$MyOutput | Out-Clipboard
+$MyOutput
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 6 completed successfully" -ForegroundColor Green
-Write-Host "  The instructions to configure the Cisco device have been copied to the clipboard, open Notepad and paste the instructions to configure the device. If you need the instructions again, rerun this script and the instructions will be reloaded to the clipboard."
+Write-Host "  Use the instructions above to configure the Cisco device have been copied to the clipboard, open Notepad and paste the instructions to configure the device. If you need the instructions again, rerun this script and the instructions will be reloaded to the clipboard."
 Write-Host

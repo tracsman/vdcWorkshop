@@ -60,7 +60,7 @@ $site01PSK = ConvertTo-SecureString -String $site01Key -AsPlainText -Force
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 4, estimated total time 5 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 5, estimated total time 5 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
