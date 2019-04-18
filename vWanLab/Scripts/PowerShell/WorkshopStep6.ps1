@@ -144,6 +144,11 @@ Get-AzVirtualWanVpnConfiguration -InputObject $wan -StorageSasUrl $sasURI -VpnSi
 # Get vWAN VPN Settings
 $URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
 $vWANConfig = Invoke-RestMethod $URI
+$myvWanConfig = ""
+foreach ($vWanConfig in $vWANConfigs) {
+    if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site02-vpn")) {$myvWanConfig = $vWANConfig}
+}
+if ($myvWanConfig = "") {Write-Warning "vWAN Config for Site02 was not found, run Step 5";Return}
 
 # 6.7 Provide configuration instructions
 ."$ScriptDir\Get-CiscoConfig.ps1"
@@ -154,16 +159,16 @@ Write-Host
 Write-Host "Here is stuff you need to know!" -ForegroundColor Green
 $MyOutput = @"
   vWAN IPs and Details
-  Public IP 1: $(($vWANConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance0)[0])
-  Public IP 2: $(($vWANConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance1)[0])
-  VPN PSK:     $(($vWANConfig.vpnSiteConnections.connectionConfiguration.PSK)[0])
-  BGP ASN:     $(($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.Asn)[0])
-  BGP IP:      $(($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0)[0])
-  BGP IP:      $(($vWANConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1)[0])
+  Public IP 1: $(myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance0)
+  Public IP 2: $(myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance1)
+  VPN PSK:     $(myvWanConfig.vpnSiteConnections.connectionConfiguration.PSK)
+  BGP ASN:     $(myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.Asn)
+  BGP IP:      $(myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0)
+  BGP IP:      $(myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1)
 
   Site 02 IPs and Details
   Public IP: $($ipRemotePeerSite2)
-  VPN PSK:   $(($vWANConfig.vpnSiteConnections.connectionConfiguration.PSK)[0])
+  VPN PSK:   $(myvWanConfig.vpnSiteConnections.connectionConfiguration.PSK)
   BGP ASN:   $($site02BGPASN)
   BGP IP:    $($site02BGPIP)
 

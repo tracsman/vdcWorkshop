@@ -19,10 +19,13 @@
 # 5.2 Notifiy student of NetFoundry onboarding process
 # 5.3 Create Site 01 in the Hub
 # 5.4 Associate Site 01 to the vWAN hub (neither the tunnel nor BGP will come up until step 5.4 is completed)
-# 5.5 Configure the NetFoundry device
-# 5.5.1 Get NetFoundry OAuth Token and build common header
-# 5.5.2 Create NetFoundry Endpoint
-# 5.5.3 Register NetFoundry NVA device
+# 5.5 Create a Blob Storage Account
+# 5.6 Copy vWAN config to storage
+# 5.7 Pull vWAN details
+# 5.8 Configure the NetFoundry device
+# 5.8.1 Get NetFoundry OAuth Token and build common header
+# 5.8.2 Create NetFoundry Endpoint
+# 5.8.3 Register NetFoundry NVA device
 #
 
 # 5.1 Validate and Initialize
@@ -56,6 +59,8 @@ $site01BGPASN = "65002"
 $site01BGPIP = "10.17." + $CompanyID +".133"
 $site01Key = 'Th3$ecret'
 $site01PSK = ConvertTo-SecureString -String $site01Key -AsPlainText -Force
+$SARGName = "Company" + $CompanyID
+$SAName = "company" + $CompanyID + "vwanconfig"
 
 # Start nicely
 Write-Host
@@ -77,7 +82,11 @@ Catch {# Login and set subscription for ARM
               Return}
 }
 
-# Initialize vWAN Hub gateway and VNet01 variables
+# Initialize vWAN, Hub gateway and VNet01 variables
+Try {$wan=Get-AzVirtualWan -ResourceGroupName $hubRGName -Name $hubNameStub}
+Catch {Write-Warning "vWAN wasn't found, please run step 1 before running this script"
+       Return}
+
 Try {$hubgw=Get-AzVpnGateway -ResourceGroupName $hubRGName -Name $hubName'-gw-vpn' -ErrorAction Stop}
 Catch {Write-Warning "Hub gateway wasn't found, please run step 1 before running this script"
        Return}
@@ -133,8 +142,44 @@ Try {Get-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -
 Catch {New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -VpnSite $vpnSite1 `
                            -SharedKey $site01PSK -EnableBgp -VpnConnectionProtocolType IKEv2 | Out-Null}
 
-# 5.5 Configure the NetFoundry device
-# 5.5.1 Get NetFoundry OAuth Token and build common header
+# 5.5 Create a Blob Storage Account
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating Storage Account" -ForegroundColor Cyan
+Try {$sa = Get-AzStorageAccount -ResourceGroupName $SARGName –StorageAccountName $SAName -ErrorAction Stop
+     Write-Host "  Storage account exists, skipping"}
+Catch {$sa =New-AzStorageAccount -ResourceGroupName $SARGName –StorageAccountName $SAName -Location $ShortRegion -Type 'Standard_LRS'}
+$ctx=$sa.Context
+
+Try {$container = Get-AzStorageContainer -Name 'config' -Context $ctx -ErrorAction Stop
+Write-Host "  Container exists, skipping"}
+Catch {$container = New-AzStorageContainer -Name 'config' -Context $ctx -Permission Blob}
+
+Try {Get-AzStorageContainerStoredAccessPolicy -Container 'config' -Policy 'vWANConfig' -Context $ctx -ErrorAction Stop | Out-Null}
+Catch {$expiryTime = (Get-Date).AddDays(2)
+       New-AzStorageContainerStoredAccessPolicy -Container 'config' -Policy 'vWANConfig' -Permission rw -ExpiryTime $expiryTime -Context $ctx | Out-Null}
+$sasToken = New-AzStorageContainerSASToken -Name 'config' -Policy 'vWANConfig' -Context $ctx
+
+#$time=(Get-Date -format yyyyMMddHHmmss).ToString()
+$blobName ="vWANConfig.json"
+
+$sasURI = $container.CloudBlobContainer.Uri.AbsoluteUri +"/"+ $blobName + $sasToken
+$vpnSites = Get-AzVpnSite -ResourceGroupName $hubRGName
+
+# 5.6 Copy vWAN config to storage
+Get-AzVirtualWanVpnConfiguration -InputObject $wan -StorageSasUrl $sasURI -VpnSite $vpnSites -ErrorAction Stop | Out-Null
+
+# 5.7 Pull vWAN details
+# Get vWAN VPN Settings
+$URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
+$vWANConfig = Invoke-RestMethod $URI
+$myvWanConfig = ""
+foreach ($vWanConfig in $vWANConfigs) {
+    if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site01-vpn")) {$myvWanConfig = $vWANConfig}
+}
+if ($myvWanConfig = "") {Write-Warning "vWAN Config for Site01 was not found, run Step 5";Return}
+
+# 5.8 Configure the NetFoundry device
+# 5.8.1 Get NetFoundry OAuth Token and build common header
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Create NetFoundry Endpoint (register applicance with NetFoundry controller)" -ForegroundColor Cyan
 Write-Host "  Getting OAuth token"
@@ -151,7 +196,7 @@ $ConnHeader = @{"Authorization" = "Bearer $($token.access_token)"
                 "Cache-Control" = "no-cache"
                 "NF-OrganizationId" = "$NetFoundryOrgID"}
 
-# 5.5.2 Create NetFoundry Endpoint
+# 5.8.2 Create NetFoundry Endpoint
 # List Networks
 $ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/networks"
 $networks = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
@@ -195,7 +240,7 @@ Else {Write-Host "  Submitting endpoint creation request"
                   "}"
       $response = Invoke-RestMethod -Method Post -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -Body $ConnBody -ErrorAction Stop
 }
-# 5.5.3 Instructions to register NetFoundry NVA device
+# 5.8.3 Instructions to register NetFoundry NVA device
 If ($response.registrationKey -eq "") {Write-Host "  Appliance is already activated, skipping"}
 Else {$RegKey = $response.registrationKey
        # Set a new alias to access the clipboard
