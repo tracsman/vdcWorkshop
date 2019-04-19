@@ -43,16 +43,17 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegion = "westus2"
 $RGName = "Company" + $CompanyID
-$VMName = "C" + $CompanyID + "VM01"
-$VMSize = "Standard_B2ms"
-$VMUserName01 = "User01"
-$VMUserName02 = "User02"
-$VMUserName03 = "User03"
+$VNetName = "C" + $CompanyID + "-VNet"
+$VMName = "C" + $CompanyID + "-VM01"
+$VMSize = "Standard_A4_v2"
+$UserName01 = "User01"
+$UserName02 = "User02"
+$UserName03 = "User03"
 
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 2, estimated total time 5 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 2, estimated total time 15 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
@@ -73,9 +74,9 @@ Catch {# Login and set subscription for ARM
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating VMs" -ForegroundColor Cyan
 Write-Host "  Pulling KeyVault Secret"
-$kvs01 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $VMUserName01 -ErrorAction Stop
-$kvs02 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $VMUserName02 -ErrorAction Stop 
-$kvs03 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $VMUserName03 -ErrorAction Stop 
+$kvs01 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $UserName01 -ErrorAction Stop
+$kvs02 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $UserName02 -ErrorAction Stop 
+$kvs03 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $UserName03 -ErrorAction Stop 
 $cred = New-Object System.Management.Automation.PSCredential ($kvs01.Name, $kvs01.SecretValue)
 
 # 2.2.1 Create Public IP
@@ -94,29 +95,29 @@ Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $S
 
 # 2.2.3 Create NIC
 Write-Host "  Creating NIC"
-$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $RGName'-VNet'
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
 $sn =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
 Try {$nic = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop
      Write-Host "    NIC exists, skipping"}
 Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -Location $ShortRegion -Subnet $sn -PublicIpAddress $pip -NetworkSecurityGroup $nsg}
 
 # 2.2.4 Build VM
-Write-Host "  creating VM"
+Write-Host "  Creating VM"
 Try {Get-AzVM -ResourceGroupName $RGName -Name $VMName -ErrorAction Stop | Out-Null
           Write-Host "    VM exists, skipping"}
 Catch {$vmConfig = New-AzVMConfig -VMName $VMName -VMSize $VMSize -ErrorAction Stop
-       $vmConfig = Set-AzVMOperatingSystem -VM $VMConfig -Windows -ComputerName $VMName -Credential $cred -ProvisionVMAgent -EnableAutoUpdate
-       $vmConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $VMName'-disk-os' -Windows -StorageAccountType Premium_LRS -DiskSizeInGB 30
-       $vmConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2019-Datacenter -Version latest
-       $vmConfig = Add-AzVMNetworkInterface -VM $VMConfig -Id $nic.Id
-       $vmConfig = Set-AzVMBootDiagnostics -VM $VMConfig -Disable
+       $vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Windows -ComputerName $VMName -Credential $cred -ProvisionVMAgent -EnableAutoUpdate
+       #$vmConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $VMName'-disk-os' -Windows -StorageAccountType Premium_LRS -DiskSizeInGB 30
+       $vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2019-Datacenter -Version latest
+       $vmConfig = Add-AzVMNetworkInterface -VM $vmConfig -Id $nic.Id
+       $vmConfig = Set-AzVMBootDiagnostics -VM $vmConfig -Disable
        Write-Host "      queuing VM build job"
        New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $vmConfig -AsJob | Out-Null}
 
 # 2.3 Run post deploy job
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Waiting for the VM to deploy, this script will continue after 5 minutes or when the VM is built, whichever comes first." -ForegroundColor Cyan
-Get-Job -Command "New-AzVM" | wait-job -Timeout 300 | Out-Null
+Write-Host "Waiting for the VM to deploy, this script will continue after 10 minutes or when the VM is built, whichever comes first." -ForegroundColor Cyan
+Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Running post VM deploy build script" -ForegroundColor Cyan
@@ -125,7 +126,7 @@ $ScriptName = "FirewallVMBuild.ps1"
 $ExtensionName = 'FWBuildVM'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName -User2 '$User02Name' -Pass2 '" + $kvs02.SecretValueText + "' -User3 '$User03Name' -Pass3 '" + $kvs03.SecretValueText + "')"
+$ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02.SecretValueText + "' -User3 '$UserName03' -Pass3 '" + $kvs03.SecretValueText + "')"
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 
 Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Name $ExtensionName -ErrorAction Stop | Out-Null

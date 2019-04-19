@@ -48,7 +48,7 @@ $snFirewall = "10.17." + $CompanyID + ".64/27"
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 1, estimated total time 5 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 1, estimated total time < 1 minute" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
@@ -67,7 +67,7 @@ Catch {# Login and set subscription for ARM
 
 # 1.2 Create VNet
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating vnet" -ForegroundColor Cyan
+Write-Host "Creating Virtual Network" -ForegroundColor Cyan
 Try {$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
      Write-Host "  resource exists, skipping"}
 Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -AddressPrefix $HubAddress -Location $ShortRegion  
@@ -82,5 +82,5 @@ Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 1 completed successfully" -ForegroundColor Green
-Write-Host "  Explore your new virtual Network in the Azure Portal."
+Write-Host "  Explore your new virtual network in the Azure Portal."
 Write-Host
