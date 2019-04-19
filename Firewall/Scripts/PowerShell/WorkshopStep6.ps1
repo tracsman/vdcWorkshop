@@ -17,6 +17,8 @@
 #  6.1 Validate and Initialize
 #  6.2 Create the Azure Firewall
 #  6.3 Configure the Azure Firewall
+#  6.4 Create the UDR table
+#  6.5 Assign the UDR table to the Tenant subnet
 
 # 6.1 Validate and Initialize
 # Az Module Test
@@ -65,6 +67,8 @@ Catch {# Login and set subscription for ARM
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
 
 # 6.2 Create the Azure Firewall
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating the firewall" -ForegroundColor Cyan
 # 6.2.1 Create Public IP
 Write-Host "  Creating Public IP"
 Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-firewall-pip' -ErrorAction Stop
@@ -72,26 +76,49 @@ Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-fire
 Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-firewall-pip' -Location $ShortRegion -AllocationMethod Dynamic}
 
 # 6.2.2 Create Firewall
-$firewall = New-AzFirewall -Name $RGName'-Firewall' -ResourceGroupName $RGName -Location $ShortRegion -VirtualNetworkName $vnet.Name -PublicIpName $pip.Name
+Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'
+     Write-Host "  Firewall exists, skipping"}
+Catch {$firewall = New-AzFirewall -Name $RGName'-Firewall' -ResourceGroupName $RGName -Location $ShortRegion -VirtualNetworkName $vnet.Name -PublicIpName $pip.Name}
 
-#  6.3 Configure the Azure Firewall
-$Azfw = Get-AzFirewall -ResourceGroupName $RG
-$Rule = New-AzFirewallApplicationRule -Name R1 -Protocol "http:80","https:443" -TargetFqdn "*microsoft.com"
-$RuleCollection = New-AzFirewallApplicationRuleCollection -Name RC1 -Priority 100 -Rule $Rule -ActionType "Allow"
-$Azfw.ApplicationRuleCollections = $RuleCollection
-Set-AzFirewall -AzureFirewall $Azfw
+# 6.3 Configure the Azure Firewall
+If ($firewall.ApplicationRuleCollections[0].Name -eq 'FWRuleCollection') {Write-Host "  Firewall rules exists, skipping"}
+Else {$Rule = New-AzFirewallApplicationRule -Name "Allow_Web" -Protocol "http:80","https:443" -TargetFqdn "*microsoft.com"
+      $RuleCollection = New-AzFirewallApplicationRuleCollection -Name "FWRuleCollection" -Priority 100 -Rule $Rule -ActionType "Allow"
+      $firewall.ApplicationRuleCollections = $RuleCollection
+      Set-AzFirewall -AzureFirewall $firewall | Out-Null
+      $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
 
-#Create UDR rule
-$Azfw = Get-AzFirewall -ResourceGroupName $RG
-$AzfwRouteName = $RG + "AzfwRoute"
-$AzfwRouteTableName = $RG + "AzfwRouteTable"
-$IlbCA = $Azfw.IpConfigurations[0].PrivateIPAddress
-$AzfwRoute = New-AzRouteConfig -Name $AzfwRouteName -AddressPrefix 0.0.0.0/0 -NextHopType VirtualAppliance -NextHopIpAddress $IlbCA
-$AzfwRouteTable = New-AzRouteTable -Name $AzfwRouteTableName -ResourceGroupName $RG -location $Location -Route $AzfwRoute
+# Create UDR rule
+$fwRouteName = 'Firewall-Route'
+$fwRouteTableName = $RGName'-Firewall-rt'
+$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
+$fwRoute = New-AzRouteConfig -Name $fwRouteName -AddressPrefix 0.0.0.0/0 -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
+$fwRouteTable = New-AzRouteTable -Name $fwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $fwRoute
 
-#associate to Servers Subnet
+#-=-=-=-=-=-=-=-=-=-=-=-=-
+Try {$Spoke2RT = Get-AzureRmRouteTable -Name $Spoke2Name'-rt' -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop
+     Write-Host "  $Spoke2Name route table exists, skipping"}
+Catch {$Spoke2RT = New-AzureRmRouteTable -Name $Spoke2Name'-rt' -ResourceGroupName $rg.ResourceGroupName -location $rg.Location
+       Get-AzureRmRouteTable -ResourceGroupName $rg.ResourceGroupName -Name $Spoke2Name'-rt' | `
+                Add-AzureRmRouteConfig -Name "Spoke02ToFS" -AddressPrefix $Spoke1VNet.Subnets[0].AddressPrefix[0] -NextHopType "VirtualAppliance" -NextHopIpAddress $HubLBIP | `
+                Set-AzureRmRouteTable | Out-Null}
+#-=-=-==-=-=-=-=-=-=-=-=-
+
+# Associate to Servers Subnet
+$sn = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
 $vnet.Subnets[2].RouteTable = $AzfwRouteTable
 Set-AzVirtualNetwork -VirtualNetwork $vnet
+
+Try {Set-AzureRmVirtualNetworkSubnetConfig -Name $Spoke1VNet.Subnets[0].Name -VirtualNetwork $Spoke1VNet -AddressPrefix $Spoke1VNet.Subnets[0].AddressPrefix `
+       -RouteTable $Spoke1RT | Set-AzureRmVirtualNetwork | Out-Null
+Set-AzureRmVirtualNetworkSubnetConfig -Name $Spoke2VNet.Subnets[0].Name -VirtualNetwork $Spoke2VNet -AddressPrefix $Spoke2VNet.Subnets[0].AddressPrefix `
+       -RouteTable $Spoke2RT | Set-AzureRmVirtualNetwork | Out-Null
+}
+Catch {
+Write-Warning 'Assigning route tables to subnets failed. Please review or contact the proctor for more assistance'
+Return
+}
+
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
