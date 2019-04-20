@@ -191,26 +191,25 @@ Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Configuring Firewall" -ForegroundColor Cyan
 $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall' -ErrorAction Stop
-$fwIP = 
+$fwIP = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-Firewall-pip' -ErrorAction Stop
 If ($firewall.NatRuleCollections[0].Name -eq 'FWNATRules') {
      Write-Host "  Firewall already configured, skipping"}
-Else {$Rule = New-AzFirewallNatRule -Name "WebNAT" -SourceAddress
-      $RuleCollection = New-AzFirewallApplicationRuleCollection -Name "FWNATRules" -Priority 100 -Rule $Rule -ActionType "Allow"
-      $firewall.ApplicationRuleCollections = $RuleCollection
-      Set-AzFirewall -AzureFirewall $firewall | Out-Null
-      $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
+Else {$NATRule80 = New-AzFirewallNatRule -Name "Web80NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP -DestinationPort 80 -TranslatedAddress $pip.IpAddress -TranslatedPort 80
+      $NATRule443 = New-AzFirewallNatRule -Name "Web443NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP -DestinationPort 443 -TranslatedAddress $pip.IpAddress -TranslatedPort 443
+      $NATRuleCollection = New-AzFirewallApplicationRuleCollection -Name "FWNATRules" -Priority 100 -Rule $NATRule80, $NATRule443 -ActionType "Allow"
+      $firewall.ApplicationRuleCollections = $NATRuleCollection
+      Set-AzFirewall -AzureFirewall $firewall | Out-Null}
 
 # 7.8 Wait for IIS installation to finish
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Waiting for IIS installation to finish, script will continue after 5 minutes or when the installation finishes, whichever is first." -ForegroundColor Cyan
 Get-Job -Command "Set-AzVMExtension" | Wait-Job -Timeout 300 | Out-Null
 
-
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 7 completed successfully" -ForegroundColor Green
 Write-Host "  Review your new Spoke and it's components in the Azure Portal"
-Write-Host "  Use a browser to see your new Web Site"
-Write-Host "  The IIS Server (via SNAT) is at" -NoNewline
-Write-Host "  HTTP://$((Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip').IpAddress)" -ForegroundColor Yellow
+Write-Host "  Also, use a browser to see your new Web Site"
+Write-Host "  The IIS Server (via NAT) is at" -NoNewline
+Write-Host "  HTTP://$fwIP" -ForegroundColor Yellow
 Write-Host
