@@ -72,7 +72,7 @@ Catch {# Login and set subscription for ARM
 
 # 2.2 Create the VM
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating VMs" -ForegroundColor Cyan
+Write-Host "Creating VM" -ForegroundColor Cyan
 Write-Host "  Pulling KeyVault Secret"
 $kvs01 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $UserName01 -ErrorAction Stop
 $kvs02 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $UserName02 -ErrorAction Stop 

@@ -43,7 +43,7 @@ $VNetName = "C" + $CompanyID + "-VNet"
 $HubAddress = "10.17." + $CompanyID + ".0/25"
 $snTenant = "10.17." + $CompanyID + ".0/27"
 $snGateway = "10.17." + $CompanyID + ".32/27"
-$snFirewall = "10.17." + $CompanyID + ".64/27"
+$snFirewall = "10.17." + $CompanyID + ".64/26"
 
 # Start nicely
 Write-Host

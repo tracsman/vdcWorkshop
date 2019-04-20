@@ -46,7 +46,7 @@ $VNetName = "C" + $CompanyID + "-VNet"
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 6, estimated total time 10 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 6, estimated total time 5 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
@@ -65,6 +65,7 @@ Catch {# Login and set subscription for ARM
 
 # Initialize VNet variable
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
+$sn = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
 
 # 6.2 Create the Azure Firewall
 Write-Host (Get-Date)' - ' -NoNewline
@@ -73,55 +74,47 @@ Write-Host "Creating the firewall" -ForegroundColor Cyan
 Write-Host "  Creating Public IP"
 Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-firewall-pip' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
-Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-firewall-pip' -Location $ShortRegion -AllocationMethod Dynamic}
+Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-firewall-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
 
 # 6.2.2 Create Firewall
-Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'
-     Write-Host "  Firewall exists, skipping"}
+Write-Host "  Creating Firewall"
+Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall' -ErrorAction Stop
+     Write-Host "    Firewall exists, skipping"}
 Catch {$firewall = New-AzFirewall -Name $RGName'-Firewall' -ResourceGroupName $RGName -Location $ShortRegion -VirtualNetworkName $vnet.Name -PublicIpName $pip.Name}
 
 # 6.3 Configure the Azure Firewall
-If ($firewall.ApplicationRuleCollections[0].Name -eq 'FWRuleCollection') {Write-Host "  Firewall rules exists, skipping"}
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Configuring Firewall" -ForegroundColor Cyan
+If ($firewall.ApplicationRuleCollections[0].Name -eq 'FWAppRules') {
+     Write-Host "  Firewall already configured, skipping"}
 Else {$Rule = New-AzFirewallApplicationRule -Name "Allow_Web" -Protocol "http:80","https:443" -TargetFqdn "*microsoft.com"
-      $RuleCollection = New-AzFirewallApplicationRuleCollection -Name "FWRuleCollection" -Priority 100 -Rule $Rule -ActionType "Allow"
+      $RuleCollection = New-AzFirewallApplicationRuleCollection -Name "FWAppRules" -Priority 100 -Rule $Rule -ActionType "Allow"
       $firewall.ApplicationRuleCollections = $RuleCollection
       Set-AzFirewall -AzureFirewall $firewall | Out-Null
       $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
 
-# Create UDR rule
-$fwRouteName = 'Firewall-Route'
-$fwRouteTableName = $RGName'-Firewall-rt'
-$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
-$fwRoute = New-AzRouteConfig -Name $fwRouteName -AddressPrefix 0.0.0.0/0 -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
-$fwRouteTable = New-AzRouteTable -Name $fwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $fwRoute
+# 6.4 Create the UDR table
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating UDR Table" -ForegroundColor Cyan
+Try {$fwRouteTable = Get-AzRouteTable -Name $RGName'-Firewall-rt' -ResourceGroupName $RGName -ErrorAction Stop
+     Write-Host "  UDR Route Table exists, skipping"}
+Catch {$fwRouteName = 'Firewall-Route'
+       $fwRouteTableName = $RGName + '-Firewall-rt'
+       $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
+       $fwRoute = New-AzRouteConfig -Name $fwRouteName -AddressPrefix "0.0.0.0/0" -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
+       $fwRouteTable = New-AzRouteTable -Name $fwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $fwRoute}
 
-#-=-=-=-=-=-=-=-=-=-=-=-=-
-Try {$Spoke2RT = Get-AzureRmRouteTable -Name $Spoke2Name'-rt' -ResourceGroupName $rg.ResourceGroupName -ErrorAction Stop
-     Write-Host "  $Spoke2Name route table exists, skipping"}
-Catch {$Spoke2RT = New-AzureRmRouteTable -Name $Spoke2Name'-rt' -ResourceGroupName $rg.ResourceGroupName -location $rg.Location
-       Get-AzureRmRouteTable -ResourceGroupName $rg.ResourceGroupName -Name $Spoke2Name'-rt' | `
-                Add-AzureRmRouteConfig -Name "Spoke02ToFS" -AddressPrefix $Spoke1VNet.Subnets[0].AddressPrefix[0] -NextHopType "VirtualAppliance" -NextHopIpAddress $HubLBIP | `
-                Set-AzureRmRouteTable | Out-Null}
-#-=-=-==-=-=-=-=-=-=-=-=-
-
-# Associate to Servers Subnet
-$sn = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
-$vnet.Subnets[2].RouteTable = $AzfwRouteTable
-Set-AzVirtualNetwork -VirtualNetwork $vnet
-
-Try {Set-AzureRmVirtualNetworkSubnetConfig -Name $Spoke1VNet.Subnets[0].Name -VirtualNetwork $Spoke1VNet -AddressPrefix $Spoke1VNet.Subnets[0].AddressPrefix `
-       -RouteTable $Spoke1RT | Set-AzureRmVirtualNetwork | Out-Null
-Set-AzureRmVirtualNetworkSubnetConfig -Name $Spoke2VNet.Subnets[0].Name -VirtualNetwork $Spoke2VNet -AddressPrefix $Spoke2VNet.Subnets[0].AddressPrefix `
-       -RouteTable $Spoke2RT | Set-AzureRmVirtualNetwork | Out-Null
-}
-Catch {
-Write-Warning 'Assigning route tables to subnets failed. Please review or contact the proctor for more assistance'
-Return
-}
-
+# 6.5 Assign the UDR table to the Tenant subnet
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Associating UDR Table to Tenant subnet" -ForegroundColor Cyan
+If ($null -eq $sn.RouteTable) {$sn.RouteTable = $fwRouteTable
+                               Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null}
+Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 6 completed successfully" -ForegroundColor Green
-Write-Host "  The instructions to configure the Cisco device have been copied to the clipboard, open Notepad and paste the instructions to configure the device. If you need the instructions again, rerun this script and the instructions will be reloaded to the clipboard."
+Write-Host "  Checkout the Firewall in the Azure portal."
+Write-Host "  Be sure to check out the Application rule collection for web traffic."
+Write-Host "  Also, checkout the Route Table and it's association to the subnet"
 Write-Host
