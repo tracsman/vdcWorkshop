@@ -79,7 +79,7 @@ Catch {# Login and set subscription for ARM
 }
 
 # Initialize Hub VNet variable
-$hubvnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubVNetName
+$hubvnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubVNetName -ErrorAction Stop
 
 # 7.2 Create VNet
 Write-Host (Get-Date)' - ' -NoNewline
@@ -167,14 +167,14 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Hub to Spoke" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkPeering -Name "HubtoSpoke" -VirtualNetworkName $HubVNetName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
      Write-Host "  peering exists, skipping" }
-Catch {Try {Add-AzVirtualNetworkPeering -Name "HubtoSpoke" -VirtualNetworkName $HubVNetName -ResourceGroupName $RGName -RemoteVirtualNetworkId $vnet.Id -AllowGatewayTransit -ErrorAction Stop | Out-Null}
+Catch {Try {Add-AzVirtualNetworkPeering -Name "HubtoSpoke" -VirtualNetwork $hubvnet -RemoteVirtualNetworkId $vnet.Id -AllowGatewayTransit -ErrorAction Stop | Out-Null}
 	   Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Spoke to Hub" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkPeering -Name "SpoketoHub" -VirtualNetworkName $VNetName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
      Write-Host "  peering exists, skipping" }
-Catch {Try {Add-AzVirtualNetworkPeering -Name "SpoketoHub" -VirtualNetworkName $VNetName -ResourceGroupName $RGName -RemoteVirtualNetwork $hubvnet.Id -UseRemoteGateways -ErrorAction Stop | Out-Null}
+Catch {Try {Add-AzVirtualNetworkPeering -Name "SpoketoHub" -VirtualNetwork $vnet -RemoteVirtualNetwork $hubvnet.Id -UseRemoteGateways -ErrorAction Stop | Out-Null}
 	   Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
 # 7.6 Assign UDR to Firewall
@@ -194,10 +194,10 @@ $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall' -
 $fwIP = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-Firewall-pip' -ErrorAction Stop
 If ($firewall.NatRuleCollections[0].Name -eq 'FWNATRules') {
      Write-Host "  Firewall already configured, skipping"}
-Else {$NATRule80 = New-AzFirewallNatRule -Name "Web80NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP -DestinationPort 80 -TranslatedAddress $pip.IpAddress -TranslatedPort 80
-      $NATRule443 = New-AzFirewallNatRule -Name "Web443NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP -DestinationPort 443 -TranslatedAddress $pip.IpAddress -TranslatedPort 443
-      $NATRuleCollection = New-AzFirewallApplicationRuleCollection -Name "FWNATRules" -Priority 100 -Rule $NATRule80, $NATRule443 -ActionType "Allow"
-      $firewall.ApplicationRuleCollections = $NATRuleCollection
+Else {$NATRule80 = New-AzFirewallNatRule -Name "Web80NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 80 -TranslatedAddress $pip.IpAddress -TranslatedPort 80
+      $NATRule443 = New-AzFirewallNatRule -Name "Web443NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 443 -TranslatedAddress $pip.IpAddress -TranslatedPort 443
+      $NATRuleCollection = New-AzFirewallNatRuleCollection -Name "FWNATRules" -Priority 100 -Rule $NATRule80, $NATRule443
+      $firewall.NatRuleCollections = $NATRuleCollection
       Set-AzFirewall -AzureFirewall $firewall | Out-Null}
 
 # 7.8 Wait for IIS installation to finish
@@ -211,5 +211,5 @@ Write-Host "Step 7 completed successfully" -ForegroundColor Green
 Write-Host "  Review your new Spoke and it's components in the Azure Portal"
 Write-Host "  Also, use a browser to see your new Web Site"
 Write-Host "  The IIS Server (via NAT) is at" -NoNewline
-Write-Host "  HTTP://$fwIP" -ForegroundColor Yellow
+Write-Host "  HTTP://$($fwIP.IpAddress)" -ForegroundColor Yellow
 Write-Host

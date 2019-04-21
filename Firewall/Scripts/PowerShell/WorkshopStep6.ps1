@@ -72,9 +72,9 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating the firewall" -ForegroundColor Cyan
 # 6.2.1 Create Public IP
 Write-Host "  Creating Public IP"
-Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-firewall-pip' -ErrorAction Stop
+Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-Firewall-pip' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
-Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-firewall-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
+Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-Firewall-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
 
 # 6.2.2 Create Firewall
 Write-Host "  Creating Firewall"
