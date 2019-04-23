@@ -23,9 +23,11 @@
 # 7.3.4 Build VM
 # 7.4 Run post deploy job (Install IIS)
 # 7.5 Peer VNets
-# 7.6 Assign UDR to Firewall
-# 7.7 Add SNAT rule to Firewall
-# 7.8 Wait for IIS installation to finish
+# 7.6 Assign Firewall UDR to subnet
+# 7.7 Configure Firewall Rules
+# 7.8 Add SNAT rule to Firewall
+# 7.9 Create Log Analytics workspace
+# 7.10 Wait for IIS installation to finish
 
 # 7.1 Validate and Initialize
 # Az Module Test
@@ -52,11 +54,13 @@ $VNetName = "C" + $CompanyID + "-Spoke-VNet"
 $VNetAddress = "10.17." + $CompanyID + ".128/25"
 $snTenant = "10.17." + $CompanyID + ".128/26"
 $HubVNetName = "C" + $CompanyID + "-VNet"
+$HubVMName = "C" + $CompanyID + "-VM01"
 $VMName = "C" + $CompanyID + "-Spoke-VM01"
 $VMSize = "Standard_A4_v2"
 $UserName01 = "User01"
 $UserName02 = "User02"
 $UserName03 = "User03"
+$RDPUDRs = "10.17." + $CompanyID + ".0/27", "10.17." + $CompanyID + ".128/26", "10.3." + $CompanyID + ".0/25"
 
 # Start nicely
 Write-Host
@@ -80,6 +84,8 @@ Catch {# Login and set subscription for ARM
 
 # Initialize Hub VNet variable
 $hubvnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubVNetName -ErrorAction Stop
+$HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $HubVMName'-nic' -ErrorAction Stop).IpConfigurations[0].PrivateIpAddress
+$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall' -ErrorAction Stop
 
 # 7.2 Create VNet
 Write-Host (Get-Date)' - ' -NoNewline
@@ -177,30 +183,48 @@ Try {Get-AzVirtualNetworkPeering -Name "SpoketoHub" -VirtualNetworkName $VNetNam
 Catch {Try {Add-AzVirtualNetworkPeering -Name "SpoketoHub" -VirtualNetwork $vnet -RemoteVirtualNetwork $hubvnet.Id -UseRemoteGateways -ErrorAction Stop | Out-Null}
 	   Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
-# 7.6 Assign UDR to Firewall
+# 7.6 Assign Firewall UDR to subnet
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Associating UDR Table to Spoke Tenant subnet" -ForegroundColor Cyan
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
 $sn = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant" -ErrorAction Stop
-$fwRouteTable = Get-AzRouteTable -Name $RGName'-Firewall-rt' -ResourceGroupName $RGName -ErrorAction Stop
+$fwRouteTable = Get-AzRouteTable -Name $RGName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
 If ($null -eq $sn.RouteTable) {$sn.RouteTable = $fwRouteTable
                                Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null}
 Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
 
-# 7.7 Add SNAT rule to Firewall
+# 7.7 Configure Firewall Rules
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Configuring Firewall" -ForegroundColor Cyan
-$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall' -ErrorAction Stop
-$fwIP = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-Firewall-pip' -ErrorAction Stop
-If ($firewall.NatRuleCollections[0].Name -eq 'FWNATRules') {
+If ($firewall.NetworkRuleCollections.Rules.Name -contains 'WebAllow') {
      Write-Host "  Firewall already configured, skipping"}
-Else {$NATRule80 = New-AzFirewallNatRule -Name "Web80NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 80 -TranslatedAddress $pip.IpAddress -TranslatedPort 80
-      $NATRule443 = New-AzFirewallNatRule -Name "Web443NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 443 -TranslatedAddress $pip.IpAddress -TranslatedPort 443
+Else {$RuleWeb = New-AzFirewallNetworkRule -Name "WebAllow" -SourceAddress * -DestinationAddress $IISIP -DestinationPort 80, 443 -Protocol TCP
+      $RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPUDRs -DestinationAddress $IISIP, $HubVMIP -DestinationPort 3389 -Protocol TCP
+      $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRules" -Priority 100 -Rule $RuleWeb, $RuleRDP -ActionType "Allow"
+      $firewall.NetworkRuleCollections = $RuleCollection
+      Set-AzFirewall -AzureFirewall $firewall | Out-Null
+      $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
+
+# 7.8 Add SNAT rule to Firewall
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Configuring Firewall" -ForegroundColor Cyan
+$fwIP = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-Firewall-pip' -ErrorAction Stop
+If ($firewall.NatRuleCollections.Name -contains 'FWNATRules') {
+    Write-Host "  Firewall already configured, skipping"}
+Else {$NATRule80 = New-AzFirewallNatRule -Name "Web80NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 80 -TranslatedAddress $nic.IpConfigurations[0].PrivateIpAddress -TranslatedPort 80
+      $NATRule443 = New-AzFirewallNatRule -Name "Web443NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 443 -TranslatedAddress $nic.IpConfigurations[0].PrivateIpAddress -TranslatedPort 443
       $NATRuleCollection = New-AzFirewallNatRuleCollection -Name "FWNATRules" -Priority 100 -Rule $NATRule80, $NATRule443
       $firewall.NatRuleCollections = $NATRuleCollection
       Set-AzFirewall -AzureFirewall $firewall | Out-Null}
 
-# 7.8 Wait for IIS installation to finish
+# 7.9 Create Log Analytics workspace
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating Log Analytics Workspace" -ForegroundColor Cyan
+Try {Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs'
+     Write-Host "  Workspaces already exists, skipping"}
+Catch {New-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -Location westus2 -Sku pernode}
+
+# 7.10 Wait for IIS installation to finish
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Waiting for IIS installation to finish, script will continue after 5 minutes or when the installation finishes, whichever is first." -ForegroundColor Cyan
 Get-Job -Command "Set-AzVMExtension" | Wait-Job -Timeout 300 | Out-Null
@@ -212,4 +236,8 @@ Write-Host "  Review your new Spoke and it's components in the Azure Portal"
 Write-Host "  Also, use a browser to see your new Web Site"
 Write-Host "  The IIS Server (via NAT) is at" -NoNewline
 Write-Host "  HTTP://$($fwIP.IpAddress)" -ForegroundColor Yellow
+Write-Host
+Write-Host " You can also enable monitoring on the firewall and watch the logs."
+Write-Host " Usefull log queries can be found at:"
+Write-Host "https://docs.microsoft.com/en-us/azure/firewall/log-analytics-samples#network-rules-log-data-query" -ForegroundColor Yellow
 Write-Host

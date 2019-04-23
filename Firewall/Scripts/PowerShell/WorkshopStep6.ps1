@@ -17,8 +17,8 @@
 #  6.1 Validate and Initialize
 #  6.2 Create the Azure Firewall
 #  6.3 Configure the Azure Firewall
-#  6.4 Create the UDR table
-#  6.5 Assign the UDR table to the Tenant subnet
+#  6.4 Create the UDR tables
+#  6.5 Assign the UDR tables to the subnets
 
 # 6.1 Validate and Initialize
 # Az Module Test
@@ -42,6 +42,8 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 $ShortRegion = "westus2"
 $RGName = "Company" + $CompanyID
 $VNetName = "C" + $CompanyID + "-VNet"
+$VMName = "C" + $CompanyID + "-VM01"
+$GatewayUDRs = "10.17." + $CompanyID + ".0/27", "10.17." + $CompanyID + ".128/26"
 
 # Start nicely
 Write-Host
@@ -65,7 +67,9 @@ Catch {# Login and set subscription for ARM
 
 # Initialize VNet variable
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
-$sn = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
+$snTenant = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
+$snGateway = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "GatewaySubnet"
+$HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop).IpConfigurations[0].PrivateIpAddress
 
 # 6.2 Create the Azure Firewall
 Write-Host (Get-Date)' - ' -NoNewline
@@ -85,30 +89,46 @@ Catch {$firewall = New-AzFirewall -Name $RGName'-Firewall' -ResourceGroupName $R
 # 6.3 Configure the Azure Firewall
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Configuring Firewall" -ForegroundColor Cyan
-If ($firewall.ApplicationRuleCollections[0].Name -eq 'FWAppRules') {
+If ($firewall.NetworkRuleCollections.Name -contains 'FWNetRDPRules') {
      Write-Host "  Firewall already configured, skipping"}
-Else {$Rule = New-AzFirewallApplicationRule -Name "Allow_Web" -Protocol "http:80","https:443" -TargetFqdn "*microsoft.com"
-      $RuleCollection = New-AzFirewallApplicationRuleCollection -Name "FWAppRules" -Priority 100 -Rule $Rule -ActionType "Allow"
-      $firewall.ApplicationRuleCollections = $RuleCollection
+Else {$RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress VirtualNetwork -DestinationAddress $HubVMIP -DestinationPort 3389 -Protocol TCP
+      $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRDPRules" -Priority 100 -Rule $RuleRDP -ActionType "Allow"
+      $firewall.NetworkRuleCollections = $RuleCollection
       Set-AzFirewall -AzureFirewall $firewall | Out-Null
       $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
 
-# 6.4 Create the UDR table
+# 6.4 Create the UDR tables
+$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating UDR Table" -ForegroundColor Cyan
-Try {$fwRouteTable = Get-AzRouteTable -Name $RGName'-Firewall-rt' -ResourceGroupName $RGName -ErrorAction Stop
-     Write-Host "  UDR Route Table exists, skipping"}
-Catch {$fwRouteName = 'Firewall-Route'
-       $fwRouteTableName = $RGName + '-Firewall-rt'
-       $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
-       $fwRoute = New-AzRouteConfig -Name $fwRouteName -AddressPrefix "0.0.0.0/0" -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
-       $fwRouteTable = New-AzRouteTable -Name $fwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $fwRoute}
+Write-Host "Creating ER UDR Table" -ForegroundColor Cyan
+Try {$erRouteTable = Get-AzRouteTable -Name $RGName'-rt-er' -ResourceGroupName $RGName -ErrorAction Stop
+     Write-Host "  UDR Table exists, skipping"}
+Catch {$erRouteName = 'ERGateway-Routes'
+       $erRouteTableName = $VNetName + '-rt-er'
+       $erRoute = New-AzRouteConfig -Name $erRouteName -AddressPrefix $GatewayUDRs -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
+       $erRouteTable = New-AzRouteTable -Name $erRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $erRoute}
 
-# 6.5 Assign the UDR table to the Tenant subnet
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Associating UDR Table to Tenant subnet" -ForegroundColor Cyan
-If ($null -eq $sn.RouteTable) {$sn.RouteTable = $fwRouteTable
-                               Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null}
+Write-Host "Creating Tenant UDR Table" -ForegroundColor Cyan
+Try {$fwRouteTable = Get-AzRouteTable -Name $RGName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
+     Write-Host "  UDR Table exists, skipping"}
+Catch {$fwRouteName = 'Default-Route'
+     $fwRouteTableName = $RGName + '-rt-fw'
+     $fwRoute = New-AzRouteConfig -Name $fwRouteName -AddressPrefix "0.0.0.0/0" -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
+     $fwRouteTable = New-AzRouteTable -Name $fwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $fwRoute -DisableBgpRoutePropagation}
+       
+# 6.5 Assign the UDR tables to the subnets
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Associating UDR Table to Hub Gateway subnet" -ForegroundColor Cyan
+If ($null -eq $snGateway.RouteTable) {$snGateway.RouteTable = $erRouteTable
+                                      Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
+                                      $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName}
+Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
+
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Associating UDR Table to Hub Tenant subnet" -ForegroundColor Cyan
+If ($null -eq $snTenant.RouteTable) {$snTenant.RouteTable = $fwRouteTable
+                                     Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null}
 Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
 
 # End nicely
