@@ -60,7 +60,7 @@ $VMSize = "Standard_A4_v2"
 $UserName01 = "User01"
 $UserName02 = "User02"
 $UserName03 = "User03"
-$RDPUDRs = "10.17." + $CompanyID + ".0/27", "10.17." + $CompanyID + ".128/26", "10.3." + $CompanyID + ".0/25"
+$RDPUDRs = ("10.17." + $CompanyID + ".0/27"), ("10.17." + $CompanyID + ".128/26"), ("10.3." + $CompanyID + ".0/25")
 
 # Start nicely
 Write-Host

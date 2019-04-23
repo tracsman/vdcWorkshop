@@ -43,12 +43,13 @@ $ShortRegion = "westus2"
 $RGName = "Company" + $CompanyID
 $VNetName = "C" + $CompanyID + "-VNet"
 $VMName = "C" + $CompanyID + "-VM01"
-$GatewayUDRs = "10.17." + $CompanyID + ".0/27", "10.17." + $CompanyID + ".128/26"
+$GatewayUDRs = ("10.17." + $CompanyID + ".0/27"), ("10.17." + $CompanyID + ".128/26")
+$RDPUDRs = ("10.17." + $CompanyID + ".0/27"), ("10.3." + $CompanyID + ".0/25")
 
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 6, estimated total time 5 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 6, estimated total time 10 minutes" -ForegroundColor Cyan
 
 # Login and permissions check
 Write-Host (Get-Date)' - ' -NoNewline
@@ -91,7 +92,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Configuring Firewall" -ForegroundColor Cyan
 If ($firewall.NetworkRuleCollections.Name -contains 'FWNetRDPRules') {
      Write-Host "  Firewall already configured, skipping"}
-Else {$RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress VirtualNetwork -DestinationAddress $HubVMIP -DestinationPort 3389 -Protocol TCP
+Else {$RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPUDRs -DestinationAddress $HubVMIP -DestinationPort 3389 -Protocol TCP
       $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRDPRules" -Priority 100 -Rule $RuleRDP -ActionType "Allow"
       $firewall.NetworkRuleCollections = $RuleCollection
       Set-AzFirewall -AzureFirewall $firewall | Out-Null
@@ -101,19 +102,21 @@ Else {$RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress Virtu
 $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating ER UDR Table" -ForegroundColor Cyan
-Try {$erRouteTable = Get-AzRouteTable -Name $RGName'-rt-er' -ResourceGroupName $RGName -ErrorAction Stop
-     Write-Host "  UDR Table exists, skipping"}
-Catch {$erRouteName = 'ERGateway-Routes'
-       $erRouteTableName = $VNetName + '-rt-er'
-       $erRoute = New-AzRouteConfig -Name $erRouteName -AddressPrefix $GatewayUDRs -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
+Try {$erRouteTable = Get-AzRouteTable -Name $VNetName'-rt-er' -ResourceGroupName $RGName -ErrorAction Stop
+     Write-Host "  ER UDR Table exists, skipping"}
+Catch {$erRouteTableName = $VNetName + '-rt-er'
+       $erRoute = @()
+       ForEach ($GatewayUDR in $GatewayUDRs) {
+                $erRouteName = 'ERGateway-Route' + ($GatewayUDRs.IndexOf($GatewayUDR) + 1).ToString("00")
+                $erRoute += New-AzRouteConfig -Name $erRouteName -AddressPrefix $GatewayUDR -NextHopType VirtualAppliance -NextHopIpAddress $fwIP}
        $erRouteTable = New-AzRouteTable -Name $erRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $erRoute}
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Tenant UDR Table" -ForegroundColor Cyan
-Try {$fwRouteTable = Get-AzRouteTable -Name $RGName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
-     Write-Host "  UDR Table exists, skipping"}
+Try {$fwRouteTable = Get-AzRouteTable -Name $VNetName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
+     Write-Host "  Tenant UDR Table exists, skipping"}
 Catch {$fwRouteName = 'Default-Route'
-     $fwRouteTableName = $RGName + '-rt-fw'
+     $fwRouteTableName = $VNetName + '-rt-fw'
      $fwRoute = New-AzRouteConfig -Name $fwRouteName -AddressPrefix "0.0.0.0/0" -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
      $fwRouteTable = New-AzRouteTable -Name $fwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $fwRoute -DisableBgpRoutePropagation}
        
@@ -128,7 +131,8 @@ Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Associating UDR Table to Hub Tenant subnet" -ForegroundColor Cyan
 If ($null -eq $snTenant.RouteTable) {$snTenant.RouteTable = $fwRouteTable
-                                     Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null}
+                                     Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
+                                     $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName}
 Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
 
 # End nicely

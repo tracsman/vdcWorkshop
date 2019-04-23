@@ -41,7 +41,7 @@ $RGName = "Company" + $CompanyID
 $VNetName = "C" + $CompanyID + "-VNet"
 $CircuitName = $RGName + "-er"
 $AzureVMIP = "10.17." + $CompanyID + ".4"
-$OnPremVMIP = "10.1." + $CompanyID + ".10"
+$OnPremVMIP = "10.3." + $CompanyID + ".10"
 
 # Start nicely
 Write-Host
