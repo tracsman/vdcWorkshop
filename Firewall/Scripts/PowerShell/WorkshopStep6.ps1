@@ -100,6 +100,9 @@ Else {$RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPU
 
 # 6.4 Create the UDR tables
 $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
+$erRouteTable = $null
+$fwRouteTable = $null
+$RouteTablesUpdated = $false
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating ER UDR Table" -ForegroundColor Cyan
 Try {$erRouteTable = Get-AzRouteTable -Name $VNetName'-rt-er' -ResourceGroupName $RGName -ErrorAction Stop
@@ -116,24 +119,27 @@ Write-Host "Creating Tenant UDR Table" -ForegroundColor Cyan
 Try {$fwRouteTable = Get-AzRouteTable -Name $VNetName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
      Write-Host "  Tenant UDR Table exists, skipping"}
 Catch {$fwRouteName = 'Default-Route'
-     $fwRouteTableName = $VNetName + '-rt-fw'
-     $fwRoute = New-AzRouteConfig -Name $fwRouteName -AddressPrefix "0.0.0.0/0" -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
-     $fwRouteTable = New-AzRouteTable -Name $fwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $fwRoute -DisableBgpRoutePropagation}
+       $fwRouteTableName = $VNetName + '-rt-fw'
+       $fwRoute = New-AzRouteConfig -Name $fwRouteName -AddressPrefix "0.0.0.0/0" -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
+       $fwRouteTable = New-AzRouteTable -Name $fwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $fwRoute -DisableBgpRoutePropagation}
        
 # 6.5 Assign the UDR tables to the subnets
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Associating UDR Table to Hub Gateway subnet" -ForegroundColor Cyan
 If ($null -eq $snGateway.RouteTable) {$snGateway.RouteTable = $erRouteTable
-                                      Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
-                                      $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName}
+                                      $RouteTablesUpdated = $true}
 Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Associating UDR Table to Hub Tenant subnet" -ForegroundColor Cyan
 If ($null -eq $snTenant.RouteTable) {$snTenant.RouteTable = $fwRouteTable
-                                     Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
-                                     $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName}
+                                     $RouteTablesUpdated = $true}
 Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
+
+If ($RouteTablesUpdated){
+     Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
+     $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
+     Write-Host "  Route table(s) saved to VNet"}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
