@@ -89,11 +89,11 @@ Catch {$firewall = New-AzFirewall -Name $RGName'-Firewall' -ResourceGroupName $R
 
 # 6.3 Configure the Azure Firewall
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Configuring Firewall" -ForegroundColor Cyan
-If ($firewall.NetworkRuleCollections.Name -contains 'FWNetRDPRules') {
+Write-Host "Configuring Firewall Network Rules" -ForegroundColor Cyan
+If ($firewall.NetworkRuleCollections.Name -contains 'FWNetRules') {
      Write-Host "  Firewall already configured, skipping"}
 Else {$RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPUDRs -DestinationAddress $HubVMIP -DestinationPort 3389 -Protocol TCP
-      $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRDPRules" -Priority 100 -Rule $RuleRDP -ActionType "Allow"
+      $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRules" -Priority 100 -Rule $RuleRDP -ActionType "Allow"
       $firewall.NetworkRuleCollections = $RuleCollection
       Set-AzFirewall -AzureFirewall $firewall | Out-Null
       $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
