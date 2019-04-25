@@ -21,13 +21,14 @@
 # 7.3.2 Create NSG
 # 7.3.3 Create NIC
 # 7.3.4 Build VM
-# 7.4 Run post deploy job (Install IIS)
-# 7.5 Peer VNets
-# 7.6 Assign Firewall UDR to subnet
-# 7.7 Configure Firewall Rules
-# 7.8 Add SNAT rule to Firewall
-# 7.9 Create Log Analytics workspace
-# 7.10 Wait for IIS installation to finish
+# 7.4 Configure Firewall Application Rules
+# 7.5 Configure Firewall Network Rules
+# 7.6 Add SNAT rule to Firewall
+# 7.7 Run post deploy job (Install IIS)
+# 7.8 Peer VNets
+# 7.9 Assign Firewall UDR to subnet
+# 7.10 Create Log Analytics workspace
+# 7.11 Wait for IIS installation to finish
 
 # 7.1 Validate and Initialize
 # Az Module Test
@@ -146,6 +147,42 @@ Catch {$vmConfig = New-AzVMConfig -VMName $VMName -VMSize $VMSize -ErrorAction S
        Write-Host "    queuing VM build job"
        New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $vmConfig -AsJob | Out-Null}
 
+# 7.4 Configure Firewall Application Rules
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Configuring Firewall Application Rules" -ForegroundColor Cyan
+If ($firewall.NetworkRuleCollections.Rules.Name -contains 'WebAllow') {
+     Write-Host "  Firewall already configured, skipping"}
+Else {$RuleWeb = New-AzFirewallNetworkRule -Name "WebAllow" -SourceAddress * -DestinationAddress $($nic.IpConfigurations[0].PrivateIpAddress) -DestinationPort 80, 443 -Protocol TCP
+      $RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPUDRs -DestinationAddress $($nic.IpConfigurations[0].PrivateIpAddress), $HubVMIP -DestinationPort 3389 -Protocol TCP
+      $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRules" -Priority 100 -Rule $RuleWeb, $RuleRDP -ActionType "Allow"
+      $firewall.NetworkRuleCollections = $RuleCollection
+      Set-AzFirewall -AzureFirewall $firewall | Out-Null
+      $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
+
+# 7.7 Configure Firewall Network Rules
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Configuring Firewall Network Rules" -ForegroundColor Cyan
+If ($firewall.NetworkRuleCollections.Rules.Name -contains 'WebAllow') {
+     Write-Host "  Firewall already configured, skipping"}
+Else {$RuleWeb = New-AzFirewallNetworkRule -Name "WebAllow" -SourceAddress * -DestinationAddress $($nic.IpConfigurations[0].PrivateIpAddress) -DestinationPort 80, 443 -Protocol TCP
+      $RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPUDRs -DestinationAddress $($nic.IpConfigurations[0].PrivateIpAddress), $HubVMIP -DestinationPort 3389 -Protocol TCP
+      $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRules" -Priority 100 -Rule $RuleWeb, $RuleRDP -ActionType "Allow"
+      $firewall.NetworkRuleCollections = $RuleCollection
+      Set-AzFirewall -AzureFirewall $firewall | Out-Null
+      $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
+
+# 7.8 Add SNAT rule to Firewall
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Configuring Firewall NAT Rules" -ForegroundColor Cyan
+$fwIP = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-Firewall-pip' -ErrorAction Stop
+If ($firewall.NatRuleCollections.Name -contains 'FWNATRules') {
+    Write-Host "  Firewall already configured, skipping"}
+Else {$NATRule80 = New-AzFirewallNatRule -Name "Web80NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 80 -TranslatedAddress $nic.IpConfigurations[0].PrivateIpAddress -TranslatedPort 80
+      $NATRule443 = New-AzFirewallNatRule -Name "Web443NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 443 -TranslatedAddress $nic.IpConfigurations[0].PrivateIpAddress -TranslatedPort 443
+      $NATRuleCollection = New-AzFirewallNatRuleCollection -Name "FWNATRules" -Priority 100 -Rule $NATRule80, $NATRule443
+      $firewall.NatRuleCollections = $NATRuleCollection
+      Set-AzFirewall -AzureFirewall $firewall | Out-Null}
+
 # 7.4 Run post deploy job (Install IIS)
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Waiting for the VM to deploy, this script will continue after 10 minutes or when the VM is built, whichever comes first." -ForegroundColor Cyan
@@ -188,41 +225,18 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Associating UDR Table to Spoke Tenant subnet" -ForegroundColor Cyan
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
 $sn = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant" -ErrorAction Stop
-$fwRouteTable = Get-AzRouteTable -Name $RGName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
+$fwRouteTable = Get-AzRouteTable -Name $HubVNetName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
 If ($null -eq $sn.RouteTable) {$sn.RouteTable = $fwRouteTable
                                Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null}
 Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
 
-# 7.7 Configure Firewall Rules
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Configuring Firewall" -ForegroundColor Cyan
-If ($firewall.NetworkRuleCollections.Rules.Name -contains 'WebAllow') {
-     Write-Host "  Firewall already configured, skipping"}
-Else {$RuleWeb = New-AzFirewallNetworkRule -Name "WebAllow" -SourceAddress * -DestinationAddress $IISIP -DestinationPort 80, 443 -Protocol TCP
-      $RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPUDRs -DestinationAddress $IISIP, $HubVMIP -DestinationPort 3389 -Protocol TCP
-      $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRules" -Priority 100 -Rule $RuleWeb, $RuleRDP -ActionType "Allow"
-      $firewall.NetworkRuleCollections = $RuleCollection
-      Set-AzFirewall -AzureFirewall $firewall | Out-Null
-      $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
-
-# 7.8 Add SNAT rule to Firewall
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Configuring Firewall" -ForegroundColor Cyan
-$fwIP = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-Firewall-pip' -ErrorAction Stop
-If ($firewall.NatRuleCollections.Name -contains 'FWNATRules') {
-    Write-Host "  Firewall already configured, skipping"}
-Else {$NATRule80 = New-AzFirewallNatRule -Name "Web80NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 80 -TranslatedAddress $nic.IpConfigurations[0].PrivateIpAddress -TranslatedPort 80
-      $NATRule443 = New-AzFirewallNatRule -Name "Web443NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 443 -TranslatedAddress $nic.IpConfigurations[0].PrivateIpAddress -TranslatedPort 443
-      $NATRuleCollection = New-AzFirewallNatRuleCollection -Name "FWNATRules" -Priority 100 -Rule $NATRule80, $NATRule443
-      $firewall.NatRuleCollections = $NATRuleCollection
-      Set-AzFirewall -AzureFirewall $firewall | Out-Null}
 
 # 7.9 Create Log Analytics workspace
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating Log Analytics Workspace" -ForegroundColor Cyan
-Try {Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs'
-     Write-Host "  Workspaces already exists, skipping"}
-Catch {New-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -Location westus2 -Sku pernode}
+Write-Host "Creating Log Analytics Workspace for monitoring collection" -ForegroundColor Cyan
+Try {Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -ErrorAction Stop | Out-Null
+     Write-Host "  Workspace already exists, skipping"}
+Catch {New-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -Location westus2 -Sku pernode | Out-Null}
 
 # 7.10 Wait for IIS installation to finish
 Write-Host (Get-Date)' - ' -NoNewline
@@ -237,7 +251,7 @@ Write-Host "  Also, use a browser to see your new Web Site"
 Write-Host "  The IIS Server (via NAT) is at" -NoNewline
 Write-Host "  HTTP://$($fwIP.IpAddress)" -ForegroundColor Yellow
 Write-Host
-Write-Host " You can also enable monitoring on the firewall and watch the logs."
-Write-Host " Usefull log queries can be found at:"
-Write-Host "https://docs.microsoft.com/en-us/azure/firewall/log-analytics-samples#network-rules-log-data-query" -ForegroundColor Yellow
+Write-Host "  You can also enable monitoring on the firewall and watch the logs."
+Write-Host "  Usefull log queries can be found at:"
+Write-Host "  https://docs.microsoft.com/en-us/azure/firewall/log-analytics-samples#network-rules-log-data-query" -ForegroundColor Yellow
 Write-Host

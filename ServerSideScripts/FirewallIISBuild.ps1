@@ -18,8 +18,8 @@ Catch {New-NetFirewallRule -DisplayName "Allow ICMPv4" -Name Allow_ICMPv4_in -Ac
        Write-Host "Port opened"}
 
 # Install IIS
-Write-Host "Installing IIS and .Net 4.5" -ForegroundColor Cyan
-add-windowsfeature Web-Server, Web-WebServer, Web-Common-Http, Web-Default-Doc, Web-Dir-Browsing, Web-Http-Errors, Web-Static-Content, Web-Health, Web-Http-Logging, Web-Performance, Web-Stat-Compression, Web-Security, Web-Filtering, Web-App-Dev, Web-ISAPI-Ext, Web-ISAPI-Filter, Web-Net-Ext, Web-Net-Ext45, Web-Asp-Net45, Web-Mgmt-Tools, Web-Mgmt-Console
+Write-Host "Installing IIS" -ForegroundColor Cyan
+Install-WindowsFeature Web-Server,Web-Asp-Net45
 
 # Create Web App PagesWeb
 Write-Host "Creating Web page and Web.Config file" -ForegroundColor Cyan
