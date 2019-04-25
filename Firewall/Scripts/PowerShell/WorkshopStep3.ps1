@@ -89,7 +89,7 @@ Catch {
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 2 completed successfully" -ForegroundColor Green
+Write-Host "Step 3 completed successfully" -ForegroundColor Green
 Write-Host "  Review your circuit in the Azure Portal, especially note the 'Provider status'"
 Write-Host "  The instructor will now contact the service provider to provision your circuit"
 Write-Host

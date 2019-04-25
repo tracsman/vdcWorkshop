@@ -17,10 +17,9 @@
 # 7.1 Validate and Initialize
 # 7.2 Create VNet
 # 7.3 Create the VM
-# 7.3.1 Create Public IP
-# 7.3.2 Create NSG
-# 7.3.3 Create NIC
-# 7.3.4 Build VM
+# 7.3.1 Create NSG
+# 7.3.2 Create NIC
+# 7.3.3 Build VM
 # 7.4 Configure Firewall Application Rules
 # 7.5 Configure Firewall Network Rules
 # 7.6 Add SNAT rule to Firewall
@@ -109,13 +108,7 @@ $kvs02 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $UserName02 -ErrorAc
 $kvs03 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $UserName03 -ErrorAction Stop 
 $cred = New-Object System.Management.Automation.PSCredential ($kvs01.Name, $kvs01.SecretValue)
 
-# 7.3.1 Create Public IP
-Write-Host "  Creating Public IP"
-Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -ErrorAction Stop
-     Write-Host "    Public IP exists, skipping"}
-Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -Location $ShortRegion -AllocationMethod Dynamic}
-
-# 7.3.2 Create NSG
+# 7.3.1 Create NSG
 Write-Host "  Creating NSG"
 Try {$nsg = Get-AzNetworkSecurityGroup -Name $VMName'-nic-nsg' -ResourceGroupName $RGName -ErrorAction Stop
 Write-Host "    NSG exists, skipping"}
@@ -130,10 +123,10 @@ Catch {$nsgRuleRDP = New-AzNetworkSecurityRuleConfig -Name "myNSGRuleRDP" -Proto
 # 7.3.3 Create NIC
 Write-Host "  Creating NIC"
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
-$sn =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
+$sn = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
 Try {$nic = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop
      Write-Host "    NIC exists, skipping"}
-Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -Location $ShortRegion -Subnet $sn -PublicIpAddress $pip -NetworkSecurityGroup $nsg}
+Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -Location $ShortRegion -Subnet $sn -NetworkSecurityGroup $nsg}
 
 # 7.3.4 Build VM
 Write-Host "  Creating VM"
@@ -150,16 +143,15 @@ Catch {$vmConfig = New-AzVMConfig -VMName $VMName -VMSize $VMSize -ErrorAction S
 # 7.4 Configure Firewall Application Rules
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Configuring Firewall Application Rules" -ForegroundColor Cyan
-If ($firewall.NetworkRuleCollections.Rules.Name -contains 'WebAllow') {
+If ($firewall.ApplicationRuleCollections.Name -contains 'FWAppRules') {
      Write-Host "  Firewall already configured, skipping"}
-Else {$RuleWeb = New-AzFirewallNetworkRule -Name "WebAllow" -SourceAddress * -DestinationAddress $($nic.IpConfigurations[0].PrivateIpAddress) -DestinationPort 80, 443 -Protocol TCP
-      $RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPUDRs -DestinationAddress $($nic.IpConfigurations[0].PrivateIpAddress), $HubVMIP -DestinationPort 3389 -Protocol TCP
-      $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRules" -Priority 100 -Rule $RuleWeb, $RuleRDP -ActionType "Allow"
-      $firewall.NetworkRuleCollections = $RuleCollection
+Else {$RuleSA = New-AzFirewallApplicationRule -Name 'StorageURLAllow' -SourceAddress * -TargetFqdn "vdcworkshop.blob.core.windows.net" -Protocol "Https:443"
+      $RuleCollection = New-AzFirewallApplicationRuleCollection -Name "FWAppRules" -Priority 100 -Rule $RuleSA -ActionType "Allow"
+      $firewall.ApplicationRuleCollections = $RuleCollection
       Set-AzFirewall -AzureFirewall $firewall | Out-Null
       $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
 
-# 7.7 Configure Firewall Network Rules
+# 7.5 Configure Firewall Network Rules
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Configuring Firewall Network Rules" -ForegroundColor Cyan
 If ($firewall.NetworkRuleCollections.Rules.Name -contains 'WebAllow') {
@@ -171,7 +163,7 @@ Else {$RuleWeb = New-AzFirewallNetworkRule -Name "WebAllow" -SourceAddress * -De
       Set-AzFirewall -AzureFirewall $firewall | Out-Null
       $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
 
-# 7.8 Add SNAT rule to Firewall
+# 7.6 Add SNAT rule to Firewall
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Configuring Firewall NAT Rules" -ForegroundColor Cyan
 $fwIP = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $RGName'-Firewall-pip' -ErrorAction Stop
@@ -181,9 +173,10 @@ Else {$NATRule80 = New-AzFirewallNatRule -Name "Web80NAT" -Protocol TCP -SourceA
       $NATRule443 = New-AzFirewallNatRule -Name "Web443NAT" -Protocol TCP -SourceAddress * -DestinationAddress $fwIP.IpAddress -DestinationPort 443 -TranslatedAddress $nic.IpConfigurations[0].PrivateIpAddress -TranslatedPort 443
       $NATRuleCollection = New-AzFirewallNatRuleCollection -Name "FWNATRules" -Priority 100 -Rule $NATRule80, $NATRule443
       $firewall.NatRuleCollections = $NATRuleCollection
-      Set-AzFirewall -AzureFirewall $firewall | Out-Null}
+      Set-AzFirewall -AzureFirewall $firewall | Out-Null
+      $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
 
-# 7.4 Run post deploy job (Install IIS)
+# 7.7 Run post deploy job (Install IIS)
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Waiting for the VM to deploy, this script will continue after 10 minutes or when the VM is built, whichever comes first." -ForegroundColor Cyan
 Get-Job -Command "New-AzVM" | Wait-Job -Timeout 600 | Out-Null
@@ -205,7 +198,7 @@ Catch {Write-Host "  queuing build job."
                          -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
                          -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 
-# 7.5 Peer VNets
+# 7.8 Peer VNets
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Hub to Spoke" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkPeering -Name "HubtoSpoke" -VirtualNetworkName $HubVNetName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
@@ -220,7 +213,7 @@ Try {Get-AzVirtualNetworkPeering -Name "SpoketoHub" -VirtualNetworkName $VNetNam
 Catch {Try {Add-AzVirtualNetworkPeering -Name "SpoketoHub" -VirtualNetwork $vnet -RemoteVirtualNetwork $hubvnet.Id -UseRemoteGateways -ErrorAction Stop | Out-Null}
 	   Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
-# 7.6 Assign Firewall UDR to subnet
+# 7.9 Assign Firewall UDR to subnet
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Associating UDR Table to Spoke Tenant subnet" -ForegroundColor Cyan
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
@@ -230,15 +223,14 @@ If ($null -eq $sn.RouteTable) {$sn.RouteTable = $fwRouteTable
                                Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null}
 Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
 
-
-# 7.9 Create Log Analytics workspace
+# 7.10 Create Log Analytics workspace
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Log Analytics Workspace for monitoring collection" -ForegroundColor Cyan
 Try {Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -ErrorAction Stop | Out-Null
      Write-Host "  Workspace already exists, skipping"}
 Catch {New-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -Location westus2 -Sku pernode | Out-Null}
 
-# 7.10 Wait for IIS installation to finish
+# 7.11 Wait for IIS installation to finish
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Waiting for IIS installation to finish, script will continue after 5 minutes or when the installation finishes, whichever is first." -ForegroundColor Cyan
 Get-Job -Command "Set-AzVMExtension" | Wait-Job -Timeout 300 | Out-Null
@@ -246,6 +238,8 @@ Get-Job -Command "Set-AzVMExtension" | Wait-Job -Timeout 300 | Out-Null
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 7 completed successfully" -ForegroundColor Green
+Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
+Write-Host
 Write-Host "  Review your new Spoke and it's components in the Azure Portal"
 Write-Host "  Also, use a browser to see your new Web Site"
 Write-Host "  The IIS Server (via NAT) is at" -NoNewline
@@ -254,4 +248,6 @@ Write-Host
 Write-Host "  You can also enable monitoring on the firewall and watch the logs."
 Write-Host "  Usefull log queries can be found at:"
 Write-Host "  https://docs.microsoft.com/en-us/azure/firewall/log-analytics-samples#network-rules-log-data-query" -ForegroundColor Yellow
+Write-Host
+Write-Host "  For extra credit, try adding Application rules to the firewall to surf to specific web sites from your Azure VMs"
 Write-Host
