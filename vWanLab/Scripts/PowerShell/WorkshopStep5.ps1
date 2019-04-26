@@ -24,8 +24,15 @@
 # 5.7 Pull vWAN details
 # 5.8 Configure the NetFoundry device
 # 5.8.1 Get NetFoundry OAuth Token and build common header
-# 5.8.2 Create NetFoundry Endpoint
-# 5.8.3 Register NetFoundry NVA device
+# 5.8.2 Get NetworkID
+# 5.8.3 Get DataCenterID
+# 5.8.4 Create NetFoundry Endpoint
+# 5.8.4.1 Check if Endpoint exists
+# 5.8.4.2 Create if Endpoint doesn't exist
+# 5.8.5 Create NetFoundry Gateway
+# 5.8.5.1 Check if Gateway exists
+# 5.8.5.2 Create if Gateway doesn't exist
+# 5.8.6 Register NetFoundry NVA device
 #
 
 # 5.1 Validate and Initialize
@@ -211,24 +218,29 @@ Foreach ($network in $networks._embedded.networks) {
 If ($ConnNetURI -eq "") {Write-Warning "Network was not found at NetFoundry, please contact the instuctor"
        Return}
 
+# 5.8.3 Get Data Center ID (Required for Endpoint Creation) 
+$ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/dataCenters/?locationCode=$ShortRegion"
+$datacenter = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
+$datacenter._links.self.href
+$DataCenterID = $datacenter._links.self.href.split("/")[6]
+
+# 5.8.4 Create NetFoundry Endpoint
 # Get Network Endpoints
 $ConnURI = $ConnNetURI + "/endpoints"
 $endpoints = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
 
-# Create Network Endpoint
+# 5.8.4.1 Check if Endpoint exists
 $EndPointExists = $False
 Foreach ($endpoint in $endpoints._embedded.endpoints) {
     If ($endpoint.Name -eq "$site01NameStub-vpn") {
               $response = $endpoints._embedded.endpoints    
               $EndPointExists = $true}
 }
+
+# 5.8.4.2 Create if Endpoint doesn't exist
 If ($EndPointExists) {Write-Host "  Endpoint already exists, skipping"}
 Else {Write-Host "  Submitting endpoint creation request"  
-      # Get Data Center ID (Required for Endpoint Creation) 
-      $ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/dataCenters/?locationCode=$ShortRegion"
-      $datacenter = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
-      $datacenter._links.self.href
-      $DataCenterID = $datacenter._links.self.href.split("/")[6]
+
 
       $ConnURI = $ConnNetURI + "/endpoints"
       $ConnBody = "{" + 
@@ -240,6 +252,11 @@ Else {Write-Host "  Submitting endpoint creation request"
                   "}"
       $response = Invoke-RestMethod -Method Post -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -Body $ConnBody -ErrorAction Stop
 }
+
+# 5.8.5 Create NetFoundry Gateway
+# 5.8.5.1 Check if Gateway exists
+# 5.8.5.2 Create if Gateway doesn't exist
+
 # 5.8.3 Instructions to register NetFoundry NVA device
 If ($response.registrationKey -eq "") {Write-Host "  Appliance is already activated, skipping"}
 Else {$RegKey = $response.registrationKey
