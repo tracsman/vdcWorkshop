@@ -51,8 +51,9 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 $ShortRegion = "westus2"
 $RGName = "Company" + $CompanyID
 $VNetName = "C" + $CompanyID + "-Spoke-VNet"
-$VNetAddress = "10.17." + $CompanyID + ".128/25"
-$snTenant = "10.17." + $CompanyID + ".128/26"
+$VNetAddress = ("10.17." + $CompanyID + ".128/25"), ("10.17." + $CompanyID + ".96/27")
+$snTenant = "10.17." + $CompanyID + ".96/27"
+$snCluster = "10.17." + $CompanyID + ".128/25"
 $HubVNetName = "C" + $CompanyID + "-VNet"
 $HubVMName = "C" + $CompanyID + "-VM01"
 $VMName = "C" + $CompanyID + "-Spoke-VM01"
@@ -95,9 +96,9 @@ Try {$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -Er
 Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -AddressPrefix $VNetAddress -Location $ShortRegion  
        Write-Host (Get-Date)' - ' -NoNewline
        Write-Host "Adding subnets" -ForegroundColor Cyan
+       Add-AzVirtualNetworkSubnetConfig -Name "Cluster" -VirtualNetwork $vnet -AddressPrefix $snCluster | Out-Null
        Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnet -AddressPrefix $snTenant | Out-Null
-       Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
-       }
+       Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null}
 
 # 7.3 Create the VM
 Write-Host (Get-Date)' - ' -NoNewline
