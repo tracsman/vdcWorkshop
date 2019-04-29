@@ -1,5 +1,4 @@
-﻿# Update Test
-#
+﻿#
 # Azure Firewall Workshop
 #
 # Use your corporate credentials to login (your @microsoft.com account) to Azure

@@ -51,9 +51,9 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 $ShortRegion = "westus2"
 $RGName = "Company" + $CompanyID
 $VNetName = "C" + $CompanyID + "-Spoke-VNet"
-$VNetAddress = ("10.17." + $CompanyID + ".128/25"), ("10.17." + $CompanyID + ".96/27")
-$snTenant = "10.17." + $CompanyID + ".96/27"
-$snCluster = "10.17." + $CompanyID + ".128/25"
+$VNetAddress = "10.17." + $CompanyID + ".128/25"
+$snCluster = "10.17." + $CompanyID + ".128/26"
+$snTenant = "10.17." + $CompanyID + ".192/26"
 $HubVNetName = "C" + $CompanyID + "-VNet"
 $HubVMName = "C" + $CompanyID + "-VM01"
 $VMName = "C" + $CompanyID + "-Spoke-VM01"
@@ -61,7 +61,7 @@ $VMSize = "Standard_A4_v2"
 $UserName01 = "User01"
 $UserName02 = "User02"
 $UserName03 = "User03"
-$RDPUDRs = ("10.17." + $CompanyID + ".0/27"), ("10.17." + $CompanyID + ".128/26"), ("10.3." + $CompanyID + ".0/25")
+$RDPUDRs = ("10.17." + $CompanyID + ".0/25"), ("10.17." + $CompanyID + ".128/25"), ("10.3." + $CompanyID + ".0/25")
 
 # Start nicely
 Write-Host
