@@ -65,7 +65,7 @@ Catch {# Login and set subscription for ARM
 
 #  3.2 Create ExpressRoute Circuit
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host 'Creating ExpressRoute Circuit in Washington DC' -ForegroundColor Cyan
+Write-Host "Creating ExpressRoute Circuit in $CircuitLocation" -ForegroundColor Cyan
 Try {Get-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitName -ErrorAction Stop | Out-Null
         Write-Host '  resource exists, skipping'}
 Catch {New-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitName -Location $ShortRegion `
