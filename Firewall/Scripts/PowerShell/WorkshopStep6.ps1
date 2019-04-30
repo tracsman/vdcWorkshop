@@ -43,8 +43,8 @@ $ShortRegion = "westus2"
 $RGName = "Company" + $CompanyID
 $VNetName = "C" + $CompanyID + "-VNet"
 $VMName = "C" + $CompanyID + "-VM01"
-$GatewayUDRs = ("10.17." + $CompanyID + ".0/27"), ("10.17." + $CompanyID + ".128/26")
-$RDPUDRs = ("10.17." + $CompanyID + ".0/27"), ("10.3." + $CompanyID + ".0/25")
+$GatewayUDRs = ("10.17." + $CompanyID + ".0/27"), ("10.17." + $CompanyID + ".128/25")
+$RDPRules = ("10.17." + $CompanyID + ".0/27"), ("10.3." + $CompanyID + ".0/25")
 
 # Start nicely
 Write-Host
@@ -92,7 +92,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Configuring Firewall Network Rules" -ForegroundColor Cyan
 If ($firewall.NetworkRuleCollections.Name -contains 'FWNetRules') {
      Write-Host "  Firewall already configured, skipping"}
-Else {$RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPUDRs -DestinationAddress $HubVMIP -DestinationPort 3389 -Protocol TCP
+Else {$RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPRules -DestinationAddress $HubVMIP -DestinationPort 3389 -Protocol TCP
       $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRules" -Priority 100 -Rule $RuleRDP -ActionType "Allow"
       $firewall.NetworkRuleCollections = $RuleCollection
       Set-AzFirewall -AzureFirewall $firewall | Out-Null

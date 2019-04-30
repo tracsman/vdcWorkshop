@@ -61,7 +61,7 @@ $VMSize = "Standard_A4_v2"
 $UserName01 = "User01"
 $UserName02 = "User02"
 $UserName03 = "User03"
-$RDPUDRs = ("10.17." + $CompanyID + ".0/25"), ("10.17." + $CompanyID + ".128/25"), ("10.3." + $CompanyID + ".0/25")
+$RDPRules = ("10.17." + $CompanyID + ".0/27"), ("10.17." + $CompanyID + ".128/25"), ("10.3." + $CompanyID + ".0/25")
 
 # Start nicely
 Write-Host
@@ -158,7 +158,7 @@ Write-Host "Configuring Firewall Network Rules" -ForegroundColor Cyan
 If ($firewall.NetworkRuleCollections.Rules.Name -contains 'WebAllow') {
      Write-Host "  Firewall already configured, skipping"}
 Else {$RuleWeb = New-AzFirewallNetworkRule -Name "WebAllow" -SourceAddress * -DestinationAddress $($nic.IpConfigurations[0].PrivateIpAddress) -DestinationPort 80, 443 -Protocol TCP
-      $RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPUDRs -DestinationAddress $($nic.IpConfigurations[0].PrivateIpAddress), $HubVMIP -DestinationPort 3389 -Protocol TCP
+      $RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPRules -DestinationAddress $($nic.IpConfigurations[0].PrivateIpAddress), $HubVMIP -DestinationPort 3389 -Protocol TCP
       $RuleCollection = New-AzFirewallNetworkRuleCollection -Name "FWNetRules" -Priority 100 -Rule $RuleWeb, $RuleRDP -ActionType "Allow"
       $firewall.NetworkRuleCollections = $RuleCollection
       Set-AzFirewall -AzureFirewall $firewall | Out-Null
