@@ -178,12 +178,12 @@ Get-AzVirtualWanVpnConfiguration -InputObject $wan -StorageSasUrl $sasURI -VpnSi
 # 5.7 Pull vWAN details
 # Get vWAN VPN Settings
 $URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
-$vWANConfig = Invoke-RestMethod $URI
+$vWANConfigs = Invoke-RestMethod $URI
 $myvWanConfig = ""
 foreach ($vWanConfig in $vWANConfigs) {
     if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site01-vpn")) {$myvWanConfig = $vWANConfig}
 }
-if ($myvWanConfig = "") {Write-Warning "vWAN Config for Site01 was not found, run Step 5";Return}
+if ($myvWanConfig -eq "") {Write-Warning "vWAN Config for Site01 was not found, run Step 5";Return}
 
 # 5.8 Configure the NetFoundry device
 # 5.8.1 Get NetFoundry OAuth Token and build common header
@@ -221,7 +221,6 @@ If ($ConnNetURI -eq "") {Write-Warning "Network was not found at NetFoundry, ple
 # 5.8.3 Get Data Center ID (Required for Endpoint Creation) 
 $ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/dataCenters/?locationCode=$ShortRegion"
 $datacenter = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
-$datacenter._links.self.href
 $DataCenterID = $datacenter._links.self.href.split("/")[6]
 
 # 5.8.4 Create NetFoundry Endpoint
