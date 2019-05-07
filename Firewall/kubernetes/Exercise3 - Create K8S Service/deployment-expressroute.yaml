@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: expressroute-content-demo-deployment
+  namespace: expressroute
+  labels:
+    app: expressroute-content
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: expressroute-content
+  template:
+    metadata:
+      labels:
+        app: expressroute-content
+    spec:
+      containers:
+      - name: expressroute-content-demo
+        image: azurecontnw/er-content-demo:onug
+        ports:
+        - containerPort: 80
