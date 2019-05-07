@@ -77,7 +77,7 @@ Catch {New-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitName -
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating ExpressRoute Gateway" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkGateway -Name $VNetName'-gw' -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
-     Write-Host "  resource exsists, skipping"}
+     Write-Host "  resource exists, skipping"}
 Catch {
     $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
     $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'GatewaySubnet' -VirtualNetwork $vnet
