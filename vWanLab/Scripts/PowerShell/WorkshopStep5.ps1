@@ -238,9 +238,7 @@ Foreach ($endpoint in $endpoints._embedded.endpoints) {
 
 # 5.8.4.2 Create if Endpoint doesn't exist
 If ($EndPointExists) {Write-Host "  Endpoint already exists, skipping"}
-Else {Write-Host "  Submitting endpoint creation request"  
-
-
+Else {Write-Host "  Submitting endpoint creation request"
       $ConnURI = $ConnNetURI + "/endpoints"
       $ConnBody = "{" + 
                   "  ""name"": ""$site01NameStub-vpn""," +
@@ -251,17 +249,67 @@ Else {Write-Host "  Submitting endpoint creation request"
                   "}"
       $response = Invoke-RestMethod -Method Post -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -Body $ConnBody -ErrorAction Stop
 }
+$EndPointID = $response._links.self.href.split("/")[8]
+$RegKey = $response.registrationKey
 
-# 5.8.5 Create NetFoundry Gateway
-# 5.8.5.1 Check if Gateway exists
-# 5.8.5.2 Create if Gateway doesn't exist
+###########  Under Constructions  ##############
+
+# 5.8.5 Create Az vWAN Site at NetFoundry
+# Get Subscriptions
+$ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/azureSubscriptions"
+$subscriptions = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
+$ConnSubURI = $subscriptions._embedded.azureSubscriptions._links.self.href
+
+# Get Azure vWAN Sites
+$ConnURI = $ConnSubURI + "/virtualWanSites"
+$vwansites = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
+
+# 5.8.5.1 Check if Az vWAN Site at NetFoundry exists
+$vWANSiteExists = $False
+Foreach ($vwansite in $vwansites._embedded.azureVirtualWanSites) {
+    If ($vwansite.name -eq "$site01NameStub-site") {
+              $response = $vwansite   
+              $vWANSiteExists = $true}
+}
+
+# 5.8.5.2 Create if Az vWAN Site at NetFoundry doesn't exist
+If ($vWANSiteExists) {Write-Host "  Az vWAN Site at NetFoundry already exists, skipping"}
+Else {Write-Host "  Submitting Az vWAN Site at NetFoundry creation request"  
+      $ConnURI = $ConnSubURI + "/virtualWanSites"
+      $ConnBody = "{`n" + 
+                  "  ""name"" : ""$site01NameStub-site"",`n" +
+                  "  ""endpointId"" : ""$EndPointID"",`n" +
+                  "  ""dataCenterId"" : ""$DataCenterID"",`n" +
+                  "  ""azureResourceGroupName"" : ""$hubRGName"",`n" +
+                  "  ""azureVirtualWanId"" : ""$($wan.Id)"",`n" +
+                  "  ""publicIpAddress"" : ""$ipRemotePeerSite1"",`n" +
+                  "  ""bgp"" : {`n" +
+                  "    ""localPeeringAddress"" : {`n" +
+                  "      ""ipAddress"" : ""$($vpnSites.BgpSettings.BgpPeeringAddress)"",`n" +
+                  "      ""asn"" : $($vpnSites.BgpSettings.Asn)`n" +
+                  "    },`n" +
+                  "    ""bgpPeerWeight"" : null,`n" +
+                  "    ""deviceLinkSpeed"" : 0,`n" +
+                  "    ""deviceVendor"" : null,`n" +
+                  "    ""deviceModel"" : null,`n" +
+                  "    ""neighborPeers"" : [ {`n" +
+                  "      ""ipAddress"" : null,`n" +
+                  "      ""asn"" : 0`n" +
+                  "    } ],`n" +
+                  "    ""advertiseLocal"" : true,`n" +
+                  "    ""advertisedPrefixes"" : [ ""$($vpnSites.AddressSpace.AddressPrefixes)"" ]`n" +
+                  "  }`n" +
+                  "}"
+      $response = Invoke-RestMethod -Method Post -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -Body $ConnBody -ErrorAction Stop
+}
+
+###########  Under Constructions  ##############
 
 # 5.8.3 Instructions to register NetFoundry NVA device
-If ($response.registrationKey -eq "") {Write-Host "  Appliance is already activated, skipping"}
-Else {$RegKey = $response.registrationKey
-       # Set a new alias to access the clipboard
-       New-Alias Out-Clipboard $env:SystemRoot\System32\Clip.exe -ErrorAction SilentlyContinue
-       $MyOutput = @"
+If ($RegKey -eq "") {Write-Host "  Appliance is already activated, skipping"}
+Else {# Set a new alias to access the clipboard
+      New-Alias Out-Clipboard $env:SystemRoot\System32\Clip.exe -ErrorAction SilentlyContinue
+      $MyOutput = @"
 The NetFoundry Appliance needs to be activated.
 To do this, open a new PowerShell window (but NOT an ISE window!)
 Run the following three commands:

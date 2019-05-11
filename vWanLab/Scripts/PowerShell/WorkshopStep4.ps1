@@ -39,7 +39,6 @@ If (Test-Path -Path $ScriptDir\init.txt) {
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
 # Non-configurable Variable Initialization (ie don't modify these)
-$ShortRegion = "westus2"
 $hubRGName = "Company" + $CompanyID + "-Hub01"
 $Az01RGName = "Company" + $CompanyID + "-Azure01"
 $Az02RGName = "Company" + $CompanyID + "-Azure02"

@@ -117,7 +117,7 @@ Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
        $VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/User01/.ssh/authorized_keys"
        $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic
        $VMConfig = Set-AzVMBootDiagnostics -VM $VMConfig -Disable
-       New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $VMConfig
+       New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $VMConfig | Out-Null
 }
 
 # 2.4 Create UDR Route Table

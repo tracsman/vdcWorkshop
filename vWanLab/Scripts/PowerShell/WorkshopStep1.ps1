@@ -90,7 +90,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Hub VPN Gateway" -ForegroundColor Cyan
 Try {Get-AzVpnGateway -ResourceGroupName $RGName -Name $vWANName'-Hub01-gw-vpn' -ErrorAction Stop | Out-Null
      Write-Host "  Hub VPN Gateway exists, skipping"}
-Catch {New-AzVpnGateway -ResourceGroupName $RGName -Name $vWANName'-Hub01-gw-vpn' -VpnGatewayScaleUnit 1 -VirtualHub $hub}
+Catch {New-AzVpnGateway -ResourceGroupName $RGName -Name $vWANName'-Hub01-gw-vpn' -VpnGatewayScaleUnit 1 -VirtualHub $hub | Out-Null}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
