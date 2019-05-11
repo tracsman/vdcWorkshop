@@ -145,6 +145,6 @@ If ($RouteTablesUpdated){
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 6 completed successfully" -ForegroundColor Green
 Write-Host "  Checkout the Firewall in the Azure portal."
-Write-Host "  Be sure to check out the Application rule collection for web traffic."
+Write-Host "  Be sure to check out the Application rule collection for RDP traffic."
 Write-Host "  Also, checkout the Route Table and it's association to the subnet"
 Write-Host

@@ -1,0 +1,52 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: imageclassifierweb
+  labels:
+    app: imageclassifierweb
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: imageclassifierweb
+  template:
+    metadata:
+      labels:
+        app: imageclassifierweb
+    spec:
+      containers:
+      - name: imageclassifierweb
+        image: kevingbb/imageclassifierweb:0.7
+        imagePullPolicy: Always
+        ports:
+        - name: http
+          containerPort: 80
+          protocol: TCP
+        resources:
+          limits:
+            memory: 1G
+            cpu: '1'
+          requests:
+            memory: 1G
+            cpu: '1'
+      dnsPolicy: ClusterFirst
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: imageclassifierweb
+  labels:
+    app: imageclassifierweb
+  annotations:
+    service.beta.kubernetes.io/azure-load-balancer-internal: "true"
+    service.beta.kubernetes.io/azure-load-balancer-internal-subnet: "Cluster"
+spec:
+  type: LoadBalancer
+  loadBalancerIP: "10.17.59.231"
+  ports:
+    - port: 80
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    app: imageclassifierweb

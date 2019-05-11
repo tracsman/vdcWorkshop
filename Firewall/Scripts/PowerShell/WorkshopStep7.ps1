@@ -247,7 +247,7 @@ Write-Host "  The IIS Server (via NAT) is at" -NoNewline
 Write-Host "  HTTP://$($fwIP.IpAddress)" -ForegroundColor Yellow
 Write-Host
 Write-Host "  You can also enable monitoring on the firewall and watch the logs."
-Write-Host "  Usefull log queries can be found at:"
+Write-Host "  Useful log queries can be found at:"
 Write-Host "  https://docs.microsoft.com/en-us/azure/firewall/log-analytics-samples#network-rules-log-data-query" -ForegroundColor Yellow
 Write-Host
 Write-Host "  For extra credit, try adding Application rules to the firewall to surf to specific web sites from your Azure VMs"

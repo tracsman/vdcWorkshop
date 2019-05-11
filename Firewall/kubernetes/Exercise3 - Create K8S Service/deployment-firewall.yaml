@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: firewall-content-demo-deployment
+  namespace: firewall
+  labels:
+    app: firewall-content
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: firewall-content
+  template:
+    metadata:
+      labels:
+        app: firewall-content
+    spec:
+      containers:
+      - name: firewall-content-demo
+        image: azurecontnw/firewall-content-demo:onug
+        ports:
+        - containerPort: 80

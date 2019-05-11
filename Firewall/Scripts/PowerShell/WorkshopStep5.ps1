@@ -77,7 +77,7 @@ Catch {Write-Warning "Private Peering isn't enabled on the ExpressRoute circuit.
 
 #  5.2 Create the connection between the ER Gateway and the ER Circuit
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Connecting Gateway to ExpressRoute in$($ckt.ServiceProviderProperties.PeeringLocation)" -ForegroundColor Cyan
+Write-Host "Connecting Gateway to ExpressRoute in $($ckt.ServiceProviderProperties.PeeringLocation)" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-conn" -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
     Write-Host '  connection exists, skipping'}
 Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetName"-gw" -ResourceGroupName $RGName

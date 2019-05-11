@@ -1,0 +1,10 @@
+Configure Azure Storage firewalls and virtual networks
+
+Azure Storage provides a layered security model. 
+This model enables you to secure your storage accounts to a specific set of supported networks. 
+When network rules are configured, only applications requesting data from over the specified 
+set of networks can access a storage account.
+
+An application that accesses a storage account when network rules are in effect requires proper 
+authorization on the request. Authorization is supported with Azure Active Directory (Azure AD) 
+credentials for blobs and queues, with a valid account access key, or with an SAS token.

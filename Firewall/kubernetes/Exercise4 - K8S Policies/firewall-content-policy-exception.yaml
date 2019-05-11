@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: firewall-content-policy
+  namespace: firewall
+spec:
+  podSelector:
+    matchLabels:
+      app: firewall-content
+  policyTypes:
+  - Ingress
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          purpose: firewall-content
+    - namespaceSelector:
+        matchLabels:
+          purpose: expressroute-content
+      podSelector:
+        matchLabels:
+          status: exception

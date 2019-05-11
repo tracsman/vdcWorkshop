@@ -1,0 +1,44 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: imageclassifierworker 
+  labels:
+    app: imageclassifierworker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: imageclassifierworker
+  template:
+    metadata:
+      labels:
+        app: imageclassifierworker
+    spec:
+      securityContext:
+        runAsGroup: 1000
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: imageclassifierworker
+          image: kevingbb/imageclassifierworker:0.4
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: API_BASE_URL
+              value: http://imageclassifierweb
+          volumeMounts:
+            - mountPath: /app/assets/images
+              name: fruitshare
+          resources:
+            limits:
+              memory: 1G
+              cpu: '1'
+            requests:
+              memory: 1G
+              cpu: '1'
+      volumes: 
+        - name: fruitshare
+          azureFile:
+            secretName: fruit-secret
+            shareName: fruit
+            readOnly: false
+      dnsPolicy: ClusterFirst
