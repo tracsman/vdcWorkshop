@@ -267,7 +267,7 @@ $vwansites = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -C
 # 5.8.5.1 Check if Az vWAN Site at NetFoundry exists
 $vWANSiteExists = $False
 Foreach ($vwansite in $vwansites._embedded.azureVirtualWanSites) {
-    If ($vwansite.name -eq "$site01NameStub-site") {
+    If ($vwansite.name -eq "$site01NameStub-vpn") {
               $response = $vwansite   
               $vWANSiteExists = $true}
 }
@@ -277,9 +277,10 @@ If ($vWANSiteExists) {Write-Host "  Az vWAN Site at NetFoundry already exists, s
 Else {Write-Host "  Submitting Az vWAN Site at NetFoundry creation request"  
       $ConnURI = $ConnSubURI + "/virtualWanSites"
       $ConnBody = "{`n" + 
-                  "  ""name"" : ""$site01NameStub-site"",`n" +
+                  "  ""name"" : ""$site01NameStub-vpn"",`n" +
                   "  ""endpointId"" : ""$EndPointID"",`n" +
                   "  ""dataCenterId"" : ""$DataCenterID"",`n" +
+                  "  ""azureId"" : ""$($vpnSite1.Id)"",`n" +
                   "  ""azureResourceGroupName"" : ""$hubRGName"",`n" +
                   "  ""azureVirtualWanId"" : ""$($wan.Id)"",`n" +
                   "  ""publicIpAddress"" : ""$ipRemotePeerSite1"",`n" +
@@ -292,11 +293,13 @@ Else {Write-Host "  Submitting Az vWAN Site at NetFoundry creation request"
                   "    ""deviceLinkSpeed"" : 0,`n" +
                   "    ""deviceVendor"" : null,`n" +
                   "    ""deviceModel"" : null,`n" +
+                  #"    ""neighborPeers"" : null`n" +
                   "    ""neighborPeers"" : [ {`n" +
                   "      ""ipAddress"" : null,`n" +
                   "      ""asn"" : 0`n" +
                   "    } ],`n" +
                   "    ""advertiseLocal"" : true,`n" +
+                  #"    ""advertisedPrefixes"" : """"`n" +
                   "    ""advertisedPrefixes"" : [ ""$($vpnSites.AddressSpace.AddressPrefixes)"" ]`n" +
                   "  }`n" +
                   "}"
