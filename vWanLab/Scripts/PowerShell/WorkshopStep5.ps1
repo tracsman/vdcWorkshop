@@ -280,7 +280,7 @@ Else {Write-Host "  Submitting Az vWAN Site at NetFoundry creation request"
                   "  ""name"" : ""$site01NameStub-vpn"",`n" +
                   "  ""endpointId"" : ""$EndPointID"",`n" +
                   "  ""dataCenterId"" : ""$DataCenterID"",`n" +
-                  "  ""azureId"" : ""$($vpnSite1.Id)"",`n" +
+                  #"  ""azureId"" : ""$($vpnSite1.Id)"",`n" +
                   "  ""azureResourceGroupName"" : ""$hubRGName"",`n" +
                   "  ""azureVirtualWanId"" : ""$($wan.Id)"",`n" +
                   "  ""publicIpAddress"" : ""$ipRemotePeerSite1"",`n" +
@@ -303,6 +303,7 @@ Else {Write-Host "  Submitting Az vWAN Site at NetFoundry creation request"
                   "    ""advertisedPrefixes"" : [ ""$($vpnSites.AddressSpace.AddressPrefixes)"" ]`n" +
                   "  }`n" +
                   "}"
+      $ConnBody
       $response = Invoke-RestMethod -Method Post -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -Body $ConnBody -ErrorAction Stop
 }
 
