@@ -116,7 +116,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating VNet Route Table" -ForegroundColor Cyan
 Try {$rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $NameStub'-VNet01-rt' -ErrorAction Stop
      Write-Host "  Route Table exists, skipping"}
-Catch {$rt = New-AzRouteTable -ResourceGroupName $RGName -Name $NameStub'-VNet01-rt' -location $ShortRegion
+Catch {$rt = New-AzRouteTable -ResourceGroupName $RGName -Name $NameStub'-VNet01-rt' -location $ShortRegion -DisableBgpRoutePropagation
        $rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $NameStub'-VNet01-rt' }
 
 # Add routes to the route table
