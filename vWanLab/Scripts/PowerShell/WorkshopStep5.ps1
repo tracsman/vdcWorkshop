@@ -150,40 +150,39 @@ Catch {New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01'
                            -SharedKey $site01PSK -EnableBgp -VpnConnectionProtocolType IKEv2 | Out-Null}
 
 # 5.5 Create a Blob Storage Account
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating Storage Account" -ForegroundColor Cyan
-Try {$sa = Get-AzStorageAccount -ResourceGroupName $SARGName –StorageAccountName $SAName -ErrorAction Stop
-     Write-Host "  Storage account exists, skipping"}
-Catch {$sa =New-AzStorageAccount -ResourceGroupName $SARGName –StorageAccountName $SAName -Location $ShortRegion -Type 'Standard_LRS'}
-$ctx=$sa.Context
-
-Try {$container = Get-AzStorageContainer -Name 'config' -Context $ctx -ErrorAction Stop
-Write-Host "  Container exists, skipping"}
-Catch {$container = New-AzStorageContainer -Name 'config' -Context $ctx -Permission Blob}
-
-Try {Get-AzStorageContainerStoredAccessPolicy -Container 'config' -Policy 'vWANConfig' -Context $ctx -ErrorAction Stop | Out-Null}
-Catch {$expiryTime = (Get-Date).AddDays(2)
-       New-AzStorageContainerStoredAccessPolicy -Container 'config' -Policy 'vWANConfig' -Permission rw -ExpiryTime $expiryTime -Context $ctx | Out-Null}
-$sasToken = New-AzStorageContainerSASToken -Name 'config' -Policy 'vWANConfig' -Context $ctx
-
-#$time=(Get-Date -format yyyyMMddHHmmss).ToString()
-$blobName ="vWANConfig.json"
-
-$sasURI = $container.CloudBlobContainer.Uri.AbsoluteUri +"/"+ $blobName + $sasToken
+#Write-Host (Get-Date)' - ' -NoNewline
+#Write-Host "Creating Storage Account" -ForegroundColor Cyan
+#Try {$sa = Get-AzStorageAccount -ResourceGroupName $SARGName –StorageAccountName $SAName -ErrorAction Stop
+#     Write-Host "  Storage account exists, skipping"}
+#Catch {$sa =New-AzStorageAccount -ResourceGroupName $SARGName –StorageAccountName $SAName -Location $ShortRegion -Type 'Standard_LRS'}
+#$ctx=$sa.Context
+#
+#Try {$container = Get-AzStorageContainer -Name 'config' -Context $ctx -ErrorAction Stop
+#Write-Host "  Container exists, skipping"}
+#Catch {$container = New-AzStorageContainer -Name 'config' -Context $ctx -Permission Blob}
+#
+#Try {Get-AzStorageContainerStoredAccessPolicy -Container 'config' -Policy 'vWANConfig' -Context $ctx -ErrorAction Stop | Out-Null}
+#Catch {$expiryTime = (Get-Date).AddDays(2)
+#       New-AzStorageContainerStoredAccessPolicy -Container 'config' -Policy 'vWANConfig' -Permission rw -ExpiryTime $expiryTime -Context $ctx | Out-Null}
+#$sasToken = New-AzStorageContainerSASToken -Name 'config' -Policy 'vWANConfig' -Context $ctx
+#
+#$blobName ="vWANConfig.json"
+#
+#$sasURI = $container.CloudBlobContainer.Uri.AbsoluteUri +"/"+ $blobName + $sasToken
 $vpnSites = Get-AzVpnSite -ResourceGroupName $hubRGName
-
+#
 # 5.6 Copy vWAN config to storage
-Get-AzVirtualWanVpnConfiguration -InputObject $wan -StorageSasUrl $sasURI -VpnSite $vpnSites -ErrorAction Stop | Out-Null
-
+#Get-AzVirtualWanVpnConfiguration -InputObject $wan -StorageSasUrl $sasURI -VpnSite $vpnSites -ErrorAction Stop | Out-Null
+#
 # 5.7 Pull vWAN details
 # Get vWAN VPN Settings
-$URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
-$vWANConfigs = Invoke-RestMethod $URI
-$myvWanConfig = ""
-foreach ($vWanConfig in $vWANConfigs) {
-    if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site01-vpn")) {$myvWanConfig = $vWANConfig}
-}
-if ($myvWanConfig -eq "") {Write-Warning "vWAN Config for Site01 was not found, run Step 5";Return}
+#$URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
+#$vWANConfigs = Invoke-RestMethod $URI
+#$myvWanConfig = ""
+#foreach ($vWanConfig in $vWANConfigs) {
+#    if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site01-vpn")) {$myvWanConfig = $vWANConfig}
+#}
+#if ($myvWanConfig -eq "") {Write-Warning "vWAN Config for Site01 was not found, run Step 5";Return}
 
 # 5.8 Configure the NetFoundry device
 # 5.8.1 Get NetFoundry OAuth Token and build common header
@@ -256,12 +255,13 @@ $RegKey = $response.registrationKey
 
 # 5.8.5 Create Az vWAN Site at NetFoundry
 # Get Subscriptions
-$ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/azureSubscriptions"
-$subscriptions = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
-$ConnSubURI = $subscriptions._embedded.azureSubscriptions._links.self.href
+#$ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/azureSubscriptions"
+#$subscriptions = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
+#$ConnSubURI = $subscriptions._embedded.azureSubscriptions._links.self.href
 
 # Get Azure vWAN Sites
-$ConnURI = $ConnSubURI + "/virtualWanSites"
+#$ConnURI = $ConnSubURI + "/virtualWanSites"
+$ConnURI = $ConnNetURI + "/virtualWanSites"
 $vwansites = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
 
 # 5.8.5.1 Check if Az vWAN Site at NetFoundry exists
@@ -275,12 +275,13 @@ Foreach ($vwansite in $vwansites._embedded.azureVirtualWanSites) {
 # 5.8.5.2 Create if Az vWAN Site at NetFoundry doesn't exist
 If ($vWANSiteExists) {Write-Host "  Az vWAN Site at NetFoundry already exists, skipping"}
 Else {Write-Host "  Submitting Az vWAN Site at NetFoundry creation request"  
-      $ConnURI = $ConnSubURI + "/virtualWanSites"
+      #$ConnURI = $ConnSubURI + "/virtualWanSites"
+      $ConnURI = $ConnNetURI + "/virtualWanSites"
       $ConnBody = "{`n" + 
                   "  ""name"" : ""$site01NameStub-vpn"",`n" +
                   "  ""endpointId"" : ""$EndPointID"",`n" +
                   "  ""dataCenterId"" : ""$DataCenterID"",`n" +
-                  "  ""azureId"" : ""$($vpnSite1.Id)"",`n" +
+                  #"  ""azureId"" : ""$($vpnSite1.Id)"",`n" +
                   "  ""azureResourceGroupName"" : ""$hubRGName"",`n" +
                   "  ""azureVirtualWanId"" : ""$($wan.Id)"",`n" +
                   "  ""publicIpAddress"" : ""$ipRemotePeerSite1"",`n" +
@@ -288,23 +289,29 @@ Else {Write-Host "  Submitting Az vWAN Site at NetFoundry creation request"
                   "    ""localPeeringAddress"" : {`n" +
                   "      ""ipAddress"" : ""$($vpnSites.BgpSettings.BgpPeeringAddress)"",`n" +
                   "      ""asn"" : $($vpnSites.BgpSettings.Asn)`n" +
-                  "    },`n" +
-                  "    ""bgpPeerWeight"" : null,`n" +
-                  "    ""deviceLinkSpeed"" : 0,`n" +
-                  "    ""deviceVendor"" : null,`n" +
-                  "    ""deviceModel"" : null,`n" +
+                  "    }`n" + #,`n" +
+                  #"    ""bgpPeerWeight"" : null,`n" +
+                  #"    ""deviceLinkSpeed"" : 0,`n" +
+                  #"    ""deviceVendor"" : null,`n" +
+                  #"    ""deviceModel"" : null,`n" +
                   #"    ""neighborPeers"" : null`n" +
-                  "    ""neighborPeers"" : [ {`n" +
-                  "      ""ipAddress"" : null,`n" +
-                  "      ""asn"" : 0`n" +
-                  "    } ],`n" +
-                  "    ""advertiseLocal"" : true,`n" +
+                  #"    ""neighborPeers"" : [ {`n" +
+                  #"      ""ipAddress"" : null,`n" +
+                  #"      ""asn"" : 0`n" +
+                  #"    } ],`n" +
+                  #"    ""advertiseLocal"" : true,`n" +
                   #"    ""advertisedPrefixes"" : """"`n" +
-                  "    ""advertisedPrefixes"" : [ ""$($vpnSites.AddressSpace.AddressPrefixes)"" ]`n" +
+                  #"    ""advertisedPrefixes"" : [ ""$($vpnSites.AddressSpace.AddressPrefixes)"" ]`n" +
                   "  }`n" +
                   "}"
       $response = Invoke-RestMethod -Method Post -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -Body $ConnBody -ErrorAction Stop
 }
+$vWANSiteID = $response._links.self.href.split("/")[8]
+
+# 5.8.5.3 Deploy Az vWAN Site
+$ConnURI = $vWANSiteID + "/deploy"
+$response = Invoke-RestMethod -Method Put -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
+
 
 ###########  Under Constructions  ##############
 
