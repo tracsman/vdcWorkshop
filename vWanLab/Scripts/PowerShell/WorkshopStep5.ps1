@@ -17,22 +17,19 @@
 # Step 5 Configure and Connect Site 1 (NetFoundry) using the partner experience
 # 5.1 Validate and Initialize
 # 5.2 Notifiy student of NetFoundry onboarding process
-# 5.3 Create Site 01 in the Hub
-# 5.4 Associate Site 01 to the vWAN hub (neither the tunnel nor BGP will come up until step 5.4 is completed)
-# 5.5 Create a Blob Storage Account
-# 5.6 Copy vWAN config to storage
-# 5.7 Pull vWAN details
-# 5.8 Configure the NetFoundry device
-# 5.8.1 Get NetFoundry OAuth Token and build common header
-# 5.8.2 Get NetworkID
-# 5.8.3 Get DataCenterID
-# 5.8.4 Create NetFoundry Endpoint
-# 5.8.4.1 Check if Endpoint exists
-# 5.8.4.2 Create if Endpoint doesn't exist
-# 5.8.5 Create NetFoundry Gateway
-# 5.8.5.1 Check if Gateway exists
-# 5.8.5.2 Create if Gateway doesn't exist
-# 5.8.6 Register NetFoundry NVA device
+# 5.3 Configure the NetFoundry device
+# 5.3.1 Get NetFoundry OAuth Token and build common header
+# 5.3.2 Get NetworkID
+# 5.3.3 Get DataCenterID
+# 5.3.4 Create NetFoundry Endpoint
+# 5.3.4.1 Check if Endpoint exists
+# 5.3.4.2 Create if Endpoint doesn't exist
+# 5.3.5 Create NetFoundry Gateway
+# 5.3.5.1 Check if Gateway exists
+# 5.3.5.2 Create if Gateway doesn't exist
+# 5.3.5.3 Deploy Az vWAN Site
+# 5.4 Associate Site 01 to the vWAN hub
+# 5.5 Instructions to register NetFoundry NVA device
 #
 
 # 5.1 Validate and Initialize
@@ -64,10 +61,6 @@ $site01NameStub = "C" + $CompanyID + "-Site01"
 $site01VNetName = $site01NameStub + "-VNet01"
 $site01BGPASN = "65002"
 $site01BGPIP = "10.17." + $CompanyID +".133"
-$site01Key = 'Th3$ecret'
-$site01PSK = ConvertTo-SecureString -String $site01Key -AsPlainText -Force
-$SARGName = "Company" + $CompanyID
-$SAName = "company" + $CompanyID + "vwanconfig"
 
 # Start nicely
 Write-Host
@@ -89,7 +82,7 @@ Catch {# Login and set subscription for ARM
               Return}
 }
 
-# Initialize vWAN, Hub gateway and VNet01 variables
+# Initialize vWAN, Hub gateway variables and check for Site01
 Try {$wan=Get-AzVirtualWan -ResourceGroupName $hubRGName -Name $hubNameStub}
 Catch {Write-Warning "vWAN wasn't found, please run step 1 before running this script"
        Return}
@@ -98,7 +91,7 @@ Try {$hubgw=Get-AzVpnGateway -ResourceGroupName $hubRGName -Name $hubName'-gw-vp
 Catch {Write-Warning "Hub gateway wasn't found, please run step 1 before running this script"
        Return}
 
-Try {$vnet01=Get-AzVirtualNetwork -ResourceGroupName $site01RGName -Name $site01VNetName -ErrorAction Stop}
+Try {Get-AzVirtualNetwork -ResourceGroupName $site01RGName -Name $site01VNetName -ErrorAction Stop | Out-Null}
 Catch {Write-Warning "Site 1 wasn't found, please run step 0 before running this script"
        Return}
 
@@ -121,6 +114,10 @@ $NetFoundryOrgID = (Get-AzKeyVaultSecret -VaultName $kvName -Name "NetFoundryOrg
 If ($null -eq $NetFoundryOrgID) {Write-Warning "NetFoundry Org ID not found, please see the instructor"
        Return}
 
+# Ensure NetFoundry SP is on the Hub Resource Group
+If ($null -eq (Get-AzRoleAssignment -ObjectId "abf6f2a4-d951-438e-8ff7-4f9360d8973b" -RoleDefinitionName "Contributor" -ResourceGroupName $hubRGName)) {
+               New-AzRoleAssignment -ObjectId "abf6f2a4-d951-438e-8ff7-4f9360d8973b" -RoleDefinitionName "Contributor" -ResourceGroupName $hubRGName}
+
 # 5.2 Notifiy student of NetFoundry onboarding process
 Write-Host
 Write-Host "This script does many behind the scenes operations to make the onboarding process quicker and easy."
@@ -130,62 +127,8 @@ Write-Host "https://netfoundry.zendesk.com/hc/en-us/articles/360018137891-Create
 Write-Host
 Write-Host
 
-# 5.3 Create Site 01 in the Hub
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating Site 01 object in the vWAN hub" -ForegroundColor Cyan
-
-Try {$vpnSite1 = Get-AzVpnSite -ResourceGroupName $hubRGName -Name $site01NameStub'-vpn' -ErrorAction Stop 
-     Write-Host "  Site 01 exists, skipping"}
-Catch {$vpnSite1 = New-AzVpnSite -ResourceGroupName $hubRGName -Name $site01NameStub'-vpn' -Location $ShortRegion `
-                   -AddressSpace $vnet01.AddressSpace.AddressPrefixes -VirtualWanResourceGroupName $hubRGName `
-                   -VirtualWanName $hubNameStub -IpAddress $ipRemotePeerSite1 -BgpAsn $site01BGPASN `
-                   -BgpPeeringAddress $site01BGPIP -BgpPeeringWeight 0}
-
-# 5.4 Associate Site 01 to the vWAN hub (neither the tunnel nor BGP will come up until step 5.4 is completed)
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Associating Site 01 to the vWAN hub" -ForegroundColor Cyan
-Try {Get-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -ErrorAction Stop | Out-Null
-     Write-Host "  Site 01 association exists, skipping"}
-Catch {New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -VpnSite $vpnSite1 `
-                           -SharedKey $site01PSK -EnableBgp -VpnConnectionProtocolType IKEv2 | Out-Null}
-
-# 5.5 Create a Blob Storage Account
-#Write-Host (Get-Date)' - ' -NoNewline
-#Write-Host "Creating Storage Account" -ForegroundColor Cyan
-#Try {$sa = Get-AzStorageAccount -ResourceGroupName $SARGName –StorageAccountName $SAName -ErrorAction Stop
-#     Write-Host "  Storage account exists, skipping"}
-#Catch {$sa =New-AzStorageAccount -ResourceGroupName $SARGName –StorageAccountName $SAName -Location $ShortRegion -Type 'Standard_LRS'}
-#$ctx=$sa.Context
-#
-#Try {$container = Get-AzStorageContainer -Name 'config' -Context $ctx -ErrorAction Stop
-#Write-Host "  Container exists, skipping"}
-#Catch {$container = New-AzStorageContainer -Name 'config' -Context $ctx -Permission Blob}
-#
-#Try {Get-AzStorageContainerStoredAccessPolicy -Container 'config' -Policy 'vWANConfig' -Context $ctx -ErrorAction Stop | Out-Null}
-#Catch {$expiryTime = (Get-Date).AddDays(2)
-#       New-AzStorageContainerStoredAccessPolicy -Container 'config' -Policy 'vWANConfig' -Permission rw -ExpiryTime $expiryTime -Context $ctx | Out-Null}
-#$sasToken = New-AzStorageContainerSASToken -Name 'config' -Policy 'vWANConfig' -Context $ctx
-#
-#$blobName ="vWANConfig.json"
-#
-#$sasURI = $container.CloudBlobContainer.Uri.AbsoluteUri +"/"+ $blobName + $sasToken
-$vpnSites = Get-AzVpnSite -ResourceGroupName $hubRGName
-#
-# 5.6 Copy vWAN config to storage
-#Get-AzVirtualWanVpnConfiguration -InputObject $wan -StorageSasUrl $sasURI -VpnSite $vpnSites -ErrorAction Stop | Out-Null
-#
-# 5.7 Pull vWAN details
-# Get vWAN VPN Settings
-#$URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
-#$vWANConfigs = Invoke-RestMethod $URI
-#$myvWanConfig = ""
-#foreach ($vWanConfig in $vWANConfigs) {
-#    if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site01-vpn")) {$myvWanConfig = $vWANConfig}
-#}
-#if ($myvWanConfig -eq "") {Write-Warning "vWAN Config for Site01 was not found, run Step 5";Return}
-
-# 5.8 Configure the NetFoundry device
-# 5.8.1 Get NetFoundry OAuth Token and build common header
+# 5.3 Configure the NetFoundry device
+# 5.3.1 Get NetFoundry OAuth Token and build common header
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Create NetFoundry Endpoint (register applicance with NetFoundry controller)" -ForegroundColor Cyan
 Write-Host "  Getting OAuth token"
@@ -202,7 +145,7 @@ $ConnHeader = @{"Authorization" = "Bearer $($token.access_token)"
                 "Cache-Control" = "no-cache"
                 "NF-OrganizationId" = "$NetFoundryOrgID"}
 
-# 5.8.2 Create NetFoundry Endpoint
+# 5.3.2 Create NetFoundry Endpoint
 # List Networks
 $ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/networks"
 $networks = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
@@ -217,17 +160,17 @@ Foreach ($network in $networks._embedded.networks) {
 If ($ConnNetURI -eq "") {Write-Warning "Network was not found at NetFoundry, please contact the instuctor"
        Return}
 
-# 5.8.3 Get Data Center ID (Required for Endpoint Creation) 
+# 5.3.3 Get Data Center ID (Required for Endpoint Creation) 
 $ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/dataCenters/?locationCode=$ShortRegion"
 $datacenter = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
 $DataCenterID = $datacenter._links.self.href.split("/")[6]
 
-# 5.8.4 Create NetFoundry Endpoint
+# 5.3.4 Create NetFoundry Endpoint
 # Get Network Endpoints
 $ConnURI = $ConnNetURI + "/endpoints"
 $endpoints = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
 
-# 5.8.4.1 Check if Endpoint exists
+# 5.3.4.1 Check if Endpoint exists
 $EndPointExists = $False
 Foreach ($endpoint in $endpoints._embedded.endpoints) {
     If ($endpoint.Name -eq "$site01NameStub-vpn") {
@@ -235,7 +178,7 @@ Foreach ($endpoint in $endpoints._embedded.endpoints) {
               $EndPointExists = $true}
 }
 
-# 5.8.4.2 Create if Endpoint doesn't exist
+# 5.3.4.2 Create if Endpoint doesn't exist
 If ($EndPointExists) {Write-Host "  Endpoint already exists, skipping"}
 Else {Write-Host "  Submitting endpoint creation request"
       $ConnURI = $ConnNetURI + "/endpoints"
@@ -251,20 +194,17 @@ Else {Write-Host "  Submitting endpoint creation request"
 $EndPointID = $response._links.self.href.split("/")[8]
 $RegKey = $response.registrationKey
 
-###########  Under Constructions  ##############
-
-# 5.8.5 Create Az vWAN Site at NetFoundry
+# 5.3.5 Create Az vWAN Site at NetFoundry
 # Get Subscriptions
-#$ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/azureSubscriptions"
-#$subscriptions = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
-#$ConnSubURI = $subscriptions._embedded.azureSubscriptions._links.self.href
+$ConnURI = "https://gateway.staging.netfoundry.io/rest/v1/azureSubscriptions"
+$subscriptions = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
+$nfSubscriptionId = $subscriptions._embedded.azureSubscriptions._links.self.href.split("/")[6]
 
 # Get Azure vWAN Sites
-#$ConnURI = $ConnSubURI + "/virtualWanSites"
 $ConnURI = $ConnNetURI + "/virtualWanSites"
 $vwansites = Invoke-RestMethod -Method Get -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
 
-# 5.8.5.1 Check if Az vWAN Site at NetFoundry exists
+# 5.3.5.1 Check if Az vWAN Site at NetFoundry exists
 $vWANSiteExists = $False
 Foreach ($vwansite in $vwansites._embedded.azureVirtualWanSites) {
     If ($vwansite.name -eq "$site01NameStub-vpn") {
@@ -272,51 +212,43 @@ Foreach ($vwansite in $vwansites._embedded.azureVirtualWanSites) {
               $vWANSiteExists = $true}
 }
 
-# 5.8.5.2 Create if Az vWAN Site at NetFoundry doesn't exist
+# 5.3.5.2 Create if Az vWAN Site at NetFoundry doesn't exist
 If ($vWANSiteExists) {Write-Host "  Az vWAN Site at NetFoundry already exists, skipping"}
 Else {Write-Host "  Submitting Az vWAN Site at NetFoundry creation request"  
-      #$ConnURI = $ConnSubURI + "/virtualWanSites"
       $ConnURI = $ConnNetURI + "/virtualWanSites"
       $ConnBody = "{`n" + 
                   "  ""name"" : ""$site01NameStub-vpn"",`n" +
                   "  ""endpointId"" : ""$EndPointID"",`n" +
                   "  ""dataCenterId"" : ""$DataCenterID"",`n" +
-                  #"  ""azureId"" : ""$($vpnSite1.Id)"",`n" +
+                  "  ""azureSubscriptionId"" : ""$nfSubscriptionId"",`n" +
                   "  ""azureResourceGroupName"" : ""$hubRGName"",`n" +
                   "  ""azureVirtualWanId"" : ""$($wan.Id)"",`n" +
                   "  ""publicIpAddress"" : ""$ipRemotePeerSite1"",`n" +
                   "  ""bgp"" : {`n" +
                   "    ""localPeeringAddress"" : {`n" +
-                  "      ""ipAddress"" : ""$($vpnSites.BgpSettings.BgpPeeringAddress)"",`n" +
-                  "      ""asn"" : $($vpnSites.BgpSettings.Asn)`n" +
+                  "      ""ipAddress"" : ""$site01BGPIP"",`n" +
+                  "      ""asn"" : $site01BGPASN`n" +
                   "    }`n" + #,`n" +
-                  #"    ""bgpPeerWeight"" : null,`n" +
-                  #"    ""deviceLinkSpeed"" : 0,`n" +
-                  #"    ""deviceVendor"" : null,`n" +
-                  #"    ""deviceModel"" : null,`n" +
-                  #"    ""neighborPeers"" : null`n" +
-                  #"    ""neighborPeers"" : [ {`n" +
-                  #"      ""ipAddress"" : null,`n" +
-                  #"      ""asn"" : 0`n" +
-                  #"    } ],`n" +
-                  #"    ""advertiseLocal"" : true,`n" +
-                  #"    ""advertisedPrefixes"" : """"`n" +
-                  #"    ""advertisedPrefixes"" : [ ""$($vpnSites.AddressSpace.AddressPrefixes)"" ]`n" +
                   "  }`n" +
                   "}"
-      $ConnBody
+      $ConnBody | Out-Clipboard
       $response = Invoke-RestMethod -Method Post -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -Body $ConnBody -ErrorAction Stop
 }
-$vWANSiteID = $response._links.self.href.split("/")[8]
+$vWANSiteID = $response._links.self.href
 
-# 5.8.5.3 Deploy Az vWAN Site
+# 5.3.5.3 Deploy Az vWAN Site
 $ConnURI = $vWANSiteID + "/deploy"
 $response = Invoke-RestMethod -Method Put -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
 
+# 5.4 Associate Site 01 to the vWAN hub
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Associating Site 01 to the vWAN hub" -ForegroundColor Cyan
+Try {Get-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -ErrorAction Stop | Out-Null
+     Write-Host "  Site 01 association exists, skipping"}
+Catch {New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -VpnSite $vpnSite1 `
+                           -EnableBgp -VpnConnectionProtocolType IKEv2 | Out-Null}
 
-###########  Under Constructions  ##############
-
-# 5.8.3 Instructions to register NetFoundry NVA device
+# 5.5 Instructions to register NetFoundry NVA device
 If ($RegKey -eq "") {Write-Host "  Appliance is already activated, skipping"}
 Else {# Set a new alias to access the clipboard
       New-Alias Out-Clipboard $env:SystemRoot\System32\Clip.exe -ErrorAction SilentlyContinue
@@ -329,7 +261,7 @@ Run the following three commands:
        sudo systemctl status dvn | grep Active
 
 The first command will open a Shell to the NetFoundry device
-the Second command will register the device
+The Second command will register the device
 The thrid command will show the status of the service on the device and should be "running"
 You many now close the command window (type exit twice)
 "@
