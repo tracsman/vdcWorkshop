@@ -231,7 +231,6 @@ Else {Write-Host "  Submitting Az vWAN Site at NetFoundry creation request"
                   "    }`n" + #,`n" +
                   "  }`n" +
                   "}"
-      $ConnBody | Out-Clipboard
       $response = Invoke-RestMethod -Method Post -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -Body $ConnBody -ErrorAction Stop
 }
 $vWANSiteID = $response._links.self.href
@@ -245,7 +244,11 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Associating Site 01 to the vWAN hub" -ForegroundColor Cyan
 Try {Get-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -ErrorAction Stop | Out-Null
      Write-Host "  Site 01 association exists, skipping"}
-Catch {New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -VpnSite $vpnSite1 `
+Catch {$vpnSites = Get-AzVpnSite -ResourceGroupName $hubRGName
+       Foreach ($Site in $vpnSites ) {
+              If ($Site.Name -eq "$site01NameStub-vpn") {$vpnSite1 = $Site}
+       }
+       New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -VpnSite $vpnSite1 `
                            -EnableBgp -VpnConnectionProtocolType IKEv2 | Out-Null}
 
 # 5.5 Instructions to register NetFoundry NVA device
