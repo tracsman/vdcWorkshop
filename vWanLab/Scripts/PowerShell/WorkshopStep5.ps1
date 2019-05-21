@@ -260,7 +260,7 @@ The NetFoundry Appliance needs to be activated.
 To do this, open a new PowerShell window (but NOT an ISE window!)
 Run the following three commands:
        ssh.exe User01@$ipRemotePeerSite1
-       sudo nfnreg -a $RegKey
+       sudo nfnreg -e staging $RegKey
        sudo systemctl status dvn | grep Active
 
 The first command will open a Shell to the NetFoundry device
