@@ -240,16 +240,16 @@ $ConnURI = $vWANSiteID + "/deploy"
 $response = Invoke-RestMethod -Method Put -Uri $ConnURI -Headers $ConnHeader -ContentType "application/json" -ErrorAction Stop
 
 # 5.4 Associate Site 01 to the vWAN hub
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Associating Site 01 to the vWAN hub" -ForegroundColor Cyan
-Try {Get-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -ErrorAction Stop | Out-Null
-     Write-Host "  Site 01 association exists, skipping"}
-Catch {$vpnSites = Get-AzVpnSite -ResourceGroupName $hubRGName
-       Foreach ($Site in $vpnSites ) {
-              If ($Site.Name -eq "$site01NameStub-vpn") {$vpnSite1 = $Site}
-       }
-       New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -VpnSite $vpnSite1 `
-                           -EnableBgp -VpnConnectionProtocolType IKEv2 | Out-Null}
+#Write-Host (Get-Date)' - ' -NoNewline
+#Write-Host "Associating Site 01 to the vWAN hub" -ForegroundColor Cyan
+#Try {Get-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -ErrorAction Stop | Out-Null
+#     Write-Host "  Site 01 association exists, skipping"}
+#Catch {$vpnSites = Get-AzVpnSite -ResourceGroupName $hubRGName
+#       Foreach ($Site in $vpnSites ) {
+#              If ($Site.Name -eq "$site01NameStub-vpn") {$vpnSite1 = $Site}
+#       }
+#       New-AzVpnConnection -ParentObject $hubgw -Name $hubName'-conn-vpn-Site01' -VpnSite $vpnSite1 `
+#                           -EnableBgp -VpnConnectionProtocolType IKEv2 | Out-Null}
 
 # 5.5 Instructions to register NetFoundry NVA device
 If ($RegKey -eq "") {Write-Host "  Appliance is already activated, skipping"}
