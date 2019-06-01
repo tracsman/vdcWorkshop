@@ -148,7 +148,7 @@ $myvWanConfig = ""
 foreach ($vWanConfig in $vWANConfigs) {
     if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site02-vpn")) {$myvWanConfig = $vWANConfig}
 }
-if ($myvWanConfig = "") {Write-Warning "vWAN Config for Site02 was not found, run Step 5";Return}
+If ($myvWanConfig = "") {Write-Warning "vWAN Config for Site02 was not found, run Step 5";Return}
 
 # 6.7 Provide configuration instructions
 ."$ScriptDir\Get-CiscoConfig.ps1"

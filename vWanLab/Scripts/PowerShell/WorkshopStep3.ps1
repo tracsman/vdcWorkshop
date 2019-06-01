@@ -107,7 +107,7 @@ Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
        $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $NameStub'-Router01-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
        $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "cisco" -Offer "cisco-csr-1000v" -Skus "csr-azure-byol" -Version latest
        $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic
-       $VMConfig = Set-AzVMBootDiagnostics -VM $VMConfig -Disable
+       $VMConfig = Set-AzVMBootDiagnostic -VM $VMConfig -Disable
        New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $VMConfig | Out-Null
 }
 
