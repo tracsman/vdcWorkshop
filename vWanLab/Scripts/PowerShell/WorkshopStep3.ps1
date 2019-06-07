@@ -21,7 +21,8 @@
 # 3.3.1 Create Public IP
 # 3.3.2 Create NSG
 # 3.3.3 Create NIC
-# 3.3.4 Build VM
+# 3.3.4 Create Public and Private RSA keys
+# 3.3.5 Build VM
 # 3.4 Create UDR Route Table
 
 # 3.1 Accept Marketplace Terms
@@ -95,7 +96,14 @@ Try {$nic = Get-AzNetworkInterface  -ResourceGroupName $RGName -Name $NameStub'-
      Write-Host "  NIC exists, skipping"}
 Catch {$nic = New-AzNetworkInterface  -ResourceGroupName $RGName -Name $NameStub'-Router01-nic' -Location $ShortRegion -Subnet $sn -PublicIpAddress $pip -NetworkSecurityGroup $nsg -EnableIPForwarding}
 
-# 3.3.4 Build VM
+# 3.3.4 Create Public and Private RSA keys
+$FileName = "id_rsa"
+If (-not (Test-Path -Path "$HOME\.ssh\")) {New-Item "$HOME\.ssh\" -ItemType Directory | Out-Null}
+If (-not (Test-Path -Path "$HOME\.ssh\$FileName")) {ssh-keygen.exe -t rsa -b 2048 -f "$HOME\.ssh\$FileName" -P """" | Out-Null}
+Else {Write-Host "  Key Files exists, skipping"}
+$PublicKey =  Get-Content "$HOME\.ssh\$FileName.pub"
+
+# 3.3.5 Build VM
 # Get-AzVMImage -Location westus2 -Offer cisco-csr-1000v -PublisherName cisco -Skus csr-azure-byol -Version latest
 $kvs = Get-AzKeyVaultSecret -VaultName $KVName -Name "User01" -ErrorAction Stop
 $cred = New-Object System.Management.Automation.PSCredential ($kvs.Name, $kvs.SecretValue)
@@ -106,6 +114,7 @@ Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
        $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $NameStub'-Router01' -Credential $cred
        $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $NameStub'-Router01-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
        $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "cisco" -Offer "cisco-csr-1000v" -Skus "csr-azure-byol" -Version latest
+       $VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/User01/.ssh/authorized_keys"
        $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic
        $VMConfig = Set-AzVMBootDiagnostic -VM $VMConfig -Disable
        New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $VMConfig | Out-Null

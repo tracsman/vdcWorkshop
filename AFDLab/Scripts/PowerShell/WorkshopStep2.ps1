@@ -32,7 +32,6 @@ If (Test-Path -Path $ScriptDir\init.txt) {
         Catch {Set-Variable -Name $var[0].Trim() -Value $var[1].Trim()}}}
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
-
 # Non-configurable Variable Initialization (ie don't modify these)
 $SubID = 'e4a176ec-f695-407c-8eeb-185fb94076b8'
 $ResourceGroup = "Company" + $CompanyID.PadLeft(2,"0")

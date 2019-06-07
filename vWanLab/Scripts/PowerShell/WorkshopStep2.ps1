@@ -106,7 +106,7 @@ $PublicKey =  Get-Content "$HOME\.ssh\$FileName.pub"
 # 2.3.5 Build VM
 # Get-AzVMImage -Location westus2 -Offer netfoundry_cloud_gateway -PublisherName tata_communications -Skus netfoundry-cloud-gateway -Version 2.13.0
 $kvs = Get-AzKeyVaultSecret -VaultName $KVName -Name "User01" -ErrorAction Stop
-$cred = New-Object System.Management.Automation.PSCredential ($kvs.Name, $kvs.SecretValue)
+$cred = New-Object System.Management.Automation.PSCredential ("nfadmin", $kvs.SecretValue)
 Try {Get-AzVM -ResourceGroupName $RGName -Name $NameStub'-Router01' -ErrorAction Stop | Out-Null
      Write-Host "  NetFoundry Router exists, skipping"}
 Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
@@ -114,10 +114,7 @@ Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
        $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $NameStub'-Router01' -Credential $cred
        $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $NameStub'-Router01-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
        $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "tata_communications" -Offer "netfoundry_cloud_gateway" -Skus "netfoundry-cloud-gateway" -Version Latest
-       #$VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "tata_communications" -Offer "netfoundry_cloud_gateway" -Skus "netfoundry-cloud-gateway" -Version "4.15.57416072"
-       #$VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "tata_communications" -Offer "netfoundry_cloud_gateway" -Skus "netfoundry-cloud-gateway" -Version "2.16.1"
-       #$VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "tata_communications" -Offer "netfoundry_cloud_gateway" -Skus "netfoundry-cloud-gateway" -Version "2.13.0"
-       $VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/User01/.ssh/authorized_keys"
+       $VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/nfadmin/.ssh/authorized_keys"
        $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic
        $VMConfig = Set-AzVMBootDiagnostic -VM $VMConfig -Disable
        New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $VMConfig | Out-Null

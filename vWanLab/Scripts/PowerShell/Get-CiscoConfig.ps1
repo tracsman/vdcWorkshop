@@ -24,12 +24,12 @@ $site02DfGate = "10.17." + $CompanyID +".161"
 
 # Get vWAN VPN Settings
 $URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
-$vWANConfig = Invoke-RestMethod $URI
-$myvWanConfig = ""
+$vWANConfigs = Invoke-RestMethod $URI
+$vWANFound = $false
 foreach ($vWanConfig in $vWANConfigs) {
-    if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site02-vpn")) {$myvWanConfig = $vWANConfig}
+    if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site02-vpn")) {$myvWanConfig = $vWANConfig;$vWANFound = $true}
 }
-if ($myvWanConfig = "") {Write-Warning "vWAN Config for Site02 was not found, run Step 5";Return}
+if (-Not $vWANFound) {Write-Warning "vWAN Config for Site02 was not found, run Step 5";Return}
 
 # 6.7 Provide configuration instructions
 $MyOutput = @"

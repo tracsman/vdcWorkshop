@@ -38,7 +38,6 @@ If (Test-Path -Path $ScriptDir\init.txt) {
         Catch {Set-Variable -Name $var[0].Trim() -Value $var[1].Trim()}}}
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
-
 # Non-configurable Variable Initialization (ie don't modify these)
 $SubID = 'e4a176ec-f695-407c-8eeb-185fb94076b8'
 $ResourceGroup = "Company" + $CompanyID.PadLeft(2,"0")
@@ -165,7 +164,7 @@ Try {Get-AzVM -ResourceGroupName $rg.ResourceGroupName -Name $VMNameASH -ErrorAc
 Catch {$vmConfig = New-AzVMConfig -VMName $VMNameASH -VMSize $VMSize -ErrorAction Stop| `
           Set-AzVMOperatingSystem -Windows -ComputerName $VMNameASH -Credential $cred -EnableAutoUpdate -ProvisionVMAgent | `
           Set-AzVMSourceImage -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2016-Datacenter -Version latest | `
-          Add-AzVMNetworkInterface -Id $nic.Id | Set-AzVMBootDiagnostics -Disable
+          Add-AzVMNetworkInterface -Id $nic.Id | Set-AzVMBootDiagnostic -Disable
           Write-Host "      queuing VM build job"
           New-AzVM -ResourceGroupName $rg.ResourceGroupName -Location $EastRegion -VM $vmConfig -AsJob | Out-Null}
 
@@ -190,7 +189,7 @@ Try {Get-AzVM -ResourceGroupName $rg.ResourceGroupName -Name $VMNameSEA -ErrorAc
 Catch {$vmConfig = New-AzVMConfig -VMName $VMNameSEA -VMSize $VMSize -ErrorAction Stop| `
           Set-AzVMOperatingSystem -Windows -ComputerName $VMNameSEA -Credential $cred -EnableAutoUpdate -ProvisionVMAgent | `
           Set-AzVMSourceImage -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2016-Datacenter -Version latest | `
-          Add-AzVMNetworkInterface -Id $nic.Id | Set-AzVMBootDiagnostics -Disable
+          Add-AzVMNetworkInterface -Id $nic.Id | Set-AzVMBootDiagnostic -Disable
           Write-Host "      queuing VM build job"
           New-AzVM -ResourceGroupName $rg.ResourceGroupName -Location $WestRegion -VM $vmConfig -AsJob | Out-Null}
 

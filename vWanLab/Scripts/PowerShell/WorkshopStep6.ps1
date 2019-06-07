@@ -143,15 +143,15 @@ Get-AzVirtualWanVpnConfiguration -InputObject $wan -StorageSasUrl $sasURI -VpnSi
 # 6.6 Pull vWAN details
 # Get vWAN VPN Settings
 $URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
-$vWANConfig = Invoke-RestMethod $URI
-$myvWanConfig = ""
+$vWANConfigs = Invoke-RestMethod $URI
+$vWANFound = $false
 foreach ($vWanConfig in $vWANConfigs) {
-    if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site02-vpn")) {$myvWanConfig = $vWANConfig}
+    if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site02-vpn")) {$myvWanConfig = $vWANConfig;$vWANFound = $true}
 }
-If ($myvWanConfig = "") {Write-Warning "vWAN Config for Site02 was not found, run Step 5";Return}
+If (-Not $vWANFound) {Write-Warning "vWAN Config for Site02 was not found, run Step 5";Return}
 
 # 6.7 Provide configuration instructions
-."$ScriptDir\Get-CiscoConfig.ps1"
+#."$ScriptDir\Get-CiscoConfig.ps1"
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Cisco Configuration Instructions" -ForegroundColor Cyan
@@ -159,16 +159,16 @@ Write-Host
 Write-Host "Here is stuff you need to know!" -ForegroundColor Green
 $MyOutput = @"
   vWAN IPs and Details
-  Public IP 1: $(myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance0)
-  Public IP 2: $(myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance1)
-  VPN PSK:     $(myvWanConfig.vpnSiteConnections.connectionConfiguration.PSK)
-  BGP ASN:     $(myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.Asn)
-  BGP IP:      $(myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0)
-  BGP IP:      $(myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1)
+  Public IP 1: $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance0)
+  Public IP 2: $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance1)
+  VPN PSK:     $($myvWanConfig.vpnSiteConnections.connectionConfiguration.PSK)
+  BGP ASN:     $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.Asn)
+  BGP IP:      $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0)
+  BGP IP:      $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1)
 
   Site 02 IPs and Details
   Public IP: $($ipRemotePeerSite2)
-  VPN PSK:   $(myvWanConfig.vpnSiteConnections.connectionConfiguration.PSK)
+  VPN PSK:   $($myvWanConfig.vpnSiteConnections.connectionConfiguration.PSK)
   BGP ASN:   $($site02BGPASN)
   BGP IP:    $($site02BGPIP)
 
@@ -176,15 +176,16 @@ $MyOutput = @"
   1. Open an SSH session to the Cisco router:
      - Open a PowerShell console window (ie NOT ISE!)
      - Type: ssh User01@$ipRemotePeerSite2 (no quotes) and hit enter
-     - You're now in the Cisco router and should see a prompt similar to ""
-  2. Enter Cisco VPN Config
+     - You're now in the Cisco router and should see a prompt similar to "C10-Site02-Router01#"
+  2. In an different PowerShell session run Get-CiscoConfig.ps1 to copy VPN config to the clipboard
+  3. Enter Cisco VPN Config on the Router
      - Get into edit mode by typing "configure terminal" (again no quotes)
-     - Right-click to paste in the config from the script above (if the clipboard doesn't have rerun the Get-CiscoConfig)
-  3. Review the pasted config for any errors, warnings are ok, if you see errors contact the instructor
-  4. Leave edit mode by typing "end"
-  5. Save your config by typing "wr"
-  6. Leave the router by typing "Exit", this will take you back to the PowerShell prompt
-  7. Close your PowerShell prompt by typing "Exit"
+     - Right-click to paste in the config from the script above (if the clipboard doesn't have the config rerun Get-CiscoConfig)
+  4. Review the pasted config for any errors, warnings are ok, if you see errors contact the instructor
+  5. Leave edit mode by typing "end"
+  6. Save your config by typing "wr"
+  7. Leave the router by typing "Exit", this will take you back to the PowerShell prompt
+  8. Close your PowerShell prompt by typing "Exit"
 
 "@
 $MyOutput
@@ -192,5 +193,5 @@ $MyOutput
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 6 completed successfully" -ForegroundColor Green
-Write-Host "  Use the instructions above to configure the Cisco device have been copied to the clipboard, open Notepad and paste the instructions to configure the device. If you need the instructions again, rerun this script and the instructions will be reloaded to the clipboard."
+Write-Host "  Use the instructions above to configure the Cisco device."
 Write-Host
