@@ -82,16 +82,16 @@ Catch {Write-Warning "Azure Site 2 Virtual Network wasn't found, please run step
 # 4.2 Connect Azure 01 VNet
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Connecting Azure 01 VNet to the vWAN hub" -ForegroundColor Cyan
-Try {Get-AzVirtualHubVnetConnection -ParentObject $hub -Name $hubName'-conn-local-vnet01' -ErrorAction Stop | Out-Null
+Try {Get-AzVirtualHubVnetConnection -ParentObject $hub -Name 'Hub01-conn-Az01' -ErrorAction Stop | Out-Null
      Write-Host "  Azure 01 VNet connection exists, skipping"}
-Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-local-vnet01' -ParentObject $hub -RemoteVirtualNetwork $Az01VNet | Out-Null}
+Catch {New-AzVirtualHubVnetConnection -Name 'Hub01-conn-Az01' -ParentObject $hub -RemoteVirtualNetwork $Az01VNet | Out-Null}
 
 # 4.3 Connect Azure 01 VNet
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Connecting Azure 02 VNet to the vWAN hub" -ForegroundColor Cyan
-Try {Get-AzVirtualHubVnetConnection -ParentObject $hub -Name $hubName'-conn-local-vnet02' -ErrorAction Stop | Out-Null
+Try {Get-AzVirtualHubVnetConnection -ParentObject $hub -Name 'Hub01-conn-Az02' -ErrorAction Stop | Out-Null
      Write-Host "  Azure 02 VNet connection exists, skipping"}
-Catch {New-AzVirtualHubVnetConnection -Name $hubName'-conn-local-vnet02' -ParentObject $hub -RemoteVirtualNetwork $Az02VNet | Out-Null}
+Catch {New-AzVirtualHubVnetConnection -Name 'Hub01-conn-Az02' -ParentObject $hub -RemoteVirtualNetwork $Az02VNet | Out-Null}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline

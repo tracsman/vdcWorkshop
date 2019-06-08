@@ -99,6 +99,10 @@ Catch {$nic = New-AzNetworkInterface  -ResourceGroupName $RGName -Name $NameStub
 # 2.3.4 Create Public and Private RSA keys
 $FileName = "id_rsa"
 If (-not (Test-Path -Path "$HOME\.ssh\")) {New-Item "$HOME\.ssh\" -ItemType Directory | Out-Null}
+If (-not (Test-Path -Path "$HOME\.ssh\config")) {
+     $FileContent = "MACs=""hmac-sha2-512,hmac-sha1,hmac-sha1-96""`nServerAliveInterval=120`nServerAliveCountMax=30"
+     Out-File -FilePath "$HOME\.ssh\config" -Encoding ascii -InputObject $FileContent -Force
+}
 If (-not (Test-Path -Path "$HOME\.ssh\$FileName")) {ssh-keygen.exe -t rsa -b 2048 -f "$HOME\.ssh\$FileName" -P """" | Out-Null}
 Else {Write-Host "  Key Files exists, skipping"}
 $PublicKey =  Get-Content "$HOME\.ssh\$FileName.pub"
@@ -141,6 +145,10 @@ Try {Get-AzRouteConfig -RouteTable $rt -Name "ToAz02" -ErrorAction Stop | Out-Nu
      Write-Host "  Az02 route exists, skipping"}
 Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToAz02" -AddressPrefix "10.17.$CompanyID.32/27" -NextHopType VirtualAppliance -NextHopIpAddress "10.17.$CompanyID.133" | Out-Null
        Set-AzRouteTable -RouteTable $rt | Out-Null}
+Try {Get-AzRouteConfig -RouteTable $rt -Name "ToSite02" -ErrorAction Stop | Out-Null
+       Write-Host "  Site02 route exists, skipping"}
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToSite02" -AddressPrefix "10.17.$CompanyID.160/27" -NextHopType VirtualAppliance -NextHopIpAddress "10.17.$CompanyID.133" | Out-Null
+         Set-AzRouteTable -RouteTable $rt | Out-Null}
 
 # Assign Route Table to the subnet
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $NameStub'-VNet01'
@@ -153,7 +161,7 @@ Else {Write-Host "  Route Table already assigned to subnet, skipping"}
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 2 completed successfully" -ForegroundColor Green
-Write-Host "  Navigate to https://pathlab.nfconsole.io/signup to configure your VPN device"
-Write-Host "  Your VPN Device Public IP is " -NoNewline
+Write-Host "  See more at https://netfoundry.zendesk.com/hc/en-us/articles/360018137891-Introduction-to-Azure-Virtual-WAN-sites"
+Write-Host "  To access your VPN device, open a console PS window and type ssh.exe nfadmin@" -NoNewline
 Write-Host (Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $NameStub'-Router01-pip').IpAddress
 Write-Host

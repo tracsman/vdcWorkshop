@@ -259,14 +259,17 @@ Else {# Set a new alias to access the clipboard
 The NetFoundry Appliance needs to be activated.
 To do this, open a new PowerShell window (but NOT an ISE window!)
 Run the following three commands:
-       ssh.exe User01@$ipRemotePeerSite1
+       ssh.exe nfadmin@$ipRemotePeerSite1
        sudo nfnreg -e staging $RegKey
-       sudo systemctl status dvn | grep Active
+       sudo systemctl status dvn
 
 The first command will open a Shell to the NetFoundry device
 The Second command will register the device
 The thrid command will show the status of the service on the device and should be "running"
 You many now close the command window (type exit twice)
+It will take about 15 minutues after the device is registered for the tunnel to come up.
+If you want to monitor this from the NetFoundry appliacnce you can run:
+       sudo ip xfrm monitor
 "@
 
        $MyOutput | Out-Clipboard
