@@ -16,13 +16,13 @@ Each top level folder is a independent lab (except for "ServerSideScripts", more
 
 ## Available Workshop Examples
 
-> **IMPORTANT**: These workshop came from instructor-led events, and require pre-built initial resources, so at this time, you CAN NOT run these scripts without these base resources. I am working on "Step 0" scripts to create these base environments to make these labs self-server, but at this time they don't exist.
+> **IMPORTANT**: These workshop came from instructor-led events, and require pre-built initial resources, at this time, you CAN NOT run these scripts without these base resources. I am working on "Step 0" scripts to create these base resources to make these labs self-service, but at this time they don't exist.
 
 * [AFDLab][AFD] - This is an Azure Front door lab. It starts with two ExpressRoute circuits connected via Global Reach, and then connected to two VNets (one in East US and one in West US) each running an identical web site. Finally an Azure Front Door is deployed to geo-load balance between the two web sites.
 
     [![0]][0]
 
-* [Firewall][Firewall] - This is a Firewall focused lab. It starts with an ExpressRoute circuit up to a hub VNet with an internet connected VM. We then add an Azure firewall, and then a spoke VNet running a web site. Policies are add to advertise the web site to the Internet via the firewall and all internal traffic to route through the firewall for allow/deny policies.
+* [Firewall][Firewall] - This is a Firewall focused lab. It starts with an ExpressRoute circuit up to a hub VNet with an internet connected VM. We then add an Azure firewall, and then a spoke VNet running a web site. Policies are added to advertise the web site to the Internet via the firewall and all internal traffic to route through the firewall for allow/deny policies.
 
     [![1]][1]
 
