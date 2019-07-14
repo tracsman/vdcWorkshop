@@ -16,6 +16,8 @@ Each top level folder is a independent lab (except for "ServerSideScripts", more
 
 ## Available Workshop Examples
 
+> **IMPORTANT**: These workshop came from instructor-led events, and require pre-built initial resources, so at this time, you CAN NOT run these scripts without these base resources. I am working on "Step 0" scripts to create these base environments to make these labs self-server, but at this time they don't exist.
+
 * [AFDLab][AFD] - This is an Azure Front door lab. It starts with two ExpressRoute circuits connected via Global Reach, and then connected to two VNets (one in East US and one in West US) each running an identical web site. Finally an Azure Front Door is deployed to geo-load balance between the two web sites.
 
     [![0]][0]
@@ -34,11 +36,9 @@ Each top level folder is a independent lab (except for "ServerSideScripts", more
 
 * More to come...
 
+## Server Side Scripts
 
-> **IMPORTANT**: These workshop came from instructor-led events, and require pre-built initial resources, so at this time, you CAN NOT run these scripts without these base resources. I am working on "Step 0" scripts to create these base environments to make these labs self-server, but at this time they don't exist.
-
-
-Also contained in the Scripts directory is a "[ServerSideScripts][Server]" folder, this contains scripts that are push to the newly build Azure VMs and run as a part of some of the deployments. You can use these as model for deploying your applications or settings. For more complex deployments Chef, Puppet, Ansible, etc can be used.
+Also contained in the repo is a Scripts directory called "[ServerSideScripts][Server]", this contains scripts that are pushed to the newly build Azure VMs and run as a part of some of the deployments. You can use these as model for deploying your applications or settings. For more complex deployments Chef, Puppet, Ansible, etc can be used.
 
 <!--Link References-->
 [Paper]: https://docs.microsoft.com/azure/architecture/vdc/networking-virtual-datacenter
