@@ -111,13 +111,14 @@ $PublicKey =  Get-Content "$HOME\.ssh\$FileName.pub"
 # Get-AzVMImage -Location westus2 -Offer cisco-csr-1000v -PublisherName cisco -Skus csr-azure-byol -Version latest
 $kvs = Get-AzKeyVaultSecret -VaultName $KVName -Name "User01" -ErrorAction Stop
 $cred = New-Object System.Management.Automation.PSCredential ($kvs.Name, $kvs.SecretValue)
+$latestsku = Get-AzVMImageSku -Location westus2 -Offer cisco-csr-1000v -PublisherName cisco | Sort Skus | Where {$_.skus -match 'byol'} | Select Skus -First 1 | foreach {$_.Skus}
 Try {Get-AzVM -ResourceGroupName $RGName -Name $NameStub'-Router01' -ErrorAction Stop | Out-Null
      Write-Host "  Cisco Router exists, skipping"}
 Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
-       Set-AzVMPlan -VM $VMConfig -Publisher "cisco" -Product "cisco-csr-1000v" -Name "16_10-byol" | Out-Null
+       Set-AzVMPlan -VM $VMConfig -Publisher "cisco" -Product "cisco-csr-1000v" -Name $latestsku | Out-Null
        $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $NameStub'-Router01' -Credential $cred
        $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $NameStub'-Router01-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
-       $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "cisco" -Offer "cisco-csr-1000v" -Skus "16_10-byol" -Version latest
+       $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "cisco" -Offer "cisco-csr-1000v" -Skus $latestsku -Version latest
        $VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/User01/.ssh/authorized_keys"
        $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic
        $VMConfig = Set-AzVMBootDiagnostic -VM $VMConfig -Disable
