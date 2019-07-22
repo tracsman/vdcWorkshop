@@ -27,7 +27,7 @@
 
 # 2.1 Accept Marketplace Terms
 ##  To run the script you need to accept the terms. Run one time in the target Azure subscription:
-##  Get-AzMarketplaceTerms -Publisher "tata_communications" -Product "netfoundry_cloud_gateway" -Name "netfoundry-cloud-gateway" | Set-AzMarketplaceTerms -Accept
+##  Get-AzMarketplaceTerms -Publisher "netfoundryinc" -Product "centos" -Name "gateway" | Set-AzMarketplaceTerms -Accept
 
 # 2.2 Validate and Initialize
 # Az Module Test
@@ -114,7 +114,7 @@ $cred = New-Object System.Management.Automation.PSCredential ("nfadmin", $kvs.Se
 Try {Get-AzVM -ResourceGroupName $RGName -Name $NameStub'-Router01' -ErrorAction Stop | Out-Null
      Write-Host "  NetFoundry Router exists, skipping"}
 Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
-       Set-AzVMPlan -VM $VMConfig -Publisher "tata_communications" -Product "netfoundry_cloud_gateway" -Name "netfoundry-cloud-gateway" | Out-Null
+       Set-AzVMPlan -VM $VMConfig -Publisher "netfoundryinc" -Product "centos" -Name "gateway" | Out-Null
        $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $NameStub'-Router01' -Credential $cred
        $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $NameStub'-Router01-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
        $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "tata_communications" -Offer "netfoundry_cloud_gateway" -Skus "netfoundry-cloud-gateway" -Version Latest
