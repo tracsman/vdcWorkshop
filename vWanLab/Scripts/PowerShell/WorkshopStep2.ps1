@@ -117,7 +117,7 @@ Catch {$VMConfig = New-AzVMConfig -VMName $NameStub'-Router01' -VMSize $VMSize
        Set-AzVMPlan -VM $VMConfig -Publisher "netfoundryinc" -Product "centos" -Name "gateway" | Out-Null
        $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $NameStub'-Router01' -Credential $cred
        $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $NameStub'-Router01-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
-       $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "tata_communications" -Offer "netfoundry_cloud_gateway" -Skus "netfoundry-cloud-gateway" -Version Latest
+       $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "netfoundryinc" -Offer "centos" -Skus "gateway" -Version Latest
        $VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/nfadmin/.ssh/authorized_keys"
        $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic
        $VMConfig = Set-AzVMBootDiagnostic -VM $VMConfig -Disable
