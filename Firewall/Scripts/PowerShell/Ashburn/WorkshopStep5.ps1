@@ -81,8 +81,24 @@ Write-Host "Connecting Gateway to ExpressRoute in $($ckt.ServiceProviderProperti
 Try {Get-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-conn" -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
     Write-Host '  connection exists, skipping'}
 Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetName"-gw" -ResourceGroupName $RGName
-       New-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-conn" -ResourceGroupName $RGName -Location $ShortRegion `
-                                             -VirtualNetworkGateway1 $gw -PeerId $ckt.Id -ConnectionType ExpressRoute | Out-Null}
+       $NeedSpace = $False
+       $i=0
+       If ($gw.ProvisioningState -eq 'Updating') {Write-Host '  waiting for ER gateway to finish provisioning: ' -NoNewline
+                                                  $NeedSpace=$True
+                                                  Sleep 10}
+       While ($gw.ProvisioningState -eq 'Updating') {
+              $i++
+              If ($i%6) {Write-Host '*' -NoNewline}
+              Else {Write-Host "$($i/6)" -NoNewline}
+              Sleep 10
+              $gw = Get-AzVirtualNetworkGateway -Name $VNetName-gw-er -ResourceGroupName $RGName}
+       If ($gw.ProvisioningState -eq 'Succeeded') {
+           New-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-conn" -ResourceGroupName $RGName -Location $ShortRegion `
+                                                 -VirtualNetworkGateway1 $gw -PeerId $ckt.Id -ConnectionType ExpressRoute | Out-Null}
+       Else {Write-Warning 'An issue occured with ER gateway provisioning.'
+             Write-Host 'Current Gateway Provisioning State' -NoNewLine
+             Write-Host $gw.ProvisioningState
+             Return}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
