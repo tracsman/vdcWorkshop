@@ -41,7 +41,7 @@ $ShortRegion = "eastus"
 $RGName = "AComp" + $CompanyID
 $VNetName = "C" + $CompanyID + "-VNet"
 $CircuitName = $RGName + "-er"
-$CircuitLocation = 'Washginton DC'
+$CircuitLocation = 'Washington DC'
 
 # Start nicely
 Write-Host
