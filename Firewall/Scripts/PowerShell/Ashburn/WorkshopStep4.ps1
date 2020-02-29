@@ -39,7 +39,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 $RGName = "AComp" + $CompanyID
 $CircuitName = $RGName + "-er"
 $PrimaryPrefix = "192.168." + $CompanyID + ".216/30"
-$SecondaryPrefix = "192.168." + $CompanyID + ".2220/30"
+$SecondaryPrefix = "192.168." + $CompanyID + ".220/30"
 $ASN = "65021"
 $VLANTag = "20" + $CompanyID
 
