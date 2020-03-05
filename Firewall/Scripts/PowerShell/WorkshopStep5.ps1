@@ -99,6 +99,7 @@ Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetName"-gw" -ResourceGroupName
              Write-Host 'Current Gateway Provisioning State' -NoNewLine
              Write-Host $gw.ProvisioningState
              Return}
+}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
