@@ -91,7 +91,7 @@ Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetName"-gw" -ResourceGroupName
               If ($i%6) {Write-Host '*' -NoNewline}
               Else {Write-Host "$($i/6)" -NoNewline}
               Sleep 10
-              $gw = Get-AzVirtualNetworkGateway -Name $VNetName-gw-er -ResourceGroupName $RGName}
+              $gw = Get-AzVirtualNetworkGateway -Name $VNetName-gw -ResourceGroupName $RGName}
        If ($gw.ProvisioningState -eq 'Succeeded') {
            New-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-conn" -ResourceGroupName $RGName -Location $ShortRegion `
                                                  -VirtualNetworkGateway1 $gw -PeerId $ckt.Id -ConnectionType ExpressRoute | Out-Null}
