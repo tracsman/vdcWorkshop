@@ -93,6 +93,9 @@ Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetName"-gw" -ResourceGroupName
               Sleep 10
               $gw = Get-AzVirtualNetworkGateway -Name $VNetName-gw -ResourceGroupName $RGName}
        If ($gw.ProvisioningState -eq 'Succeeded') {
+           If ($NeedSpace) {Write-Host}
+           Write-Host '  Gatewate is provisioned'
+           Write-Host '  Connecting to ExpressRoute'
            New-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-conn" -ResourceGroupName $RGName -Location $ShortRegion `
                                                  -VirtualNetworkGateway1 $gw -PeerId $ckt.Id -ConnectionType ExpressRoute | Out-Null}
        Else {Write-Warning 'An issue occured with ER gateway provisioning.'

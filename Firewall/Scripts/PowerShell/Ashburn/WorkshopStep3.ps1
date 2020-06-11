@@ -37,7 +37,7 @@ If (Test-Path -Path $ScriptDir\init.txt) {
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
 # Non-configurable Variable Initialization (ie don't modify these)
-$ShortRegion = "eastus"
+$ShortRegion = "centralus"
 $RGName = "AComp" + $CompanyID
 $VNetName = "C" + $CompanyID + "-VNet"
 $CircuitName = $RGName + "-er"
@@ -68,7 +68,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating ExpressRoute Circuit in $CircuitLocation" -ForegroundColor Cyan
 Try {Get-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitName -ErrorAction Stop | Out-Null
         Write-Host '  resource exists, skipping'}
-Catch {New-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitName -Location $ShortRegion `
+Catch {New-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitName -Location eastus `
                                       -ServiceProviderName Equinix -PeeringLocation $CircuitLocation `
                                       -BandwidthInMbps 50 -SkuFamily MeteredData -SkuTier Standard | Out-Null
 }
