@@ -48,7 +48,7 @@ If (Test-Path -Path $ScriptDir\init.txt) {
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
 # Non-configurable Variable Initialization (ie don't modify these)
-$ShortRegion = "centralus"
+$ShortRegion = "eastus"
 $RGName = "AComp" + $CompanyID
 $VNetName = "C" + $CompanyID + "-Spoke-VNet"
 $VNetAddress = "10.10." + $CompanyID + ".128/25"
