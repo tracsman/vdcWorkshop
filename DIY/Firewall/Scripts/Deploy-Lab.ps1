@@ -35,7 +35,7 @@ ForEach ($File in $FileName) {
     Invoke-WebRequest -Uri "$uri$File" -OutFile "$ScriptPath\$File" | Out-Null
 }
 
-& ./Scripts/Validate-Lab.ps1
+& $ScriptPath/Validate-Lab.ps1
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
