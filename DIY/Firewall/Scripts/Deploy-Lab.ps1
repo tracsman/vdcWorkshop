@@ -39,5 +39,5 @@ ForEach ($File in $FileName) {
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Environment initialization completed successfully" -ForegroundColor Green
+Write-Host "Environment initialization completed" -ForegroundColor Cyan
 Write-Host
