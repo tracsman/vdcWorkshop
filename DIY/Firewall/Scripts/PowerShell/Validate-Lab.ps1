@@ -7,6 +7,7 @@ $FileName += 'WorkshopStep3.ps1'
 $FileName += 'WorkshopStep4.ps1'
 $FileName += 'WorkshopStep5.ps1'
 $ErrorBit=$False
+$ScriptPath = "$env:HOME/Scripts"
 
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
@@ -14,7 +15,7 @@ Write-Host "Validating environment:" -ForegroundColor Cyan
 Write-Host "  Checking Script Files....." -NoNewline
 Try {
     ForEach ($File in $FileName) {
-        Test-Path .\$File -ErrorAction Stop | Out-Null
+        Test-Path $ScriptPath\$File -ErrorAction Stop | Out-Null
     }
 }
 Catch {
@@ -63,10 +64,3 @@ Write-Host "    Checking RG Name........" -NoNewline
 If ($RGName.Length -le 3) {"Bad short or don't exist"}
 ElseIf ($RGName -contains " ") {"Bad Space"}
 Write-Host "Valid" -ForegroundColor Green
-
-
-
-# End nicely
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Environment initialization completed successfully" -ForegroundColor Green
-Write-Host

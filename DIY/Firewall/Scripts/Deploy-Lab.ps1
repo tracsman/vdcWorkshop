@@ -7,7 +7,7 @@ Write-Host "Initializing workshop environment, estimated total time < 1 minute" 
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Scripts Folder" -ForegroundColor Cyan
-$ScriptPath = ".\Scripts" 
+$ScriptPath = "$env:HOME/Scripts"
 If (-Not (Test-Path $ScriptPath)){New-Item -ItemType Directory -Force -Path $ScriptPath | Out-Null}
 
 # Create and fill init.txt
