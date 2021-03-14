@@ -41,13 +41,11 @@ Write-Host "Starting step 2, estimated total time < 1 minute" -ForegroundColor C
 
 # Set Subscription
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Checking login and permissions" -ForegroundColor Cyan
-Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null}
-Catch {Write-Host "Logging in to ARM"
-       Try {$Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
-       Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
-              Return}
-       Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"}
+Write-Host "Setting Subscription Context" -ForegroundColor Cyan
+Try {$myContext = Set-AzContext -Subscription $SubID -ErrorAction Stop}
+Catch {Write-Warning "Permission check failed, ensure Sub ID is set correctly!"
+        Return}
+Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscription.Id,")"
 
 # 1.2 Create VNet
 Write-Host (Get-Date)' - ' -NoNewline

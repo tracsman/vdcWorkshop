@@ -45,17 +45,15 @@ Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Starting step 3, estimated total time 15 minutes" -ForegroundColor Cyan
 
-# Set Subscription
+# Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Checking login and permissions" -ForegroundColor Cyan
-Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null}
-Catch {Write-Host "Logging in to ARM"
-       Try {$Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
-       Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
-              Return}
-       Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"}
+Write-Host "Setting Subscription Context" -ForegroundColor Cyan
+Try {$myContext = Set-AzContext -Subscription $SubID -ErrorAction Stop}
+Catch {Write-Warning "Permission check failed, ensure Sub ID is set correctly!"
+        Return}
+Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscription.Id,")"
 
-# 3.2 Create the VM
+# 3.2 Create
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating VM" -ForegroundColor Cyan
 Write-Host "  Pulling KeyVault Secret"

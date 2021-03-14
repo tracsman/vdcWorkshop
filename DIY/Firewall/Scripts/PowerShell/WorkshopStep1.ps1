@@ -58,21 +58,33 @@ Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Starting step 1, estimated total time < 1 minute" -ForegroundColor Cyan
 
-# Set Subscription
+# Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Checking login and permissions" -ForegroundColor Cyan
-Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null}
-Catch {Write-Host "Logging in to ARM"
-       Try {$Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
-       Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
-              Return}
-       Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"}
+Write-Host "Setting Subscription Context" -ForegroundColor Cyan
+Try {$myContext = Set-AzContext -Subscription $SubID -ErrorAction Stop}
+Catch {Write-Warning "Permission check failed, ensure Sub ID is set correctly!"
+        Return}
+Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscription.Id,")"
+
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "  Checking Login" -ForegroundColor Cyan
+$RegEx = '^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$'
+If ($myContext.Account.Id -notmatch $RegEx) {
+        Write-Host "Fatal Error: You are logged in with a Managed Service bearer token" -ForegroundColor Red
+        Write-Host "To correct this, you'll need to login using your Azure credentials."
+        Write-Host "To do this, at the command prompt, enter: " -NoNewline
+        Write-Host "Connect-AzAccount -UseDeviceAuthentication" -ForegroundColor Yellow
+        Write-Host "This command will show a URL and Code. Open a new browser tab and navigate to that URL, enter the code, and login with your Azure credentials"
+        Write-Host
+        Return
+}
+Write-Host "  Current User: ",$myContext.Account.Id
 
 # 1.2 Create resource group
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Resource Group $RGName" -ForegroundColor Cyan
 Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null
-        Write-Host "  resource group exists, skipping"}
+        Write-Host "  Resource group exists, skipping"}
 Catch {New-AzResourceGroup -Name $RGName -Location $ShortRegion | Out-Null}
 
 # 1.3 Create key vault
@@ -81,8 +93,14 @@ Write-Host "Creating Key Vault and Secrets" -ForegroundColor Cyan
 
 # Get/Create key vault name
 # Check if there already is a key vault in this resource group and get the name, if not make up a KV name
+$kvName = $null
+$kv = $null
 $kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
-If ($null -eq $kvName) {
+
+# If found, ensure this Key Vault isn't in removed state
+if ($null -ne $kvName) {$kv = Get-AzKeyVault -VaultName $kvName -Location $ShortRegion -InRemovedState}
+
+If ($null -eq $kvName -or $null -ne $kv) {
    Do {$kvRandom = Get-Random
        $kvName = $RGName + '-kv' + "-$kvRandom"
        $kv = Get-AzKeyVault -VaultName $kvName -Location $ShortRegion -InRemovedState
@@ -97,14 +115,14 @@ If ($null -eq $kv) {$kv = New-AzKeyVault -VaultName $kvName -ResourceGroupName $
 Else {Write-Host "  Key Vault exists, skipping"}
 
 # 1.4 Set Key Vault Access Policy
-Write-Host "  setting Key Vault Access Policy"
-$UserID = (Get-AzAdUser -UserPrincipalName (az account show --query user.name --output tsv)).Id
-$UserID
-If ($kv.AccessPolicies.ObjectId -notcontains $UserID) {
+Write-Host "  Setting Key Vault Access Policy"
+$UserID = (Get-AzAdUser -UserPrincipalName $myContext.Account.Id).Id
+If ($kv.AccessPolicies.ObjectId -contains $UserID) {
+    Write-Host "    Policy exists, skipping"
+}Else {
     Set-AzKeyVaultAccessPolicy -VaultName $kvName -ResourceGroupName $RGName -ObjectId $UserID -PermissionsToSecrets get,list,set,delete 
-    "Added the Policy"
+    Write-Host "    Policy added"
 }
-"Done with Policy"
 
 # 1.5 Create Secrets
 # Add VM User 1 secret
