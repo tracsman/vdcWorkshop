@@ -84,19 +84,19 @@ Else {$RuleRDP = New-AzFirewallNetworkRule -Name "RDPAllow" -SourceAddress $RDPR
 
 # 4.4 Create the UDR tables
 $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
-$erRouteTable = $null
+$gwRouteTable = $null
 $fwRouteTable = $null
 $RouteTablesUpdated = $false
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating ER UDR Table" -ForegroundColor Cyan
-Try {$erRouteTable = Get-AzRouteTable -Name $VNetName'-rt-er' -ResourceGroupName $RGName -ErrorAction Stop
-     Write-Host "  ER UDR Table exists, skipping"}
-Catch {$erRouteTableName = $VNetName + '-rt-er'
-       $erRoute = @()
+Write-Host "Creating Gateway UDR Table" -ForegroundColor Cyan
+Try {$gwRouteTable = Get-AzRouteTable -Name $VNetName'-rt-gw' -ResourceGroupName $RGName -ErrorAction Stop
+     Write-Host "  Gateway UDR Table exists, skipping"}
+Catch {$gwRouteTableName = $VNetName + '-rt-gw'
+       $gwRoute = @()
        ForEach ($GatewayUDR in $GatewayUDRs) {
-                $erRouteName = 'ERGateway-Route' + ($GatewayUDRs.IndexOf($GatewayUDR) + 1).ToString("00")
-                $erRoute += New-AzRouteConfig -Name $erRouteName -AddressPrefix $GatewayUDR -NextHopType VirtualAppliance -NextHopIpAddress $fwIP}
-       $erRouteTable = New-AzRouteTable -Name $erRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $erRoute}
+                $gwRouteName = 'Gateway-Route' + ($GatewayUDRs.IndexOf($GatewayUDR) + 1).ToString("00")
+                $gwRoute += New-AzRouteConfig -Name $gwRouteName -AddressPrefix $GatewayUDR -NextHopType VirtualAppliance -NextHopIpAddress $fwIP}
+       $gwRouteTable = New-AzRouteTable -Name $gwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $gwRoute}
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Tenant UDR Table" -ForegroundColor Cyan
@@ -110,7 +110,7 @@ Catch {$fwRouteName = 'Default-Route'
 # 4.5 Assign the UDR tables to the subnets
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Associating UDR Table to Hub Gateway subnet" -ForegroundColor Cyan
-If ($null -eq $snGateway.RouteTable) {$snGateway.RouteTable = $erRouteTable
+If ($null -eq $snGateway.RouteTable) {$snGateway.RouteTable = $gwRouteTable
                                       $RouteTablesUpdated = $true}
 Else {Write-Host "  A Route Table is already assigned to the subnet, skipping"}
 
