@@ -13,8 +13,8 @@
 # 1.1 Validate and Initialize
 # 1.2 Create resource group
 # 1.3 Create key vault
-# 1.4 Set Access Policy
-# 1.5 Create Secret
+# 1.4 Set Key Vault Access Policy
+# 1.5 Create Secrets
 #
 
 # 1.1 Validate and Initialize
@@ -76,12 +76,13 @@ Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null
 Catch {New-AzResourceGroup -Name $RGName -Location $ShortRegion | Out-Null}
 
 # 1.3 Create key vault
-# Check if there already is a key vault in this resource group, if not make up a KV name
+# Get/Create key vault name
+# Check if there already is a key vault in this resource group and get the name, if not make up a KV name
 $kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
 If ($null -eq $kvName) {
    Do {$kvRandom = Get-Random
        $kvName = $RGName + '-kv' + "-$kvRandom"
-       $kv = Get-AzKeyVault -VaultName $kvName -ResourceGroupName $RGName
+       $kv = Get-AzKeyVault -VaultName $kvName -Location $ShortRegion -InRemovedState
        }
    While ($null -ne $kv)    
 }
@@ -92,6 +93,17 @@ If ($null -eq $kv) {$kv = New-AzKeyVault -VaultName $kvName -ResourceGroupName $
                     Start-Sleep -Seconds 10}
 Else {Write-Host "  Key Vault exists, skipping"}
 
+# 1.4 Set Key Vault Access Policy
+Write-Host "  setting Key Vault Access Policy"
+$UserID = (Get-AzAdUser -UserPrincipalName (az account show --query user.name --output tsv)).Id
+$UserID
+If ($kv.AccessPolicies.ObjectId -notcontains $UserID) {
+    Set-AzKeyVaultAccessPolicy -VaultName $kvName -ResourceGroupName $RGName -ObjectId $UserID -PermissionsToSecrets get,list,set,delete 
+    "Added the Policy"
+}
+"Done with Policy"
+
+# 1.5 Create Secrets
 # Add VM User 1 secret
 $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $User01Name -ErrorAction Stop 
 If ($null -eq $kvs) {Try {$kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name $User01Name -SecretValue $User01SecPass -ErrorAction Stop}
@@ -107,13 +119,6 @@ Else {Write-Host "  $User02Name exists, skipping"}
 $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $User03Name -ErrorAction Stop 
 If ($null -eq $kvs) {$kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name $User03Name -SecretValue $User03SecPass -ErrorAction Stop}
 Else {Write-Host "  $User03Name exists, skipping"}
-
-# Set Key Vault permissions
-Write-Host "  setting Key Vault Access Policy"
-$UserID = (Get-AzAdUser -UserPrincipalName (az account show --query user.name --output tsv)).Id
-If ($kv.AccessPolicies.ObjectId -notcontains $UserID) {
-    Set-AzKeyVaultAccessPolicy -VaultName $kvName -ResourceGroupName $RGName -ObjectId $UserID -PermissionsToSecrets get,list,set,delete 
-}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
