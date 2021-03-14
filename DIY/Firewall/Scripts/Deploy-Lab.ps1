@@ -45,7 +45,6 @@ switch ($MenuItem.Character) {
              Return}
 }
 
-Return
 # Start nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Initializing workshop environment, estimated total time < 1 minute" -ForegroundColor Cyan
