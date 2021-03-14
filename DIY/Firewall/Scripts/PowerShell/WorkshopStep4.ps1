@@ -30,9 +30,9 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # $SubID     = defined in and pulled from the init.txt file above
 # $ShortRegion defined in and pulled from the init.txt file above
 # $RGName    = defined in and pulled from the init.txt file above
-$VNetName    = "VNet01"
-$VMName      = "Hub-VM01"
-$FWName      = "Hub-FW01"
+$VNetName    = "Hub01-VNet01"
+$VMName      = "Hub01-VM01"
+$FWName      = "Hub01-FW01"
 $GatewayUDRs = ("10.11.12.0/27"), ("10.17.12.128/25")
 $RDPRules    = ("10.11.12.0/27"), ("10.3.12.0/25")
 

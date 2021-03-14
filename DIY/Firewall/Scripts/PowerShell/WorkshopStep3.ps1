@@ -32,8 +32,8 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # $SubID     = defined in and pulled from the init.txt file above
 # $ShortRegion defined in and pulled from the init.txt file above
 # $RGName    = defined in and pulled from the init.txt file above
-$VNetName    = "VNet01"
-$VMName      = "Hub-VM01"
+$VNetName    = "Hub01-VNet01"
+$VMName      = "Hub01-VM01"
 $VMSize      = "Standard_A4_v2"
 $UserName01  = "User01"
 $UserName02  = "User02"

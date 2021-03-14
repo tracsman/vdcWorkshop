@@ -28,7 +28,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # $SubID     = defined in and pulled from the init.txt file above
 # $ShortRegion defined in and pulled from the init.txt file above
 # $RGName    = defined in and pulled from the init.txt file above
-$VNetName    = "VNet01"
+$VNetName    = "Hub01-VNet01"
 $HubAddress  = "10.11.12.0/25"
 $snTenant    = "10.11.12.0/27"
 $snGateway   = "10.11.12.32/27"
