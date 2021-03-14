@@ -76,6 +76,9 @@ Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null
 Catch {New-AzResourceGroup -Name $RGName -Location $ShortRegion | Out-Null}
 
 # 1.3 Create key vault
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating Key Vault and Secrets" -ForegroundColor Cyan
+
 # Get/Create key vault name
 # Check if there already is a key vault in this resource group and get the name, if not make up a KV name
 $kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
