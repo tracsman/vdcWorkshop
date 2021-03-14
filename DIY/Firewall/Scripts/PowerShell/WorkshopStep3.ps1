@@ -1,38 +1,26 @@
 ﻿#
-# Azure Firewall Workshop
-#
-# Use your corporate credentials to login (your @microsoft.com account) to Azure
+# DIY Azure Firewall Workshop
 #
 #
-# Step 1 Create Virtual Network
-# Step 2 Create an internet facing VM
-# Step 3 Create an ExpressRoute circuit and ER Gateway
-# Step 4 Bring up ExpressRoute Private Peering
-# Step 5 Create the connection between the ER Gateway and the ER Circuit
-# Step 6 Create and configure the Azure Firewall
-# Step 7 Create Spoke VNet with IIS Server and a firewall rule to allow traffic
+# Step 1 Create resource group, key vault, and secret
+# Step 2 Create Virtual Network
+# Step 3 Create an internet facing VM
+# Step 4 Create and configure the Azure Firewall
+# Step 5 Create Spoke VNet with IIS Server and a firewall rule to allow traffic
 # 
 
-# Step 2 Create an internet facing VM
-# 2.1 Validate and Initialize
-# 2.2 Create the VM
-# 2.2.1 Create Public IP
-# 2.2.2 Create NSG
-# 2.2.3 Create NIC
-# 2.2.4 Build VM
-# 2.3 Run post deploy job
+# Step 3 Create an internet facing VM
+# 3.1 Validate and Initialize
+# 3.2 Create the VM
+# 3.2.1 Create Public IP
+# 3.2.2 Create NSG
+# 3.2.3 Create NIC
+# 3.2.4 Build VM
+# 3.3 Run post deploy job
 
-# 2.1 Validate and Initialize
-# Az Module Test
-$ModCheck = Get-Module Az.Network -ListAvailable
-If ($Null -eq $ModCheck) {
-    Write-Warning "The Az PowerShell module was not found. This script uses the Az modules for PowerShell"
-    Write-Warning "See the blog post for more information at: https://azure.microsoft.com/blog/how-to-migrate-from-azurerm-to-az-in-azure-powershell/"
-    Return
-    }
-
+# 3.1 Validate and Initialize
 # Load Initialization Variables
-$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
+$ScriptDir = "$env:HOME/Scripts"
 If (Test-Path -Path $ScriptDir\init.txt) {
         Get-Content $ScriptDir\init.txt | Foreach-Object{
         $var = $_.Split('=')
@@ -41,42 +29,39 @@ If (Test-Path -Path $ScriptDir\init.txt) {
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
 # Non-configurable Variable Initialization (ie don't modify these)
-$ShortRegion = "westus2"
-$RGName = "Company" + $CompanyID
-$VNetName = "C" + $CompanyID + "-VNet"
-$VMName = "C" + $CompanyID + "-VM01"
-$VMSize = "Standard_A4_v2"
+# $SubID defined in and pulled from the init.txt file above
+# $ShortRegion defined in and pulled from the init.txt file above
+# $RGName defined in and pulled from the init.txt file above
+$VNetName   = "VNet01"
+$VMName     = "Hub-VM01"
+$VMSize     = "Standard_A4_v2"
 $UserName01 = "User01"
 $UserName02 = "User02"
 $UserName03 = "User03"
+$kvName     = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
 
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 2, estimated total time 15 minutes" -ForegroundColor Cyan
+Write-Host "Starting step 3, estimated total time 15 minutes" -ForegroundColor Cyan
 
-# Login and permissions check
+# Set Subscription
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Checking login and permissions" -ForegroundColor Cyan
 Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null}
-Catch {# Login and set subscription for ARM
-       Write-Host "Logging in to ARM"
+Catch {Write-Host "Logging in to ARM"
        Try {$Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
-       Catch {Connect-AzAccount | Out-Null
-              $Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
-       Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"
-       Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null}
        Catch {Write-Warning "Permission check failed, ensure company id is set correctly!"
               Return}
-}
+       Write-Host "Current Sub:",$Sub.Name,"(",$Sub.Id,")"}
 
-# 2.2 Create the VM
+# 3.2 Create the VM
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating VM" -ForegroundColor Cyan
 Write-Host "  Pulling KeyVault Secret"
-$kvs01 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $UserName01 -ErrorAction Stop
-$kvs02 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $UserName02 -ErrorAction Stop
-$kvs03 = Get-AzKeyVaultSecret -VaultName $RGName"-kv" -Name $UserName03 -ErrorAction Stop 
+$kvs01 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName01 -ErrorAction Stop
+$kvs02 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName02 -ErrorAction Stop
+$kvs03 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName03 -ErrorAction Stop 
 $cred = New-Object System.Management.Automation.PSCredential ($kvs01.Name, $kvs01.SecretValue)
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs02.SecretValue)
 try {
@@ -91,13 +76,13 @@ try {
     [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
 }
 
-# 2.2.1 Create Public IP
+# 3.2.1 Create Public IP
 Write-Host "  Creating Public IP"
 Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
 Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -Location $ShortRegion -AllocationMethod Dynamic}
 
-# 2.2.2 Create NSG
+# 3.2.2 Create NSG
 Write-Host "  Creating NSG"
 $nsgRuleRDP = New-AzNetworkSecurityRuleConfig -Name myNSGRuleRDP -Protocol Tcp -Direction Inbound -Priority 1000 `
               -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 3389 -Access Allow
@@ -105,7 +90,7 @@ Try {$nsg = Get-AzNetworkSecurityGroup -Name $VMName'-nic-nsg' -ResourceGroupNam
 Write-Host "    NSG exists, skipping"}
 Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VMName'-nic-nsg' -SecurityRules $nsgRuleRDP}
 
-# 2.2.3 Create NIC
+# 3.2.3 Create NIC
 Write-Host "  Creating NIC"
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
 $sn =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
@@ -113,20 +98,19 @@ Try {$nic = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic
      Write-Host "    NIC exists, skipping"}
 Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -Location $ShortRegion -Subnet $sn -PublicIpAddress $pip -NetworkSecurityGroup $nsg}
 
-# 2.2.4 Build VM
+# 3.2.4 Build VM
 Write-Host "  Creating VM"
 Try {Get-AzVM -ResourceGroupName $RGName -Name $VMName -ErrorAction Stop | Out-Null
           Write-Host "    VM exists, skipping"}
 Catch {$vmConfig = New-AzVMConfig -VMName $VMName -VMSize $VMSize -ErrorAction Stop
        $vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Windows -ComputerName $VMName -Credential $cred -ProvisionVMAgent -EnableAutoUpdate
-       #$vmConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $VMName'-disk-os' -Windows -StorageAccountType Premium_LRS -DiskSizeInGB 30
        $vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2019-Datacenter -Version latest
        $vmConfig = Add-AzVMNetworkInterface -VM $vmConfig -Id $nic.Id
        $vmConfig = Set-AzVMBootDiagnostic -VM $vmConfig -Disable
        Write-Host "      queuing VM build job"
        New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $vmConfig -AsJob | Out-Null}
 
-# 2.3 Run post deploy job
+# 3.3 Run post deploy job
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Waiting for the VM to deploy, this script will continue after 10 minutes or when the VM is built, whichever comes first." -ForegroundColor Cyan
 Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
@@ -156,7 +140,7 @@ Catch {Write-Host "  queuing build job."
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 2 completed successfully" -ForegroundColor Green
+Write-Host "Step 3 completed successfully" -ForegroundColor Green
 Write-Host "  Review your VM and it's components in the Azure Portal"
 Write-Host "  RDP to your new Azure VM using the Public IP"
 Write-Host "  The VM Public IP is " -NoNewline
