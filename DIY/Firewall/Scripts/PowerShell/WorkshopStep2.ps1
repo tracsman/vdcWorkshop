@@ -24,15 +24,15 @@ If (Test-Path -Path $ScriptDir\init.txt) {
         Catch {Set-Variable -Name $var[0].Trim() -Value $var[1].Trim()}}}
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
-# Non-configurable Variable Initialization (ie don't modify these)
-# $SubID defined in and pulled from the init.txt file above
+# Variable Initialization
+# $SubID     = defined in and pulled from the init.txt file above
 # $ShortRegion defined in and pulled from the init.txt file above
-# $RGName defined in and pulled from the init.txt file above
-$VNetName   = "VNet01"
-$HubAddress = "10.11.12.0/25"
-$snTenant   = "10.11.12.0/27"
-$snGateway  = "10.11.12.32/27"
-$snFirewall = "10.11.12.64/26"
+# $RGName    = defined in and pulled from the init.txt file above
+$VNetName    = "VNet01"
+$HubAddress  = "10.11.12.0/25"
+$snTenant    = "10.11.12.0/27"
+$snGateway   = "10.11.12.32/27"
+$snFirewall  = "10.11.12.64/26"
 
 # Start nicely
 Write-Host

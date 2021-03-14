@@ -27,11 +27,12 @@ If (Test-Path -Path $ScriptDir\init.txt) {
         Catch {Set-Variable -Name $var[0].Trim() -Value $var[1].Trim()}}}
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
-# Non-configurable Variable Initialization (ie don't modify these)
-# $SubID defined in and pulled from the init.txt file above
+# Variable Initialization
+# $SubID     = defined in and pulled from the init.txt file above
 # $ShortRegion defined in and pulled from the init.txt file above
-# $RGName defined in and pulled from the init.txt file above
+# $RGName    = defined in and pulled from the init.txt file above
 
+# Define Password pattern match RegEx
 $RegEx='^(?=\P{Ll}*\p{Ll})(?=\P{Lu}*\p{Lu})(?=\P{N}*\p{N})(?=[\p{L}\p{N}]*[^\p{L}\p{N}])[\s\S]{12,}$'
 
 # Set VM User 1

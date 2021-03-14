@@ -28,17 +28,17 @@ If (Test-Path -Path $ScriptDir\init.txt) {
         Catch {Set-Variable -Name $var[0].Trim() -Value $var[1].Trim()}}}
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
-# Non-configurable Variable Initialization (ie don't modify these)
-# $SubID defined in and pulled from the init.txt file above
+# Variable Initialization
+# $SubID     = defined in and pulled from the init.txt file above
 # $ShortRegion defined in and pulled from the init.txt file above
-# $RGName defined in and pulled from the init.txt file above
-$VNetName   = "VNet01"
-$VMName     = "Hub-VM01"
-$VMSize     = "Standard_A4_v2"
-$UserName01 = "User01"
-$UserName02 = "User02"
-$UserName03 = "User03"
-$kvName     = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
+# $RGName    = defined in and pulled from the init.txt file above
+$VNetName    = "VNet01"
+$VMName      = "Hub-VM01"
+$VMSize      = "Standard_A4_v2"
+$UserName01  = "User01"
+$UserName02  = "User02"
+$UserName03  = "User03"
+$kvName      = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
 
 # Start nicely
 Write-Host
