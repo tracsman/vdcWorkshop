@@ -2,7 +2,7 @@ Write-Host
 Write-Host "DIY Lab Deploy Utility" -ForegroundColor Cyan
 Write-Host
 # Ensure we're in a Cloud Shell session
-If (-not -not ([environment]::GetEnvironmentVariable("AZUREPS_HOST_ENVIRONMENT") -match "cloud-shell")) {
+If (-not ([environment]::GetEnvironmentVariable("AZUREPS_HOST_ENVIRONMENT") -match "cloud-shell")) {
     Write-Host
     Write-Host "FATAL ERROR: Not in an Azure Cloud Shell session" -ForegroundColor Red
     Write-Host
