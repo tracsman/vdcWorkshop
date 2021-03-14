@@ -146,7 +146,7 @@ Else {$RuleSA = New-AzFirewallApplicationRule -Name 'StorageURLAllow' -SourceAdd
       $RuleCollection = New-AzFirewallApplicationRuleCollection -Name "FWAppRules" -Priority 100 -Rule $RuleSA -ActionType "Allow"
       $firewall.ApplicationRuleCollections = $RuleCollection
       Set-AzFirewall -AzureFirewall $firewall | Out-Null
-      $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $RGName'-Firewall'}
+      $firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName}
 
 # 5.5 Configure Firewall Network Rules
 Write-Host (Get-Date)' - ' -NoNewline
@@ -200,14 +200,14 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Hub to Spoke" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkPeering -Name "HubtoSpoke" -VirtualNetworkName $HubVNetName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
      Write-Host "  peering exists, skipping" }
-Catch {Try {Add-AzVirtualNetworkPeering -Name "HubtoSpoke" -VirtualNetwork $hubvnet -RemoteVirtualNetworkId $vnet.Id -AllowGatewayTransit -ErrorAction Stop | Out-Null}
+Catch {Try {Add-AzVirtualNetworkPeering -Name "HubtoSpoke" -VirtualNetwork $hubvnet -RemoteVirtualNetworkId $vnet.Id -ErrorAction Stop | Out-Null}
 	   Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Spoke to Hub" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkPeering -Name "SpoketoHub" -VirtualNetworkName $VNetName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
      Write-Host "  peering exists, skipping" }
-Catch {Try {Add-AzVirtualNetworkPeering -Name "SpoketoHub" -VirtualNetwork $vnet -RemoteVirtualNetwork $hubvnet.Id -UseRemoteGateways -ErrorAction Stop | Out-Null}
+Catch {Try {Add-AzVirtualNetworkPeering -Name "SpoketoHub" -VirtualNetwork $vnet -RemoteVirtualNetwork $hubvnet.Id -ErrorAction Stop | Out-Null}
 	   Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
 # 5.9 Assign Firewall UDR to subnet
