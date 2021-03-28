@@ -3,9 +3,9 @@
 # DIY Firewall Workshop - Step 5 - Optional Challenge
 
 ## Abstract
-In this optional challenge step, you can take your Firewall investigation deeper and review the logs and output from the Firewall protecting your web site.
+In this optional challenge step, you can take the Firewall investigation deeper and review the logs and output from the Firewall protecting the web site.
 
-In this step you'll hook up your Firewall output to your Log Analytics workspace and review the logged output.
+In this step you'll hook up the Firewall output to the Log Analytics workspace and review the logged output.
 
 ## Deployment
 ### Turn on and review monitoring

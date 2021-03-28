@@ -75,5 +75,5 @@ To get started, proceed to the Initialization step where you initialize your Clo
 
 
 <!--Image References-->
-[1]: ./Media/Final.svg "Workshop final as-built diagram" 
+[1]: ./Media/Step5.svg "Workshop final as-built diagram" 
 
