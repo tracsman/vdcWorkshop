@@ -38,6 +38,7 @@ Activity | Duration
 [Step 3: Create an internet facing VM][Step3] | 10 minutes
 [Step 4: Create and configure the Azure Firewall][Step4] | 75 minutes
 [Step 5: Create Spoke VNet with IIS Server and firewall rules to allow traffic][Step5] | 25 minutes
+[Step 5: (Optional Challenge) Attach Firewall to Log Analytics][Step5Challenge] | Varies
 
 [![1]][1]
 
@@ -66,6 +67,7 @@ To get started, proceed to the Initialization step where you initialize your Clo
 [Step3]: ./WorkshopStep3.md
 [Step4]: ./WorkshopStep4.md
 [Step5]: ./WorkshopStep5.md
+[Step5Challenge]: ./WorkshopStep5Challenge.md
 
 [Paper]: https://docs.microsoft.com/azure/architecture/vdc/networking-virtual-datacenter
 [Server]: ./Scripts/ServerSideScripts
