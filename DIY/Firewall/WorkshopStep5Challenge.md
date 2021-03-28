@@ -29,6 +29,7 @@ In this step you'll hook up your Firewall output to your Log Analytics workspace
 ## Application Diagram After this Step is Complete
 [![1]][1]
 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 5 (cont)&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Main Page][Next] 
 
 <!--Link References-->
 [Prev]: ./WorkshopStep5.md

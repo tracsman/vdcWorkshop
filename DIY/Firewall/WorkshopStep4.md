@@ -23,6 +23,7 @@ Once you're done with this step, you will have just protected your resources fro
 ## Application Diagram After this Step is Complete
 [![1]][1]
 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 4&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
 
 <!--Link References-->
 [Prev]: ./WorkshopStep3.md

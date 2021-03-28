@@ -26,6 +26,7 @@ Once you're done with this step,
 ## Application Diagram After this Step is Complete
 [![1]][1]
 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 5&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
 
 <!--Link References-->
 [Prev]: ./WorkshopStep4.md

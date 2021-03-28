@@ -23,6 +23,7 @@ Once you're done with this step, you will know how to deploy a simple, publicly 
 ## Application Diagram After this Step is Complete
 [![1]][1]
 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 3&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
 
 <!--Link References-->
 [Prev]: ./WorkshopStep2.md

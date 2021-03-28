@@ -49,9 +49,9 @@ Activity | Duration
 
 ## Lab Guide
 
-Throughout a series of 5 scripts you will progressively implement a hub and spoke network design running an IIS based web site protected by an Azure Firewall. 
+Through a series of 5 scripts you will progressively implement a hub and spoke network design running an IIS based web site protected by an Azure Firewall. 
 
-All building scripts will be run in a Cloud Shell PowerShell session, this way you all SDK and PowerShell settings are done for you, making getting started much faster and focusing on the build out of the workshop resources not getting started with PowerShell.
+All building scripts will be run in a Cloud Shell PowerShell session, this way all SDK and PowerShell settings are done for you, making getting started much faster and focusing on the build out of the workshop resources not getting started with PowerShell.
 
 By the end of the workshop you will have implemented the lab architecture referenced in the diagram above.
 
@@ -75,5 +75,5 @@ To get started, proceed to the Initialization step where you initialize your Clo
 
 
 <!--Image References-->
-[1]: ./Documents/Firewall.png "Firewall Image" 
+[1]: ./Media/Final.svg "Workshop final as-built diagram" 
 
