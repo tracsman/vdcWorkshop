@@ -35,7 +35,7 @@ switch ($MenuItem.Character) {
          $FileName += 'WorkshopStep3.ps1'
          $FileName += 'WorkshopStep4.ps1'
          $FileName += 'WorkshopStep5.ps1'
-         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/master/DIY/Firewall/Scripts/PowerShell/'}
+         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/master/DIY/Firewall/Scripts/'}
     "0" {Write-Host "Exiting" -ForegroundColor Cyan
          Write-Host
          Return}
