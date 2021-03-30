@@ -36,7 +36,7 @@ Activity | Duration
 [Step 1: Create resource group, key vault, and secret][Step1] | 2 minutes
 [Step 2: Create Virtual Network][Step2] | 2 minutes
 [Step 3: Create an internet facing VM][Step3] | 10 minutes
-[Step 4: Create and configure the Azure Firewall][Step4] | 75 minutes
+[Step 4: Create and configure the Azure Firewall][Step4] | 25 minutes
 [Step 5: Create Spoke VNet with IIS Server and firewall rules to allow traffic][Step5] | 25 minutes
 [Step 5: (Optional Challenge) Attach Firewall to Log Analytics][Step5Challenge] | Varies
 
