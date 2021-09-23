@@ -68,7 +68,7 @@ Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscrip
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Checking Login" -ForegroundColor Cyan
-$RegEx = '^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$'
+$RegEx = '^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$'
 If ($myContext.Account.Id -notmatch $RegEx) {
         Write-Host "Fatal Error: You are logged in with a Managed Service bearer token" -ForegroundColor Red
         Write-Host "To correct this, you'll need to login using your Azure credentials."
