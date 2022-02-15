@@ -22,14 +22,21 @@ Each top level folder is a independent lab (except for "ServerSideScripts", more
 
     [![1]][1]
 
+## Beta Workshops in Development
+
+* [Workshop Maximus][Max] - This modular workshop builds out as many Azure IaaS Networking features as I could work into a story. It is initially four steps, but will eventually get to around 11 steps. Release 1 will cover VNets, NSGs, Public IPs, Firewall, UDRs, VNet Peering, App Gateway, and Load Balancer. The next release will encompass Private Endpoints, NVAs, VPN, Bastion, Global VNet Peering, and ASGs. The third release will cover AFD, Firewall Manager, DNS, Azure Virtual Network Manager, and Route Server. The final release will incorporate CDN, Traffic Manager, and perhaps vWAN (although vWAN may be it's own separate workshop).
+
+    [![2]][2]
+
 ## Server Side Scripts
 
-Also contained in the repo is a Scripts directory called "[ServerSideScripts][Server]", this contains scripts that are pushed to the newly build Azure VMs and run as a part of some of the deployments. You can use these as model for deploying your applications or settings. For more complex deployments Chef, Puppet, Ansible, etc can be used.
+Also contained in the repo is a Scripts directory called "[ServerSideScripts][Server]", this contains scripts that are pushed to the newly built Azure VMs and run as a part of some of the deployments. You can use these as models for deploying your applications or settings. For more complex deployments Chef, Puppet, Ansible, etc can be used.
 
 <!--Link References-->
 [Paper]: https://docs.microsoft.com/azure/architecture/vdc/networking-virtual-datacenter
 [AFD]: ./AFDLab/
 [Firewall]: ./Firewall/
+[Max]: ./Maximus/
 [HubSpoke]: ./HubSpokeLab/
 [vWAN]: ./vWanLab/
 [Server]: ./Scripts/ServerSideScripts
@@ -37,5 +44,6 @@ Also contained in the repo is a Scripts directory called "[ServerSideScripts][Se
 <!--Image References-->
 [0]: ./AFDLab/Documents/AFD.png "AFD Image"
 [1]: ./Firewall/Documents/Firewall.png "Firewall Image" 
-[2]: ./HubSpokeLab/Documents/HubSpoke.png "Hub and Spoke Image"
-[3]: ./vWanLab/Documents/vWAN.png "Virtual WAN Image"
+[2]: ./Maximus/Documents/Max.png "Workshop Maximus Image"
+[3]: ./HubSpokeLab/Documents/HubSpoke.png "Hub and Spoke Image"
+[4]: ./vWanLab/Documents/vWAN.png "Virtual WAN Image"
