@@ -1,8 +1,6 @@
 # Creating a Virtual Data Center - Self Service Labs
 ## A network perspective
 
-> **WARNING**: This DIY folder and all sub-folders are currently in developement and SHOULD NOT be used. I'll remove this warning when I get the first workshop, Firewall, complete.
-
 This GitHub repo is based on some of the topics mentioned in the [Azure Virtual Data Center paper][Paper]. The goal is to provide example of some of the key network technologies available in Azure in a very hands-on and informative way.
 
 Your uses cases will be much more complex than the examples provided herein, but hopefully these environment patterns that will be the foundation for your use case. 
