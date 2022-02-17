@@ -29,6 +29,7 @@ Write-Host
 Write-Host
 switch ($MenuItem.Character) {
     "1" {Write-Host "Firewall Lab was selected" -ForegroundColor Cyan
+         $RGName = "FWLab"
          $FileName = @()
          $FileName += 'Validate-Lab.ps1'
          $FileName += 'WorkshopStep1.ps1'
@@ -38,6 +39,7 @@ switch ($MenuItem.Character) {
          $FileName += 'WorkshopStep5.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/master/DIY/Firewall/Scripts/'}
     "2" {Write-Host "Firewall Lab was selected" -ForegroundColor Cyan
+         $RGName = "MaxLab"
          $FileName = @()
          $FileName += 'Validate-Lab.ps1'
          $FileName += 'Module01.ps1'
@@ -71,7 +73,7 @@ Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Init File" -ForegroundColor Cyan
 If (-Not (Test-Path $ScriptPath\init.txt)){
-    $FileContent = "SubID=00000000-0000-0000-0000-000000000000" + "`nShortRegion=westus2" + "`nRGName=FWLab"
+    $FileContent = "SubID=00000000-0000-0000-0000-000000000000" + "`nShortRegion=westus2" + "`nRGName=" + $RGName
     Out-File -FilePath "$ScriptPath\init.txt" -Encoding ascii -InputObject $FileContent -Force
 }
 

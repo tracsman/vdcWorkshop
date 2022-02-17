@@ -1,6 +1,6 @@
 [Main Page][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 0&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
 
-# DIY Firewall Workshop - Cloud Shell Initialization (Step 0)
+# DIY Workshop Maximus - Cloud Shell Initialization (Step 0)
 
 ## Abstract
 [Azure Cloud Shell][CloudShell] is an interactive, authenticated, browser-accessible shell for managing Azure resources. It provides the flexibility of choosing the shell experience that best suits the way you work, either Bash or PowerShell. We'll be using the Cloud Shell for the deployment of PowerShell scripts in today's workshop. Using the Cloud Shell provides a unified foundation to interact with Azure with all the PowerShell settings and Azure SDKs loaded, so you can start the shell and immediately begin interacting with Azure.
@@ -27,7 +27,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
    and follow the instructions. Login using your Azure Portal credentials
 6. In Cloud Shell run the following to download the workshop files
     ```powershell 
-    (IWR aka.ms/1).Content | IEX
+    (IWR aka.ms/1Beta).Content | IEX
     ```
     > **NOTE**
     > A warning about the subscription ID will be shown, we’ll fix this next
