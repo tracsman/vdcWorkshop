@@ -1,20 +1,26 @@
 ﻿#
-# DIY Azure Firewall Workshop
+# DIY Workshop Maximus
 #
 #
-# Step 1 Create resource group, key vault, and secret
-# Step 2 Create Virtual Network
-# Step 3 Create an internet facing VM
-# Step 4 Create and configure the Azure Firewall
-# Step 5 Create Spoke VNet with IIS Server and a firewall rule to allow traffic
+# Module 1 - Hub - Create resource group, key vault and secret, Hub VNet, VM, and deploy website
+# Module 2 - Access - Create NSG, Public IP, Bastion, IP Prefix, VNet NAT
+# Module 3 - Secure - Create Firewall, Firewall Policy, Log Analytics, UDR
+# Module 4 - Web Tier - Create Spoke1 VNet, VNet Peering, 3xVM with Web Site, App Gateway
+# Module 5 - Data Tier - Create Spoke2 VNet, Load Balancer, VMSS configured as a File Server
 # 
 
-# Step 1 Create resource group, key vault, and secret
+# Module 1 - Hub
 # 1.1 Validate and Initialize
 # 1.2 Create resource group
 # 1.3 Create key vault
 # 1.4 Set Key Vault Access Policy
 # 1.5 Create Secrets
+# 1.6 Create VNet
+# 1.6.1 Create Tenant Subnet NSG
+# 1.7 Create the VM
+# 1.7.1 Create NIC
+# 1.7.2 Build VM
+# 1.8 Run post deploy job
 #
 
 # 1.1 Validate and Initialize
@@ -31,6 +37,17 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # $SubID     = defined in and pulled from the init.txt file above
 # $ShortRegion defined in and pulled from the init.txt file above
 # $RGName    = defined in and pulled from the init.txt file above
+$VNetName    = "Hub01-VNet01"
+$HubAddress  = "10.11.12.0/25"
+$snTenant    = "10.11.12.0/27"
+$snGateway   = "10.11.12.32/27"
+$snFirewall  = "10.11.12.64/26"
+$VNetName    = "Hub01-VNet01"
+$VMName      = "Hub01-VM01"
+$VMSize      = "Standard_A4_v2"
+$UserName01  = "User01"
+$UserName02  = "User02"
+$UserName03  = "User03"
 
 # Define Password pattern match RegEx
 $RegEx='^(?=\P{Ll}*\p{Ll})(?=\P{Lu}*\p{Lu})(?=\P{N}*\p{N})(?=[\p{L}\p{N}]*[^\p{L}\p{N}])[\s\S]{12,}$'
@@ -140,6 +157,97 @@ Else {Write-Host "  $User02Name exists, skipping"}
 $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $User03Name -ErrorAction Stop 
 If ($null -eq $kvs) {$kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name $User03Name -SecretValue $User03SecPass -ErrorAction Stop}
 Else {Write-Host "  $User03Name exists, skipping"}
+
+# 1.6 Create VNet
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating Virtual Network" -ForegroundColor Cyan
+Try {$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
+     Write-Host "  resource exists, skipping"}
+Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -AddressPrefix $HubAddress -Location $ShortRegion  
+       Write-Host (Get-Date)' - ' -NoNewline
+       Write-Host "Adding subnets" -ForegroundColor Cyan
+       Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnet -AddressPrefix $snTenant | Out-Null
+       Add-AzVirtualNetworkSubnetConfig -Name "GatewaySubnet" -VirtualNetwork $vnet -AddressPrefix $snGateway | Out-Null
+       Add-AzVirtualNetworkSubnetConfig -Name "AzureFirewallSubnet" -VirtualNetwork $vnet -AddressPrefix $snFirewall | Out-Null
+       Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
+       }
+
+# 1.6.1 Create Tenant Subnet NSG
+Write-Host "  Creating NSG"
+$nsgRuleRDP = New-AzNetworkSecurityRuleConfig -Name myNSGRuleRDP -Protocol Tcp -Direction Inbound -Priority 1000 `
+              -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 3389 -Access Allow
+Try {$nsg = Get-AzNetworkSecurityGroup -Name $VMName'-nic-nsg' -ResourceGroupName $RGName -ErrorAction Stop
+Write-Host "    NSG exists, skipping"}
+Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VMName'-nic-nsg' -SecurityRules $nsgRuleRDP}
+
+# 1.7 Create VM
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating VM" -ForegroundColor Cyan
+Write-Host "  Pulling KeyVault Secret"
+$kvs01 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName01 -ErrorAction Stop
+$kvs02 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName02 -ErrorAction Stop
+$kvs03 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName03 -ErrorAction Stop 
+$cred = New-Object System.Management.Automation.PSCredential ($kvs01.Name, $kvs01.SecretValue)
+$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs02.SecretValue)
+try {
+    $kvs02 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
+} finally {
+    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
+}
+$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs03.SecretValue)
+try {
+    $kvs03 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
+} finally {
+    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
+}
+
+# 1.7.1 Create NIC
+Write-Host "  Creating NIC"
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
+$sn =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
+Try {$nic = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop
+     Write-Host "    NIC exists, skipping"}
+Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -Location $ShortRegion -Subnet $sn -PublicIpAddress $pip -NetworkSecurityGroup $nsg}
+
+# 1.7.1 Build VM
+Write-Host "  Creating VM"
+Try {Get-AzVM -ResourceGroupName $RGName -Name $VMName -ErrorAction Stop | Out-Null
+          Write-Host "    VM exists, skipping"}
+Catch {$vmConfig = New-AzVMConfig -VMName $VMName -VMSize $VMSize -ErrorAction Stop
+       $vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Windows -ComputerName $VMName -Credential $cred -ProvisionVMAgent -EnableAutoUpdate
+       $vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2019-Datacenter -Version latest
+       $vmConfig = Add-AzVMNetworkInterface -VM $vmConfig -Id $nic.Id
+       $vmConfig = Set-AzVMBootDiagnostic -VM $vmConfig -Disable
+       Write-Host "      queuing VM build job"
+       New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $vmConfig -AsJob | Out-Null}
+
+# 1.8 Run post deploy job
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Waiting for the VM to deploy, this script will continue after 10 minutes or when the VM is built, whichever comes first." -ForegroundColor Cyan
+Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
+
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Running post VM deploy build script" -ForegroundColor Cyan
+$ScriptStorageAccount = "vdcworkshop"
+$ScriptName = "FirewallVMBuild.ps1"
+$ExtensionName = 'FWBuildVM'
+$timestamp = (Get-Date).Ticks
+$ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
+$ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
+$PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
+
+Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Name $ExtensionName -ErrorAction Stop | Out-Null
+     Remove-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Name $ExtensionName -Force -ErrorAction Stop | Out-Null
+     Write-Host "  extension found and removed."}
+Catch {}
+
+Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Name $ExtensionName -ErrorAction Stop | Out-Null
+     Write-Warning "Extension still exists, ending script"
+     Return}
+Catch {Write-Host "  queuing build job."
+       Set-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Location $ShortRegion -Name $ExtensionName `
+                         -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
+                         -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline

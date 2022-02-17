@@ -1,6 +1,6 @@
-[Main Page][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 0&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
+[Main Page][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Module 0&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
 
-# DIY Workshop Maximus - Cloud Shell Initialization (Step 0)
+# DIY Workshop Maximus - Cloud Shell Initialization (Module 0)
 
 ## Abstract
 [Azure Cloud Shell][CloudShell] is an interactive, authenticated, browser-accessible shell for managing Azure resources. It provides the flexibility of choosing the shell experience that best suits the way you work, either Bash or PowerShell. We'll be using the Cloud Shell for the deployment of PowerShell scripts in today's workshop. Using the Cloud Shell provides a unified foundation to interact with Azure with all the PowerShell settings and Azure SDKs loaded, so you can start the shell and immediately begin interacting with Azure.
@@ -54,7 +54,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 
 <!--Link References-->
 [Prev]: ./README.md
-[Next]: ./WorkshopStep1.md
+[Next]: ./Module01.md
 [CloudShell]: https://docs.microsoft.com/azure/cloud-shell/overview
 
 <!--Image References-->

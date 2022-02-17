@@ -32,13 +32,12 @@ The workshop can be completed at your own pace depending on your previous experi
 
 Activity | Duration
 -------- | ---------
-[Cloud Shell Initialization and Updates][Step0] | 15 minutes
-[Step 1: Create resource group, key vault, and secret][Step1] | 2 minutes
-[Step 2: Create Virtual Network][Step2] | 2 minutes
-[Step 3: Create an internet facing VM][Step3] | 10 minutes
-[Step 4: Create and configure the Azure Firewall][Step4] | 15 minutes
-[Step 5: Create Spoke VNet with IIS Server and firewall rules to allow traffic][Step5] | 25 minutes
-[Step 5: (Optional Challenge) Attach Firewall to Log Analytics][Step5Challenge] | Varies
+[Cloud Shell Initialization and Updates][Module0] | 15 minutes
+[Step 1: Create resource group, key vault, and secret][Module1] | 2 minutes
+[Step 2: Create Virtual Network][Module2] | 2 minutes
+[Step 3: Create an internet facing VM][Module3] | 10 minutes
+[Step 4: Create and configure the Azure Firewall][Module4] | 15 minutes
+[Step 5: Create Spoke VNet with IIS Server and firewall rules to allow traffic][Module5] | 25 minutes
 
 [![1]][1]
 
@@ -61,13 +60,12 @@ To get started, proceed to the Initialization step where you initialize your Clo
 [PayGo]: https://azure.microsoft.com/pricing/purchase-options/pay-as-you-go/
 [MacRDP]:  https://apps.apple.com/us/app/microsoft-remote-desktop-10/id1295203466?mt=12
 [FWDeck]: ./Documents/Firewall%20Workshop.pptx
-[Step0]: ./WorkshopStep0.md
-[Step1]: ./WorkshopStep1.md
-[Step2]: ./WorkshopStep2.md
-[Step3]: ./WorkshopStep3.md
-[Step4]: ./WorkshopStep4.md
-[Step5]: ./WorkshopStep5.md
-[Step5Challenge]: ./WorkshopStep5Challenge.md
+[Module0]: ./Module00.md
+[Module1]: ./Module01.md
+[Module2]: ./Module02.md
+[Module3]: ./Module03.md
+[Module4]: ./Module04.md
+[Module5]: ./Module05.md
 
 [Paper]: https://docs.microsoft.com/azure/architecture/vdc/networking-virtual-datacenter
 [Server]: ./Scripts/ServerSideScripts

@@ -1,6 +1,6 @@
 << [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
 
-# DIY Firewall Workshop - Step 1
+# DIY Workshop Maximus - Module 1
 
 ## Abstract
 In this step we change to the Scripts directory and execute the Step 1 PowerShell Script. This establishes the pattern for all future steps in this workshop.
@@ -31,8 +31,8 @@ Once you're done with this step, you will see a Resource Group in Azure to which
 << [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
 
 <!--Link References-->
-[Prev]: ./WorkshopStep0.md
-[Next]: ./WorkshopStep2.md
+[Prev]: ./Module00.md
+[Next]: ./Module02.md
 
 <!--Image References-->
 [1]: ./Media/Step1.svg "As built diagram for step 1" 
