@@ -15,7 +15,7 @@
 # 1.3 Create key vault
 # 1.4 Set Key Vault Access Policy
 # 1.5 Create Secrets
-# 1.6 Create VNet
+# 1.6 Create VNet and subnets
 # 1.6.1 Create Tenant Subnet NSG
 # 1.7 Create the VM
 # 1.7.1 Create NIC
@@ -38,12 +38,14 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # $ShortRegion defined in and pulled from the init.txt file above
 # $RGName    = defined in and pulled from the init.txt file above
 $VNetName    = "Hub01-VNet01"
-$HubAddress  = "10.11.12.0/25"
-$snTenant    = "10.11.12.0/27"
-$snGateway   = "10.11.12.32/27"
-$snFirewall  = "10.11.12.64/26"
-$VNetName    = "Hub01-VNet01"
-$VMName      = "Hub01-VM01"
+$HubAddress  = "10.0.0.0/16"
+$snTenant    = "10.0.1.0/24"
+$snBastion   = "10.0.2.0/24"
+$snFirewall  = "10.0.3.0/24"
+$snGateway   = "10.0.4.0/24"
+$snRtSvr     = "10.0.5.0/24"
+$VNetName    = "Hub-VNet"
+$VMName      = "Hub-VM01"
 $VMSize      = "Standard_A4_v2"
 $UserName01  = "User01"
 $UserName02  = "User02"
@@ -116,7 +118,6 @@ $kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).V
 
 # If found, ensure this Key Vault isn't in removed state
 if ($null -ne $kvName) {$kv = Get-AzKeyVault -VaultName $kvName -Location $ShortRegion -InRemovedState}
-
 If ($null -eq $kvName -or $null -ne $kv) {
    Do {$kvRandom = Get-Random
        $kvName = $RGName + '-kv' + "-$kvRandom"
@@ -158,7 +159,7 @@ $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $User03Name -ErrorAction St
 If ($null -eq $kvs) {$kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name $User03Name -SecretValue $User03SecPass -ErrorAction Stop}
 Else {Write-Host "  $User03Name exists, skipping"}
 
-# 1.6 Create VNet
+# 1.6 Create VNet and subnets
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Virtual Network" -ForegroundColor Cyan
 Try {$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
@@ -167,18 +168,21 @@ Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -
        Write-Host (Get-Date)' - ' -NoNewline
        Write-Host "Adding subnets" -ForegroundColor Cyan
        Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnet -AddressPrefix $snTenant | Out-Null
-       Add-AzVirtualNetworkSubnetConfig -Name "GatewaySubnet" -VirtualNetwork $vnet -AddressPrefix $snGateway | Out-Null
+       Add-AzVirtualNetworkSubnetConfig -Name "AzureBastionSubnet" -VirtualNetwork $vnet -AddressPrefix $snBastion | Out-Null
        Add-AzVirtualNetworkSubnetConfig -Name "AzureFirewallSubnet" -VirtualNetwork $vnet -AddressPrefix $snFirewall | Out-Null
+       Add-AzVirtualNetworkSubnetConfig -Name "GatewaySubnet" -VirtualNetwork $vnet -AddressPrefix $snGateway | Out-Null
+       Add-AzVirtualNetworkSubnetConfig -Name "RouteServerSubnet" -VirtualNetwork $vnet -AddressPrefix $snRtSvr | Out-Null
        Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
        }
 
 # 1.6.1 Create Tenant Subnet NSG
 Write-Host "  Creating NSG"
-$nsgRuleRDP = New-AzNetworkSecurityRuleConfig -Name myNSGRuleRDP -Protocol Tcp -Direction Inbound -Priority 1000 `
-              -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 3389 -Access Allow
-Try {$nsg = Get-AzNetworkSecurityGroup -Name $VMName'-nic-nsg' -ResourceGroupName $RGName -ErrorAction Stop
+Try {$nsg = Get-AzNetworkSecurityGroup -Name $VNetName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
 Write-Host "    NSG exists, skipping"}
-Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VMName'-nic-nsg' -SecurityRules $nsgRuleRDP}
+Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VNetName'-nsg'}
+
+# Assign NSG to the Tenant Subnet
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
 
 # 1.7 Create VM
 Write-Host (Get-Date)' - ' -NoNewline
