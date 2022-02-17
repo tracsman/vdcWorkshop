@@ -1,10 +1,11 @@
 # Validate Environment - For Workshop Maximus
 
 $FileName = @()
-$FileName += 'WorkshopStep1.ps1'
-$FileName += 'WorkshopStep2.ps1'
-$FileName += 'WorkshopStep3.ps1'
-$FileName += 'WorkshopStep4.ps1'
+$FileName += 'Module01.ps1'
+$FileName += 'Module02.ps1'
+$FileName += 'Module03.ps1'
+$FileName += 'Module04.ps1'
+$FileName += 'Module05.ps1'
 $ErrorBit=$False
 $ScriptPath = "$env:HOME/Scripts"
 $SubID = $null
