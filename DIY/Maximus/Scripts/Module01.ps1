@@ -3,7 +3,7 @@
 #
 #
 # Module 1 - Hub - Create resource group, key vault and secret, Hub VNet, VM, and deploy website
-# Module 2 - Access - Create NSG, Public IP, Bastion, IP Prefix, VNet NAT
+# Module 2 - Access - Create NSG, Public IPs, IP Prefix, Bastion, VNet NAT
 # Module 3 - Secure - Create Firewall, Firewall Policy, Log Analytics, UDR
 # Module 4 - Web Tier - Create Spoke1 VNet, VNet Peering, 3xVM with Web Site, App Gateway
 # Module 5 - Data Tier - Create Spoke2 VNet, Load Balancer, VMSS configured as a File Server
@@ -174,22 +174,6 @@ Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -
        Add-AzVirtualNetworkSubnetConfig -Name "RouteServerSubnet" -VirtualNetwork $vnet -AddressPrefix $snRtSvr | Out-Null
        Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
        }
-
-# 1.6.1 Create Tenant Subnet NSG
-Write-Host "  Creating NSG"
-Try {$nsg = Get-AzNetworkSecurityGroup -Name $VNetName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
-Write-Host "    NSG exists, skipping"}
-Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VNetName'-nsg'}
-
-# Assign NSG to the Tenant Subnet
-Write-Host "    Assigning NSG"
-$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
-$sn =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
-if ($null -eq $sn.NetworkSecurityGroup) {
-    $sn.NetworkSecurityGroup = $nsg
-    Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
-} Else {
-    Write-Host "    NSG assigned, skipping"}
 
 # 1.7 Create VM
 Write-Host (Get-Date)' - ' -NoNewline

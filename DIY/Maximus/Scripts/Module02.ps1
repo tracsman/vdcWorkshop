@@ -1,17 +1,21 @@
 ﻿#
-# DIY Azure Firewall Workshop
+# DIY Workshop Maximus
 #
 #
-# Step 1 Create resource group, key vault, and secret
-# Step 2 Create Virtual Network
-# Step 3 Create an internet facing VM
-# Step 4 Create and configure the Azure Firewall
-# Step 5 Create Spoke VNet with IIS Server and a firewall rule to allow traffic
+# Module 1 - Hub - Create resource group, key vault and secret, Hub VNet, VM, and deploy website
+# Module 2 - Access - Create NSG, Public IPs, IP Prefix, Bastion, VNet NAT
+# Module 3 - Secure - Create Firewall, Firewall Policy, Log Analytics, UDR
+# Module 4 - Web Tier - Create Spoke1 VNet, VNet Peering, 3xVM with Web Site, App Gateway
+# Module 5 - Data Tier - Create Spoke2 VNet, Load Balancer, VMSS configured as a File Server
 # 
 
-# Step 2 Create Virtual Network
+# Module 2 - Access - Create NSG, Public IPs, IP Prefix, Bastion, VNet NAT
 # 2.1 Validate and Initialize
-# 2.2 Create VNet
+# 2.2 Create NSG
+# 2.3 Create 2 Public IP (for Firewall and Bastion)
+# 2.4 Create IP Prefix for NAT
+# 2.5 Create Bastion
+# 2.6 VNet NAT
 #
 
 # 2.1 Validate and Initialize
@@ -28,11 +32,10 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # $SubID     = defined in and pulled from the init.txt file above
 # $ShortRegion defined in and pulled from the init.txt file above
 # $RGName    = defined in and pulled from the init.txt file above
-$VNetName    = "Hub01-VNet01"
-$HubAddress  = "10.11.12.0/25"
-$snTenant    = "10.11.12.0/27"
-$snGateway   = "10.11.12.32/27"
-$snFirewall  = "10.11.12.64/26"
+$VNetName    = "Hub-VNet"
+$FWName      = "Hub-FW"
+$BastionName = "Hub-Bastion"
+$NATName     = "Hub-NAT"
 
 # Start nicely
 Write-Host
@@ -47,21 +50,63 @@ Catch {Write-Warning "Permission check failed, ensure Sub ID is set correctly!"
         Return}
 Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscription.Id,")"
 
-# 1.2 Create VNet
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating Virtual Network" -ForegroundColor Cyan
-Try {$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
-     Write-Host "  resource exists, skipping"}
-Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -AddressPrefix $HubAddress -Location $ShortRegion  
-       Write-Host (Get-Date)' - ' -NoNewline
-       Write-Host "Adding subnets" -ForegroundColor Cyan
-       Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnet -AddressPrefix $snTenant | Out-Null
-       Add-AzVirtualNetworkSubnetConfig -Name "GatewaySubnet" -VirtualNetwork $vnet -AddressPrefix $snGateway | Out-Null
-       Add-AzVirtualNetworkSubnetConfig -Name "AzureFirewallSubnet" -VirtualNetwork $vnet -AddressPrefix $snFirewall | Out-Null
-       Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
-       }
+# 2.2 Create Tenant Subnet NSG
+Write-Host "  Creating NSG"
+Try {$nsg = Get-AzNetworkSecurityGroup -Name $VNetName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
+Write-Host "    NSG exists, skipping"}
+Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VNetName'-nsg'}
 
-# End nicely
+# Assign NSG to the Tenant Subnet
+Write-Host "    Assigning NSG"
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
+$sn =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
+if ($null -eq $sn.NetworkSecurityGroup) {
+    $sn.NetworkSecurityGroup = $nsg
+    Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
+} Else {
+    Write-Host "    NSG already assigned, skipping"}
+
+# 2.3 Create 2 Public IP (for Firewall and Bastion)
+Write-Host "  Creating Firewall Public IP"
+Try {$pipFW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pip' -ErrorAction Stop
+     Write-Host "    Public IP exists, skipping"}
+Catch {$pipFW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
+
+Write-Host "  Creating Bastion Public IP"
+Try {$pipBastion = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $BastionName'-pip' -ErrorAction Stop
+     Write-Host "    Public IP exists, skipping"}
+Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $BastionName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
+
+# 2.4 Create IP Prefix for NAT
+Write-Host "  Creating IP Prefix for VNet NAT"
+Try {$ippNAT = Get-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -ErrorAction Stop
+     Write-Host "    Public IP exists, skipping"}
+Catch {$ippNAT = New-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -Location $ShortRegion -IpAddressVersion "IPv4" -PrefixLength = "28"}
+
+# 2.5 Create Bastion
+Write-Host "  Creating Bastion"
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
+Try {$bastion = Get-AzPublicIpPrefix -ResourceGroupName $RGName -Name $BastionName'-ipp' -ErrorAction Stop
+     Write-Host "    Public IP exists, skipping"}
+Catch {$bastion = New-AzBastion -ResourceGroupName $RGName -Name $BastionName -PublicIpAddress $pipBastion -VirtualNetwork $vnet}
+
+# 2.6 VNet NAT
+Write-Host "  Creating VNet NAT"
+Try {$nat = Get-AzNatGateway -ResourceGroupName $RGName -Name $NATName -ErrorAction Stop
+Write-Host "    VNet NAT exists, skipping"}
+Catch {$nat = New-AzNatGateway -ResourceGroupName $RGName -Name $NATName -Location $ShortRegion -IdleTimeoutInMinutes 10 -Sku "Standard" -PublicIpPrefix $NATName'-ipp'}
+
+# Add NAT to Tenant subnet
+Write-Host "    Assigning NAT to Tenant Subnet"
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
+$sn =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
+if ($null -eq $sn.NatGateway) {
+    $sn.NatGateway = $nat
+    Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
+} Else {
+    Write-Host "    NAT already assigned, skipping"}
+
+    # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 2 completed successfully" -ForegroundColor Green
 Write-Host "  Explore your new virtual network in the Azure Portal."
