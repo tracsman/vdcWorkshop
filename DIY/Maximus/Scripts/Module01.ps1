@@ -182,7 +182,14 @@ Write-Host "    NSG exists, skipping"}
 Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VNetName'-nsg'}
 
 # Assign NSG to the Tenant Subnet
+Write-Host "    Assigning NSG"
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
+$sn =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
+if ($null -eq $sn.NetworkSecurityGroup) {
+    $sn.NetworkSecurityGroup = $nsg
+    Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
+} Else {
+    Write-Host "    NSG assigned, skipping"}
 
 # 1.7 Create VM
 Write-Host (Get-Date)' - ' -NoNewline
@@ -211,7 +218,7 @@ $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
 $sn =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
 Try {$nic = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop
      Write-Host "    NIC exists, skipping"}
-Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -Location $ShortRegion -Subnet $sn -PublicIpAddress $pip -NetworkSecurityGroup $nsg}
+Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -Location $ShortRegion -Subnet $sn}
 
 # 1.7.1 Build VM
 Write-Host "  Creating VM"
@@ -233,8 +240,8 @@ Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Running post VM deploy build script" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "FirewallVMBuild.ps1"
-$ExtensionName = 'FWBuildVM'
+$ScriptName = "MaxIISBuild.ps1"
+$ExtensionName = 'MaxIISBuild'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
 $ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
@@ -255,6 +262,6 @@ Catch {Write-Host "  queuing build job."
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 1 completed successfully" -ForegroundColor Green
+Write-Host "Module 1 deployed successfully" -ForegroundColor Green
 Write-Host "  Explore your new Resource Group and Key Vault in the Azure Portal."
 Write-Host
