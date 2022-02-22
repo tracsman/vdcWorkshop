@@ -86,15 +86,15 @@ Catch {$ippNAT = New-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'
 # 2.5 Create Bastion
 Write-Host "  Creating Bastion"
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
-Try {$bastion = Get-AzPublicIpPrefix -ResourceGroupName $RGName -Name $BastionName'-ipp' -ErrorAction Stop
-     Write-Host "    Public IP exists, skipping"}
+Try {$bastion = New-AzBastion -ResourceGroupName $RGName -Name $BastionName -ErrorAction Stop
+     Write-Host "    Bastion exists, skipping"}
 Catch {$bastion = New-AzBastion -ResourceGroupName $RGName -Name $BastionName -PublicIpAddress $pipBastion -VirtualNetwork $vnet -AsJob}
 
 # 2.6 VNet NAT
 Write-Host "  Creating VNet NAT"
 Try {$nat = Get-AzNatGateway -ResourceGroupName $RGName -Name $NATName -ErrorAction Stop
 Write-Host "    VNet NAT exists, skipping"}
-Catch {$nat = New-AzNatGateway -ResourceGroupName $RGName -Name $NATName -Location $ShortRegion -IdleTimeoutInMinutes 10 -Sku "Standard" -PublicIpPrefix $NATName'-ipp'}
+Catch {$nat = New-AzNatGateway -ResourceGroupName $RGName -Name $NATName -Location $ShortRegion -IdleTimeoutInMinutes 10 -Sku "Standard" -PublicIpPrefix $ippNAT}
 
 # Add NAT to Tenant subnet
 Write-Host "    Assigning NAT to Tenant Subnet"
