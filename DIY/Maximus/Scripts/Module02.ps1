@@ -81,14 +81,14 @@ Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $Bas
 Write-Host "  Creating IP Prefix for VNet NAT"
 Try {$ippNAT = Get-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
-Catch {$ippNAT = New-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -Location $ShortRegion -IpAddressVersion "IPv4" -PrefixLength = "28"}
+Catch {$ippNAT = New-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -Location $ShortRegion -IpAddressVersion "IPv4" -PrefixLength 28}
 
 # 2.5 Create Bastion
 Write-Host "  Creating Bastion"
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
 Try {$bastion = Get-AzPublicIpPrefix -ResourceGroupName $RGName -Name $BastionName'-ipp' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
-Catch {$bastion = New-AzBastion -ResourceGroupName $RGName -Name $BastionName -PublicIpAddress $pipBastion -VirtualNetwork $vnet}
+Catch {$bastion = New-AzBastion -ResourceGroupName $RGName -Name $BastionName -PublicIpAddress $pipBastion -VirtualNetwork $vnet -AsJob}
 
 # 2.6 VNet NAT
 Write-Host "  Creating VNet NAT"
@@ -106,7 +106,12 @@ if ($null -eq $sn.NatGateway) {
 } Else {
     Write-Host "    NAT already assigned, skipping"}
 
-    # End nicely
+# Wait for Bastion to finish
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Waiting for Bastion to deploy, this script will continue after 10 minutes or when the deployment is complete, whichever comes first." -ForegroundColor Cyan
+Get-Job -Command "New-AzBastion" | wait-job -Timeout 600 | Out-Null
+
+# End nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 2 completed successfully" -ForegroundColor Green
 Write-Host "  Explore your new virtual network in the Azure Portal."
