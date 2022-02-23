@@ -51,6 +51,7 @@ Catch {Write-Warning "Permission check failed, ensure Sub ID is set correctly!"
 Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscription.Id,")"
 
 # 2.2 Create Tenant Subnet NSG
+Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating NSG"
 Try {$nsg = Get-AzNetworkSecurityGroup -Name $VNetName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
 Write-Host "    NSG exists, skipping"}
@@ -67,30 +68,35 @@ if ($null -eq $sn.NetworkSecurityGroup) {
     Write-Host "    NSG already assigned, skipping"}
 
 # 2.3 Create 2 Public IP (for Firewall and Bastion)
+Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating Firewall Public IP"
 Try {$pipFW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pip' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
 Catch {$pipFW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
 
+Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating Bastion Public IP"
 Try {$pipBastion = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $BastionName'-pip' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
 Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $BastionName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
 
 # 2.4 Create IP Prefix for NAT
+Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating IP Prefix for VNet NAT"
 Try {$ippNAT = Get-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
 Catch {$ippNAT = New-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -Location $ShortRegion -IpAddressVersion "IPv4" -PrefixLength 28}
 
 # 2.5 Create Bastion
+Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating Bastion"
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
-Try {$bastion = New-AzBastion -ResourceGroupName $RGName -Name $BastionName -ErrorAction Stop
+Try {$bastion = Get-AzBastion -ResourceGroupName $RGName -Name $BastionName -ErrorAction Stop
      Write-Host "    Bastion exists, skipping"}
 Catch {$bastion = New-AzBastion -ResourceGroupName $RGName -Name $BastionName -PublicIpAddress $pipBastion -VirtualNetwork $vnet -AsJob}
 
 # 2.6 VNet NAT
+Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating VNet NAT"
 Try {$nat = Get-AzNatGateway -ResourceGroupName $RGName -Name $NATName -ErrorAction Stop
 Write-Host "    VNet NAT exists, skipping"}
