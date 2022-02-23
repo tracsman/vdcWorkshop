@@ -46,7 +46,7 @@ $snGateway   = "10.0.4.0/24"
 $snRtSvr     = "10.0.5.0/24"
 $VNetName    = "Hub-VNet"
 $VMName      = "Hub-VM01"
-$VMSize      = "Standard_A4_v2"
+$VMSize      = "Standard_B2S"
 $UserName01  = "User01"
 $UserName02  = "User02"
 $UserName03  = "User03"
@@ -211,7 +211,8 @@ Try {Get-AzVM -ResourceGroupName $RGName -Name $VMName -ErrorAction Stop | Out-N
 Catch {$vmConfig = New-AzVMConfig -VMName $VMName -VMSize $VMSize -ErrorAction Stop
        $vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Windows -ComputerName $VMName -Credential $cred -ProvisionVMAgent -EnableAutoUpdate
        #$vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2019-Datacenter -Version latest
-       $vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsDesktop -Offer windows-11 -Skus win11-21h2-pro -Version latest
+       #$vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsDesktop -Offer windows-11 -Skus win11-21h2-pro -Version latest
+       $vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2022-Datacenter -Version latest
        $vmConfig = Add-AzVMNetworkInterface -VM $vmConfig -Id $nic.Id
        $vmConfig = Set-AzVMBootDiagnostic -VM $vmConfig -Disable
        Write-Host "      queuing VM build job"

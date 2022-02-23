@@ -85,7 +85,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating IP Prefix for VNet NAT"
 Try {$ippNAT = Get-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
-Catch {$ippNAT = New-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -Location $ShortRegion -IpAddressVersion "IPv4" -PrefixLength 28}
+Catch {$ippNAT = New-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -Location $ShortRegion -IpAddressVersion "IPv4" -PrefixLength 31}
 
 # 2.5 Create Bastion
 Write-Host (Get-Date)' - ' -NoNewline
