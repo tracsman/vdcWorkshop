@@ -77,6 +77,8 @@ Catch {$fwPolicy = New-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RG
 Write-Host "    Creating Firewall Policy Rule Collection"
 $HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop).IpConfigurations[0].PrivateIpAddress
 
+# Create FW IP Group
+$ipGrpTenants = New-AzFi
 # Create App Rule collection and Rule
 $fwAppRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWAppRCGroup -Priority 100 -FirewallPolicyObject $fwPolicy
 $fwAppRule = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $TenantSubnets -Protocol "https:443" -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
