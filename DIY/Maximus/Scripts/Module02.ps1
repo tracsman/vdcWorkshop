@@ -3,7 +3,7 @@
 #
 #
 # Module 1 - Hub - Create resource group, key vault and secret, Hub VNet, VM, and deploy website
-# Module 2 - Access - Create NSG, Public IPs, IP Prefix, Bastion, VNet NAT
+# Module 2 - Access - Create NSG, Public IP, IP Prefix, Bastion, VNet NAT
 # Module 3 - Secure - Create Firewall, Firewall Policy, Log Analytics, UDR
 # Module 4 - Web Tier - Create Spoke1 VNet, VNet Peering, 3xVM with Web Site, App Gateway
 # Module 5 - Data Tier - Create Spoke2 VNet, Load Balancer, VMSS configured as a File Server
@@ -12,7 +12,7 @@
 # Module 2 - Access - Create NSG, Public IPs, IP Prefix, Bastion, VNet NAT
 # 2.1 Validate and Initialize
 # 2.2 Create NSG
-# 2.3 Create 2 Public IP (for Firewall and Bastion)
+# 2.3 Create Public IP for Bastion
 # 2.4 Create IP Prefix for NAT
 # 2.5 Create Bastion
 # 2.6 VNet NAT
@@ -67,13 +67,7 @@ if ($null -eq $sn.NetworkSecurityGroup) {
 } Else {
     Write-Host "    NSG already assigned, skipping"}
 
-# 2.3 Create 2 Public IP (for Firewall and Bastion)
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "  Creating Firewall Public IP"
-Try {$pipFW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pip' -ErrorAction Stop
-     Write-Host "    Public IP exists, skipping"}
-Catch {$pipFW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
-
+# 2.3 Create Public IP for Bastion)
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating Bastion Public IP"
 Try {$pipBastion = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $BastionName'-pip' -ErrorAction Stop

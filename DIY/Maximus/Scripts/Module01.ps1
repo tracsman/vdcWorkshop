@@ -3,7 +3,7 @@
 #
 #
 # Module 1 - Hub - Create resource group, key vault and secret, Hub VNet, VM, and deploy website
-# Module 2 - Access - Create NSG, Public IPs, IP Prefix, Bastion, VNet NAT
+# Module 2 - Access - Create NSG, Public IP, IP Prefix, Bastion, VNet NAT
 # Module 3 - Secure - Create Firewall, Firewall Policy, Log Analytics, UDR
 # Module 4 - Web Tier - Create Spoke1 VNet, VNet Peering, 3xVM with Web Site, App Gateway
 # Module 5 - Data Tier - Create Spoke2 VNet, Load Balancer, VMSS configured as a File Server
