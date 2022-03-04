@@ -33,14 +33,14 @@ If (Test-Path -Path $ScriptDir/init.txt) {
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
 # Variable Initialization
-# $SubID     = defined in and pulled from the init.txt file above
-# $ShortRegion defined in and pulled from the init.txt file above
-# $RGName    = defined in and pulled from the init.txt file above
-$VNetName    = "Hub-VNet"
-$FWName      = "Hub-FW"
-$VMName      = "Hub-VM01"
-$GatewayUDRs = ("10.0.1.2/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/24")
-$RDPRules    = ("10.0.1.2/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/24"), ("10.10.1.0/24"), ("10.10.2.0/24")
+# $SubID       = defined in and pulled from the init.txt file above
+# $ShortRegion = defined in and pulled from the init.txt file above
+# $RGName      = defined in and pulled from the init.txt file above
+$VNetName      = "Hub-VNet"
+$FWName        = "Hub-FW"
+$VMName        = "Hub-VM01"
+$TenantSubnets = ("10.0.1.2/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/24")
+$RDPRules      = ("10.0.1.2/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/24"), ("10.10.1.0/24"), ("10.10.2.0/24")
 
 # Start nicely
 Write-Host
@@ -79,7 +79,7 @@ $HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic
 
 # Create App Rule collection and Rule
 $fwAppRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWAppRCGroup -Priority 100 -FirewallPolicyObject $fwPolicy
-$fwAppRule = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceAddress "10.0.1.2/24", "10.1.1.0/24", "10.2.1.0/24", "10.3.1.0/24" -Protocol "https:443" -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
+$fwAppRule = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $TenantSubnets -Protocol "https:443" -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
 $fwAppColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWApp-coll" -Priority 100 -Rule $fwAppRule -ActionType "Allow"
 Set-AzFirewallPolicyRuleCollectionGroup -Name $fwAppRCGroup.Name -Priority 100 -RuleCollection $fwAppColl -FirewallPolicyObject $fwPolicy
 
@@ -95,6 +95,9 @@ $fwNATRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWNATRCGroup -P
 $fwNATRuleWeb = New-AzFirewallPolicyNatRule -Name "NAT-Hub-Web-Site" -SourceAddress * -DestinationAddress $fwIP -DestinationPort 80 -Protocol TCP -Description "Translation for the Hub Web site" -TranslatedAddress $HubVMIP -TranslatedPort 80
 $fwNATColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNAT-coll" -Priority 100 -Rule $fwNATRuleWeb -ActionType "Allow"
 Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNATRCGroup.Name -Priority 100 -RuleCollection $fwNATColl -FirewallPolicyObject $fwPolicy
+
+Write-Host "***************  Ending!!! ******************"
+Return
 
 # 3.2.3 Create Firewall
 Write-Host "  Creating Firewall"
@@ -114,8 +117,8 @@ Try {$gwRouteTable = Get-AzRouteTable -Name $VNetName'-rt-gw' -ResourceGroupName
      Write-Host "  Gateway UDR Table exists, skipping"}
 Catch {$gwRouteTableName = $VNetName + '-rt-gw'
        $gwRoute = @()
-       ForEach ($GatewayUDR in $GatewayUDRs) {
-                $gwRouteName = 'Gateway-Route' + ($GatewayUDRs.IndexOf($GatewayUDR) + 1).ToString("00")
+       ForEach ($GatewayUDR in $TenantSubnets) {
+                $gwRouteName = 'Gateway-Route' + ($TenantSubnets.IndexOf($GatewayUDR) + 1).ToString("00")
                 $gwRoute += New-AzRouteConfig -Name $gwRouteName -AddressPrefix $GatewayUDR -NextHopType VirtualAppliance -NextHopIpAddress $fwIP}
        $gwRouteTable = New-AzRouteTable -Name $gwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $gwRoute}
 
