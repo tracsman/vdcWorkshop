@@ -39,8 +39,8 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 $VNetName      = "Hub-VNet"
 $FWName        = "Hub-FW"
 $VMName        = "Hub-VM01"
-$TenantSubnets = ("10.0.1.2/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/24")
-$RDPRules      = ("10.0.1.2/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/24"), ("10.10.1.0/24"), ("10.10.2.0/24")
+$TenantSubnets = "10.0.1.0/24", "10.1.1.0/24", "10.2.1.0/24", "10.3.1.0/24"
+$RDPRules      = ("10.0.1.0/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/24"), ("10.10.1.0/24"), ("10.10.2.0/24")
 
 # Start nicely
 Write-Host
@@ -82,7 +82,7 @@ $ipGrpTenants = New-AzIpGroup -Name $FWName-ipgroup -ResourceGroupName $RGName -
 
 # Create App Rule collection and Rule
 $fwAppRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWAppRCGroup -Priority 100 -FirewallPolicyObject $fwPolicy
-$fwAppRule = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants -Protocol "https:443" -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
+$fwAppRule = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
 $fwAppColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWApp-coll" -Priority 100 -Rule $fwAppRule -ActionType "Allow"
 Set-AzFirewallPolicyRuleCollectionGroup -Name $fwAppRCGroup.Name -Priority 100 -RuleCollection $fwAppColl -FirewallPolicyObject $fwPolicy
 
