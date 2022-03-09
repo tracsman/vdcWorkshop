@@ -90,20 +90,17 @@ catch {$fwAppRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWAppRCG
        $UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall App Rule for Storage Access"
 try {$fwAppRule = Get-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
-     Write-Host "      Firewall App Rule for Storage Access exists, skipping"
-}
+     Write-Host "      Firewall App Rule for Storage Access exists, skipping"}
 catch {$fwAppRule = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
        $UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall App Rule Collection Filter"
 try {$fwAppColl = Get-AzFirewallPolicyFilterRuleCollection -Name "HubFWApp-coll" -Priority 100 -Rule $fwAppRule -ActionType "Allow"
-     Write-Host "      Firewall App Rule Collection Filter exists, skipping"
-}
+     Write-Host "      Firewall App Rule Collection Filter exists, skipping"}
 catch {$fwAppColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWApp-coll" -Priority 100 -Rule $fwAppRule -ActionType "Allow"
        $UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall App Rule Collection to Firewall Policy Object"
-     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwAppRCGroup.Name -Priority 100 -RuleCollection $fwAppColl -FirewallPolicyObject $fwPolicy
-}
+     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwAppRCGroup.Name -Priority 100 -RuleCollection $fwAppColl -FirewallPolicyObject $fwPolicy}
 
 # Create Network Rule collection and Rules
 Write-Host "    Creating Firewall Policy Rule Collection"
