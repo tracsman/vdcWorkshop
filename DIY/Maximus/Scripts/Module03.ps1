@@ -108,7 +108,7 @@ $UpdateFWPolicyObject = $false
 Write-Host "    Creating Firewall Policy Net Rule Collection"
 try {$fwNetRCGroup = Get-AzFirewallPolicyRuleCollectionGroup -Name HubFWNetRCGroup -FirewallPolicyObject $fwPolicy -ErrorAction Stop
      Write-Host "    Firewall Policy Net Rule Collection exists, skipping"}
-catch {$fwNetRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWNetRCGroup -Priority 100 -FirewallPolicyObject $fwPolicy
+catch {$fwNetRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWNetRCGroup -Priority 200 -FirewallPolicyObject $fwPolicy
        $UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall RDP Network Rule"
 try {$fwNetRuleRDP = Get-AzFirewallPolicyNetworkRule -Name "Allow-RDP" -FirewallPolicyObject $fwPolicy -ErrorAction Stop
@@ -135,7 +135,7 @@ $UpdateFWPolicyObject = $false
 Write-Host "    Creating Firewall NAT Rule Collection"
 try {$fwNATRCGroup = Get-AzFirewallPolicyRuleCollectionGroup -Name HubFWNATRCGroup -FirewallPolicyObject $fwPolicy -ErrorAction Stop
      Write-Host "    Creating Firewall NAT Rule Collection"}
-catch {$fwNATRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWNATRCGroup -Priority 100 -FirewallPolicyObject $fwPolicy
+catch {$fwNATRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWNATRCGroup -Priority 200 -FirewallPolicyObject $fwPolicy
        $UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall NAT Rule"
 try {$fwNATRuleWeb = Get-AzFirewallPolicyNatRule -Name "NAT-Hub-Web-Site" -FirewallPolicyObject $fwPolicy -ErrorAction Stop
