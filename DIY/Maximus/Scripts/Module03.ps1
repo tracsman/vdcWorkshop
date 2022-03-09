@@ -100,7 +100,7 @@ catch {$fwAppColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWApp-col
        $UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall App Rule Collection to Firewall Policy Object"
-     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwAppRCGroup.Name -Priority 100 -RuleCollection $fwAppColl -FirewallPolicyObject $fwPolicy}
+     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwAppRCGroup.Name -Priority 101 -RuleCollection $fwAppColl -FirewallPolicyObject $fwPolicy}
 
 # Create Network Rule collection and Rules
 $fwPolicy = Get-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -ErrorAction Stop
@@ -127,7 +127,7 @@ catch {$fwNetColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNet-col
        $UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Creating Firewall Policy Rule Collection"
-     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNetRCGroup.Name -Priority 100 -RuleCollection $fwNetColl -FirewallPolicyObject $fwPolicy}
+     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNetRCGroup.Name -Priority 201 -RuleCollection $fwNetColl -FirewallPolicyObject $fwPolicy}
 
 # Create NAT Rule collection and Rules
 $fwPolicy = Get-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -ErrorAction Stop
@@ -135,7 +135,7 @@ $UpdateFWPolicyObject = $false
 Write-Host "    Creating Firewall NAT Rule Collection"
 try {$fwNATRCGroup = Get-AzFirewallPolicyRuleCollectionGroup -Name HubFWNATRCGroup -FirewallPolicyObject $fwPolicy -ErrorAction Stop
      Write-Host "    Creating Firewall NAT Rule Collection"}
-catch {$fwNATRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWNATRCGroup -Priority 200 -FirewallPolicyObject $fwPolicy
+catch {$fwNATRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWNATRCGroup -Priority 300 -FirewallPolicyObject $fwPolicy
        $UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall NAT Rule"
 try {$fwNATRuleWeb = Get-AzFirewallPolicyNatRule -Name "NAT-Hub-Web-Site" -FirewallPolicyObject $fwPolicy -ErrorAction Stop
@@ -149,7 +149,7 @@ catch {$fwNATColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNAT-col
        $UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall NAT Rule collection to the Firewall Policy Object"
-     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNATRCGroup.Name -Priority 100 -RuleCollection $fwNATColl -FirewallPolicyObject $fwPolicy}
+     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNATRCGroup.Name -Priority 301 -RuleCollection $fwNATColl -FirewallPolicyObject $fwPolicy}
 
 
 Write-Host "***************  Ending!!! ******************"
