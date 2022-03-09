@@ -13,10 +13,10 @@
 # 3.1 Validate and Initialize
 # 3.2 Create Firewall
 # 3.2.1 Create Public IP
-# 3.2.2 Create Firewall
-# 3.2.3 Create Firewall Policy
-# 3.2.4.1 Create Firewall Policy Collections and Rules
-# 3.2.4 Create and assign UDR
+# 3.2.2 Create Firewall Policy
+# 3.2.3 Create Firewall
+# 3.2.4 Create Firewall Policy Collections and Rules
+# 3.2.5 Create and assign UDR
 # 3.3 Add Log Analystics Workspace
 # 3.3.1 Create Log Analytics Workspace
 # 3.3.2 Create Diagnotic Rules on Firewall
@@ -65,19 +65,20 @@ Try {$pipFW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pi
      Write-Host "    Public IP exists, skipping"}
 Catch {$pipFW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
 
-# 3.2.2 Create Firewall
-Write-Host "  Creating Firewall"
-Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName -ErrorAction Stop
-     Write-Host "    Firewall exists, skipping"}
-Catch {$firewall = New-AzFirewall -Name $FWName -ResourceGroupName $RGName -Location $ShortRegion -VirtualNetworkName $VNetName -PublicIpName $pipFW.Name -SkuTier Premium}
-
-# 3.2.3 Create Firewall Policy
+# 3.2.2 Create Firewall Policy
 Write-Host "  Creating Firewall Policy"
 Try {$fwPolicy = Get-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -ErrorAction Stop
     Write-Host "    Firewall exists, skipping"}
 Catch {$fwPolicy = New-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -Location $ShortRegion}
 
-# 3.2.2.1 Create Firewall Policy Collections and Rules
+# 3.2.3 Create Firewall
+Write-Host "  Creating Firewall"
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
+Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName -ErrorAction Stop
+     Write-Host "    Firewall exists, skipping"}
+Catch {$firewall = New-AzFirewall -Name $FWName -ResourceGroupName $RGName -Location $ShortRegion -VirtualNetwork $vnet -PublicIpAddress $pipFW -SkuTier Premium -FirewallPolicyId $fwPolicy.Id}
+
+# 3.2.4 Create Firewall Policy Collections and Rules
 $HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop).IpConfigurations[0].PrivateIpAddress
 
 # Create FW IP Group
@@ -106,7 +107,7 @@ catch {$fwAppColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWApp-col
        $UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall App Rule Collection to Firewall Policy Object"
-     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwAppRCGroup.Name -Priority 101 -RuleCollection $fwAppColl -FirewallPolicyObject $fwPolicy}
+     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwAppRCGroup.Name -Priority 100 -RuleCollection $fwAppColl -FirewallPolicyObject $fwPolicy}
 
 # Create Network Rule collection and Rules
 $fwPolicy = Get-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -ErrorAction Stop
@@ -133,7 +134,7 @@ catch {$fwNetColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNet-col
        $UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall Net Rule Collection to Firewall Policy object"
-     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNetRCGroup.Name -Priority 201 -RuleCollection $fwNetColl -FirewallPolicyObject $fwPolicy}
+     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNetRCGroup.Name -Priority 200 -RuleCollection $fwNetColl -FirewallPolicyObject $fwPolicy}
 
 # Create NAT Rule collection and Rules
 $fwPolicy = Get-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -ErrorAction Stop
@@ -155,7 +156,7 @@ catch {$fwNATColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNAT-col
        $UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall NAT Rule collection to the Firewall Policy Object"
-     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNATRCGroup.Name -Priority 301 -RuleCollection $fwNATColl -FirewallPolicyObject $fwPolicy}
+     Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNATRCGroup.Name -Priority 300 -RuleCollection $fwNATColl -FirewallPolicyObject $fwPolicy}
 
 #$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName -ErrorAction Stop
 #$firewall.FirewallPolicy = $fwPolicy.Id
@@ -164,7 +165,7 @@ if ($UpdateFWPolicyObject) {
 Write-Host "***************  Ending!!! ******************"
 Return
 
-# 3.2.4 Create and assign UDR
+# 3.2.5 Create and assign UDR
 # Create UDR Tables
 $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 $gwRouteTable = $null
