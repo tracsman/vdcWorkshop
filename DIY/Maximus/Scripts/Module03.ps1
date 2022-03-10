@@ -70,7 +70,6 @@ Write-Host "  Creating Firewall Policy"
 Try {$fwPolicy = Get-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -ErrorAction Stop
     Write-Host "    Firewall exists, skipping"}
 Catch {$fwPolicy = New-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -Location $ShortRegion}
-$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 
 # 3.2.3 Create Firewall
 Write-Host "  Creating Firewall"
@@ -78,6 +77,7 @@ $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
 Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName -ErrorAction Stop
      Write-Host "    Firewall exists, skipping"}
 Catch {$firewall = New-AzFirewall -Name $FWName -ResourceGroupName $RGName -Location $ShortRegion -VirtualNetwork $vnet -PublicIpAddress $pipFW -SkuTier Premium -FirewallPolicyId $fwPolicy.Id}
+$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 
 # 3.2.4 Create Firewall Policy Collections and Rules
 $HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop).IpConfigurations[0].PrivateIpAddress
