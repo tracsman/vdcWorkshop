@@ -155,7 +155,7 @@ Write-Host "    Creating Firewall NAT Rule"
 if ($fwNATRCGroup.Properties.RuleCollection.Rules.Name -contains "NAT-Hub-Web-Site") {
      Write-Host "      Firewall NAT Rule exists, skipping"}
 else {$fwNATRuleWeb = New-AzFirewallPolicyNatRule -Name "NAT-Hub-Web-Site" -SourceAddress * -DestinationAddress $fwIP -DestinationPort 80 -Protocol TCP -Description "Translation for the Hub Web site" -TranslatedAddress $HubVMIP -TranslatedPort 80
-      $fwNATColl.Rules.Add($fwNATRuleWeb)
+      $fwNATColl = New-AzFirewallPolicyNATRuleCollection -Name "HubFWNAT-coll" -Priority 100 -ActionType "Dnat" -Rule $fwNATRuleWeb
       $UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall NAT Rule collection to the Firewall Policy Object"
