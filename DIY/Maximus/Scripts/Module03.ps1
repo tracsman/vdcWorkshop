@@ -149,7 +149,7 @@ Write-Host "    Creating Firewall NAT Rule Collection Filter"
 if ($fwNATRCGroup.Properties.RuleCollection.Name -contains "HubFWNAT-coll") {
     $fwNATColl = $fwNATRCGroup.Properties.RuleCollection | Where-Object {$_.Name -eq "HubFWNAT-coll"}
     Write-Host "      Firewall NAT Rule Collection Filter exists, skipping"} 
-else {$fwNATColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNAT-coll" -Priority 100
+else {$fwNATColl = New-AzFirewallPolicyNATRuleCollection -Name "HubFWNAT-coll" -Priority 100 -ActionType "Dnat"
       $UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall NAT Rule"
 if ($fwNATRCGroup.Properties.RuleCollection.Rules.Name -contains "NAT-Hub-Web-Site") {
