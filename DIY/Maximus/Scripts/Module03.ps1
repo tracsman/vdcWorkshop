@@ -145,15 +145,17 @@ try {$fwNATRCGroup = Get-AzFirewallPolicyRuleCollectionGroup -Name HubFWNATRCGro
      Write-Host "      Firewall NAT Rule Collection exists, skipping"}
 catch {$fwNATRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWNATRCGroup -Priority 300 -FirewallPolicyObject $fwPolicy
        $UpdateFWPolicyObject = $true}
+Write-Host "    Creating Firewall NAT Rule Collection Filter"
+if ($fwNATRCGroup.Properties.RuleCollection.Name -contains "HubFWNAT-coll") {
+    $fwNATColl = $fwNATRCGroup.Properties.RuleCollection | Where-Object {$_.Name -eq "HubFWNAT-coll"}
+    Write-Host "      Firewall NAT Rule Collection Filter exists, skipping"} 
+else {$fwNATColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNAT-coll" -Priority 100 -Rule $fwNATRuleWeb
+      $UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall NAT Rule"
 if ($fwNATRCGroup.Properties.RuleCollection.Rules.Name -contains "NAT-Hub-Web-Site") {
      Write-Host "      Firewall NAT Rule exists, skipping"}
 else {$fwNATRuleWeb = New-AzFirewallPolicyNatRule -Name "NAT-Hub-Web-Site" -SourceAddress * -DestinationAddress $fwIP -DestinationPort 80 -Protocol TCP -Description "Translation for the Hub Web site" -TranslatedAddress $HubVMIP -TranslatedPort 80
-      $UpdateFWPolicyObject = $true}
-Write-Host "    Creating Firewall NAT Rule Collection Filter"
-if ($fwNATRCGroup.Properties.RuleCollection.Name -contains "HubFWNAT-coll") {
-    Write-Host "      Firewall NAT Rule Collection Filter exists, skipping"} 
-else {$fwNATColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNAT-coll" -Priority 100 -Rule $fwNATRuleWeb
+      $fwNATColl.Rules.Add($fwNATRuleWeb)
       $UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall NAT Rule collection to the Firewall Policy Object"
