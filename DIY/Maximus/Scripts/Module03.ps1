@@ -153,7 +153,7 @@ else {$fwNATRuleWeb = New-AzFirewallPolicyNatRule -Name "NAT-Hub-Web-Site" -Sour
 Write-Host "    Creating Firewall NAT Rule Collection Filter"
 if ($fwNATRCGroup.Properties.RuleCollection.Name -contains "HubFWNAT-coll") {
     Write-Host "      Firewall NAT Rule Collection Filter exists, skipping"} 
-else {$fwNATColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNAT-coll" -Priority 100 -Rule $fwNATRuleWeb -ActionType "Allow"
+else {$fwNATColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNAT-coll" -Priority 100 -Rule $fwNATRuleWeb
       $UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall NAT Rule collection to the Firewall Policy Object"
