@@ -96,18 +96,20 @@ try {$fwAppRCGroup = Get-AzFirewallPolicyRuleCollectionGroup -Name HubFWAppRCGro
      Write-Host "      Firewall App Rule Collection exists, skipping"}
 catch {$fwAppRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWAppRCGroup -Priority 100 -FirewallPolicyObject $fwPolicy
        $UpdateFWPolicyObject = $true}
-Write-Host "    Creating Firewall App Rule for Storage Access"
-if ($fwAppRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-storage") {
-    Write-Host "      Firewall App Rule for Storage Access exists, skipping"}
-else {$fwAppRule = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
-      $UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall App Rule Collection Filter"
 if ($fwAppRCGroup.Properties.RuleCollection.Name -contains "HubFWApp-coll") {
-    Write-Host "      Firewall App Rule Collection Filter exists, skipping"} 
-else {$fwAppColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWApp-coll" -Priority 100 -Rule $fwAppRule -ActionType "Allow"
-      $UpdateFWPolicyObject = $true}
+     Write-Host "      Firewall App Rule Collection Filter exists, skipping"} 
+else {$UpdateFWPolicyObject = $true}
+Write-Host "    Creating Firewall App Rule for Storage Access"
+$fwAppRule = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" `
+               -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
+if ($fwAppRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-storage") {
+    Write-Host "      Firewall App Rule for Storage Access exists, skipping"}
+else {$UpdateFWPolicyObject = $true}
+
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall App Rule Collection to Firewall Policy Object"
+     $fwAppColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWApp-coll" -Priority 100 -Rule $fwAppRule -ActionType "Allow"
      Set-AzFirewallPolicyRuleCollectionGroup -Name $fwAppRCGroup.Name -Priority 100 -RuleCollection $fwAppColl -FirewallPolicyObject $fwPolicy}
 
 # Create Network Rule collection and Rules
@@ -118,23 +120,27 @@ try {$fwNetRCGroup = Get-AzFirewallPolicyRuleCollectionGroup -Name HubFWNetRCGro
      Write-Host "      Firewall Policy Net Rule Collection exists, skipping"}
 catch {$fwNetRCGroup = New-AzFirewallPolicyRuleCollectionGroup -Name HubFWNetRCGroup -Priority 200 -FirewallPolicyObject $fwPolicy
        $UpdateFWPolicyObject = $true}
-Write-Host "    Creating Firewall RDP Network Rule"
-if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-RDP") {
-     Write-Host "      Firewall RDP Network Rule exists, skipping"}
- else {$fwNetRuleRDP = New-AzFirewallPolicyNetworkRule -Name "Allow-RDP" -SourceAddress $RDPRules -DestinationAddress $RDPRules -DestinationPort 3389 -Protocol TCP -Description "Allow RDP inside the private network for all Azure VMs"
-       $UpdateFWPolicyObject = $true}
-Write-Host "    Creating Firewall Web Network Rule"
-if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-Web") {
-    Write-Host "      Firewall Web Network Rule exists, skipping"}
-else {$fwNetRuleWeb = New-AzFirewallPolicyNetworkRule -Name "Allow-Web" -SourceAddress * -DestinationAddress $HubVMIP -DestinationPort 80 -Protocol TCP -Description "Allow access to the web site on the hub VM"
-      $UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall Net Rule Collection Filter"
 if ($fwNetRCGroup.Properties.RuleCollection.Name -contains "HubFWNet-coll") {
-    Write-Host "      Firewall Net Rule Collection Filter exists, skipping"} 
-else {$fwNetColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNet-coll" -Priority 100 -Rule $fwNetRuleRDP, $fwNetRuleWeb -ActionType "Allow"
-      $UpdateFWPolicyObject = $true}
+     Write-Host "      Firewall Net Rule Collection Filter exists, skipping"} 
+else {$UpdateFWPolicyObject = $true}
+Write-Host "    Creating Firewall RDP Network Rule"
+$fwNetRuleRDP = New-AzFirewallPolicyNetworkRule -Name "Allow-RDP" -SourceAddress $RDPRules `
+                    -DestinationAddress $RDPRules -DestinationPort 3389 -Protocol TCP `
+                    -Description "Allow RDP inside the private network for all Azure VMs"
+if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-RDP") {
+     Write-Host "      Firewall RDP Network Rule exists, skipping"}
+ else {$UpdateFWPolicyObject = $true}
+Write-Host "    Creating Firewall Web Network Rule"
+$fwNetRuleWeb = New-AzFirewallPolicyNetworkRule -Name "Allow-Web" -SourceAddress * `
+                    -DestinationAddress $HubVMIP -DestinationPort 80 -Protocol TCP `
+                    -Description "Allow access to the web site on the hub VM"
+if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-Web") {
+    Write-Host "      Firewall Web Network Rule exists, skipping"}
+else {$UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall Net Rule Collection to Firewall Policy object"
+     $fwNetColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNet-coll" -Priority 100 -ActionType "Allow" -Rule $fwNetRuleRDP, $fwNetRuleWeb
      Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNetRCGroup.Name -Priority 200 -RuleCollection $fwNetColl -FirewallPolicyObject $fwPolicy}
 
 # Create NAT Rule collection and Rules
@@ -149,19 +155,18 @@ Write-Host "    Creating Firewall NAT Rule Collection Filter"
 if ($fwNATRCGroup.Properties.RuleCollection.Name -contains "HubFWNAT-coll") {
     $fwNATColl = $fwNATRCGroup.Properties.RuleCollection | Where-Object {$_.Name -eq "HubFWNAT-coll"}
     Write-Host "      Firewall NAT Rule Collection Filter exists, skipping"} 
-else {$fwNATColl = New-AzFirewallPolicyNATRuleCollection -Name "HubFWNAT-coll" -Priority 100 -ActionType "Dnat"
-      $UpdateFWPolicyObject = $true}
+else {$UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall NAT Rule"
-if ($fwNATRCGroup.Properties.RuleCollection.Rules.Name -contains "NAT-Hub-Web-Site") {
-     Write-Host "      Firewall NAT Rule exists, skipping"}
-else {$fwNATRuleWeb = New-AzFirewallPolicyNatRule -Name "NAT-Hub-Web-Site" -SourceAddress * `
+$fwNATRuleWeb = New-AzFirewallPolicyNatRule -Name "NAT-Hub-Web-Site" -SourceAddress * `
                          -DestinationAddress $pipFW.IpAddress -DestinationPort 80 -Protocol TCP `
                          -TranslatedAddress $HubVMIP -TranslatedPort 80 `
                          -Description "Translation for the Hub Web site"
-      $fwNATColl = New-AzFirewallPolicyNATRuleCollection -Name "HubFWNAT-coll" -Priority 100 -ActionType "Dnat" -Rule $fwNATRuleWeb
-      $UpdateFWPolicyObject = $true}
+if ($fwNATRCGroup.Properties.RuleCollection.Rules.Name -contains "NAT-Hub-Web-Site") {
+     Write-Host "      Firewall NAT Rule exists, skipping"}
+else {$UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall NAT Rule collection to the Firewall Policy Object"
+     $fwNATColl = New-AzFirewallPolicyNATRuleCollection -Name "HubFWNAT-coll" -Priority 100 -ActionType "Dnat" -Rule $fwNATRuleWeb
      Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNATRCGroup.Name -Priority 300 -RuleCollection $fwNATColl -FirewallPolicyObject $fwPolicy}
 
 Write-Host "***************  Ending!!! ******************"
