@@ -70,6 +70,7 @@ Write-Host "  Creating Firewall Policy"
 Try {$fwPolicy = Get-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -ErrorAction Stop
     Write-Host "    Firewall exists, skipping"}
 Catch {$fwPolicy = New-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -Location $ShortRegion}
+$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 
 # 3.2.3 Create Firewall
 Write-Host "  Creating Firewall"
@@ -163,7 +164,6 @@ Return
 
 # 3.2.5 Create and assign UDR
 # Create UDR Tables
-$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 $gwRouteTable = $null
 $fwRouteTable = $null
 $RouteTablesUpdated = $false
