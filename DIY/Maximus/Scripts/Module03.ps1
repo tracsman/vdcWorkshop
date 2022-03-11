@@ -231,7 +231,7 @@ Catch {$logWorkspace = New-AzOperationalInsightsWorkspace -ResourceGroupName $RG
 # 3.3.2 Create Diagnotic Rules on Firewall
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating diagnostic setting on Firewall" -ForegroundColor Cyan
-Try {Get-AzDiagnosticSetting -Name FW-Diagnostics -ResourceId $firewall.Id
+Try {Get-AzDiagnosticSetting -Name FW-Diagnostics -ResourceId $firewall.Id -ErrorAction Stop
      Write-Host "  Diagnostic setting already exists, skipping"}
 Catch {Set-AzDiagnosticSetting -Name FW-Diagnostics -ResourceId $firewall.Id -Enabled $true -WorkspaceId $logWorkspace.Id}
 
@@ -245,7 +245,7 @@ Write-Host "  Also, checkout the Route Table and it's association to the subnet"
 Write-Host
 Write-Host "  Also, use a browser to see your new Web Site served via the FIrewall IP address."
 Write-Host "  The IIS Server (via NAT) is at" -NoNewline
-Write-Host "  HTTP://$($fwIP.IpAddress)" -ForegroundColor Yellow
+Write-Host "  HTTP://$($pipFW.IpAddress)" -ForegroundColor Yellow
 Write-Host
 Write-Host "  For extra credit, try adding Application rules to the firewall to surf to specific web sites from your Azure VMs"
 Write-Host
