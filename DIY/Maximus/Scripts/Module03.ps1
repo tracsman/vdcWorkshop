@@ -55,6 +55,12 @@ Catch {Write-Warning "Permission check failed, ensure Sub ID is set correctly!"
         Return}
 Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscription.Id,")"
 
+# Pulling required components
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
+$snTenant = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
+$snGateway = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "GatewaySubnet"
+$HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop).IpConfigurations[0].PrivateIpAddress
+
 # 3.2 Create Firewall
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating the firewall" -ForegroundColor Cyan
@@ -73,15 +79,12 @@ Catch {$fwPolicy = New-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RG
 
 # 3.2.3 Create Firewall
 Write-Host "  Creating Firewall"
-$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
 Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName -ErrorAction Stop
      Write-Host "    Firewall exists, skipping"}
 Catch {$firewall = New-AzFirewall -Name $FWName -ResourceGroupName $RGName -Location $ShortRegion -VirtualNetwork $vnet -PublicIpAddress $pipFW -SkuTier Premium -FirewallPolicyId $fwPolicy.Id}
 $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 
 # 3.2.4 Create Firewall Policy Collections and Rules
-$HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop).IpConfigurations[0].PrivateIpAddress
-
 # Create FW IP Group
 Write-Host "    Creating IP Group for Tenant Subnets"
 try {$ipGrpTenants = Get-AzIpGroup -Name $FWName-ipgroup -ResourceGroupName $RGName -ErrorAction Stop
@@ -101,15 +104,20 @@ if ($fwAppRCGroup.Properties.RuleCollection.Name -contains "HubFWApp-coll") {
      Write-Host "      Firewall App Rule Collection Filter exists, skipping"} 
 else {$UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall App Rule for Storage Access"
-$fwAppRule = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" `
-               -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
+$fwAppRuleStorage = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" `
+                         -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
 if ($fwAppRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-storage") {
     Write-Host "      Firewall App Rule for Storage Access exists, skipping"}
 else {$UpdateFWPolicyObject = $true}
-
+Write-Host "    Creating Firewall App Rule for Windows Update Access"
+$fwAppRuleWU = New-AzFirewallPolicyApplicationRule -Name "Allow-WU" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" `
+                         -FqdnTag "WindowsUpdate" -Description "Allow Tenant subnet VM access to Windows Update"
+if ($fwAppRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-storage") {
+    Write-Host "      Firewall App Rule for Storage Access exists, skipping"}
+else {$UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall App Rule Collection to Firewall Policy Object"
-     $fwAppColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWApp-coll" -Priority 100 -Rule $fwAppRule -ActionType "Allow"
+     $fwAppColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWApp-coll" -Priority 100 -Rule $fwAppRuleStorage, $fwAppRuleWU -ActionType "Allow"
      Set-AzFirewallPolicyRuleCollectionGroup -Name $fwAppRCGroup.Name -Priority 100 -RuleCollection $fwAppColl -FirewallPolicyObject $fwPolicy}
 
 # Create Network Rule collection and Rules
@@ -169,9 +177,6 @@ if ($UpdateFWPolicyObject) {
      $fwNATColl = New-AzFirewallPolicyNATRuleCollection -Name "HubFWNAT-coll" -Priority 100 -ActionType "Dnat" -Rule $fwNATRuleWeb
      Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNATRCGroup.Name -Priority 300 -RuleCollection $fwNATColl -FirewallPolicyObject $fwPolicy}
 
-Write-Host "***************  Ending!!! ******************"
-Return
-
 # 3.2.5 Create and assign UDR
 # Create UDR Tables
 $gwRouteTable = $null
@@ -219,7 +224,6 @@ If ($RouteTablesUpdated){
 # 3.3.1 Create Log Analytics Workspace
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Log Analytics Workspace for monitoring collection" -ForegroundColor Cyan
-$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName -ErrorAction Stop
 Try {$logWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -ErrorAction Stop | Out-Null
      Write-Host "  Workspace already exists, skipping"}
 Catch {$logWorkspace = New-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -Location $ShortRegion -Sku pernode | Out-Null}
@@ -229,13 +233,20 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating diagnostic setting on Firewall" -ForegroundColor Cyan
 Try {Get-AzDiagnosticSetting -Name FW-Diagnostics -ResourceId $firewall.Id
      Write-Host "  Diagnostic setting already exists, skipping"}
-Catch {Set-AzDiagnosticSetting -Name FW-Diagnostics -ResourceId $firewall.Id -Category AuditEvent -MetricCategory AllMetrics -Enabled $true -WorkspaceId $logWorkspace.Id}
+Catch {Set-AzDiagnosticSetting -Name FW-Diagnostics -ResourceId $firewall.Id -Enabled $true -WorkspaceId $logWorkspace.Id}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 3 completed successfully" -ForegroundColor Green
-Write-Host "  Review your VM and it's components in the Azure Portal"
-Write-Host "  RDP to your new Azure VM using the Public IP"
-Write-Host "  The VM Public IP is " -NoNewline
-Write-Host (Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip').IpAddress -ForegroundColor Yellow
+Write-Host "Module 3 completed successfully" -ForegroundColor Green
+Write-Host
+Write-Host "  Checkout your Firewall and policy in the Azure portal."
+Write-Host "  Be sure to check out the Application rule collection for RDP traffic."
+Write-Host "  Also, checkout the Route Table and it's association to the subnet"
+Write-Host
+Write-Host "  Also, use a browser to see your new Web Site served via the FIrewall IP address."
+Write-Host "  The IIS Server (via NAT) is at" -NoNewline
+Write-Host "  HTTP://$($fwIP.IpAddress)" -ForegroundColor Yellow
+Write-Host
+Write-Host "  For extra credit, try adding Application rules to the firewall to surf to specific web sites from your Azure VMs"
+Write-Host
 Write-Host
