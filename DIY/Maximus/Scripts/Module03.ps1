@@ -224,9 +224,9 @@ If ($RouteTablesUpdated){
 # 3.3.1 Create Log Analytics Workspace
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Log Analytics Workspace for monitoring collection" -ForegroundColor Cyan
-Try {$logWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -ErrorAction Stop | Out-Null
+Try {$logWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -ErrorAction Stop
      Write-Host "  Workspace already exists, skipping"}
-Catch {$logWorkspace = New-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -Location $ShortRegion -Sku pernode | Out-Null}
+Catch {$logWorkspace = New-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -Location $ShortRegion -Sku pernode}
 
 # 3.3.2 Create Diagnotic Rules on Firewall
 Write-Host (Get-Date)' - ' -NoNewline
