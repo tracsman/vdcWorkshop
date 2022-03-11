@@ -231,9 +231,9 @@ Catch {$logWorkspace = New-AzOperationalInsightsWorkspace -ResourceGroupName $RG
 # 3.3.2 Create Diagnotic Rules on Firewall
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating diagnostic setting on Firewall" -ForegroundColor Cyan
-Try {Get-AzDiagnosticSetting -Name FW-Diagnostics -ResourceId $firewall.Id -ErrorAction Stop
+Try {Get-AzDiagnosticSetting -Name FW-Diagnostics -ResourceId $firewall.Id -ErrorAction Stop | Out-Null
      Write-Host "  Diagnostic setting already exists, skipping"}
-Catch {Set-AzDiagnosticSetting -Name FW-Diagnostics -ResourceId $firewall.Id -Enabled $true -WorkspaceId $logWorkspace.Id}
+Catch {Set-AzDiagnosticSetting -Name FW-Diagnostics -ResourceId $firewall.Id -Enabled $true -WorkspaceId $logWorkspace.Id | Out-Null}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
