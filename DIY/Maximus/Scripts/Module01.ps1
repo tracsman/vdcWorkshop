@@ -178,7 +178,7 @@ Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -
 # 1.7 Create VM
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating VM" -ForegroundColor Cyan
-Write-Host "  Pulling KeyVault Secret"
+Write-Host "  Pulling Key Vault Secrets"
 $kvs01 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName01 -ErrorAction Stop
 $kvs02 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName02 -ErrorAction Stop
 $kvs03 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName03 -ErrorAction Stop 

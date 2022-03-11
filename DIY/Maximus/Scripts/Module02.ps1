@@ -42,13 +42,27 @@ Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Starting step 2, estimated total time < 1 minute" -ForegroundColor Cyan
 
-# Set Subscription
+# Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Setting Subscription Context" -ForegroundColor Cyan
 Try {$myContext = Set-AzContext -Subscription $SubID -ErrorAction Stop}
 Catch {Write-Warning "Permission check failed, ensure Sub ID is set correctly!"
         Return}
 Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscription.Id,")"
+
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "  Checking Login" -ForegroundColor Cyan
+$RegEx = '^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$'
+If ($myContext.Account.Id -notmatch $RegEx) {
+        Write-Host "Fatal Error: You are logged in with a Managed Service bearer token" -ForegroundColor Red
+        Write-Host "To correct this, you'll need to login using your Azure credentials."
+        Write-Host "To do this, at the command prompt, enter: " -NoNewline
+        Write-Host "Connect-AzAccount -UseDeviceAuthentication" -ForegroundColor Yellow
+        Write-Host "This command will show a URL and Code. Open a new browser tab and navigate to that URL, enter the code, and login with your Azure credentials"
+        Write-Host
+        Return
+}
+Write-Host "  Current User: ",$myContext.Account.Id
 
 # 2.2 Create Tenant Subnet NSG
 Write-Host (Get-Date)' - ' -NoNewline
