@@ -117,7 +117,7 @@ Catch {Try {Add-AzVirtualNetworkPeering -Name Spoke01toHub01 -VirtualNetwork $vn
 # 4.4 Get secrets from KeyVault
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Obtaining secrets from Key Vault" -ForegroundColor Cyan
-$kvName = $RGName + '-kv'
+$kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
 $kvs01 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName01 -ErrorAction Stop
 $kvs02 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName02 -ErrorAction Stop
 $kvs03 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName03 -ErrorAction Stop 
