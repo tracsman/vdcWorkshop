@@ -111,7 +111,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Spoke to Hub" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkPeering -Name Spoke01toHub01 -VirtualNetworkName $vnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
 	Write-Host "  peering exists, skipping" }
-Catch {Try {Add-AzVirtualNetworkPeering -Name Spoke01toHub01 -VirtualNetwork $vnet -RemoteVirtualNetworkId $hubvnet.Id -UseRemoteGateways -ErrorAction Stop | Out-Null}
+Catch {Try {Add-AzVirtualNetworkPeering -Name Spoke01toHub01 -VirtualNetwork $vnet -RemoteVirtualNetworkId $hubvnet.Id -ErrorAction Stop | Out-Null}
 	  Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
 # 4.4 Get secrets from KeyVault
