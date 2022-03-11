@@ -45,7 +45,7 @@ $RDPRules      = ("10.0.1.0/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/2
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 3, estimated total time 15 minutes" -ForegroundColor Cyan
+Write-Host "Starting Module 3, estimated total time 20 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
@@ -111,7 +111,7 @@ if ($fwAppRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-storage"
 else {$UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall App Rule for Windows Update Access"
 $fwAppRuleWU = New-AzFirewallPolicyApplicationRule -Name "Allow-WU" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" `
-                         -FqdnTag "WindowsUpdate" -Description "Allow Tenant subnet VM access to Windows Update"
+                         -FqdnTag "WindowsUpdate" -WebCategory * -Description "Allow Tenant subnet VM access to Windows Update"
 if ($fwAppRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-storage") {
     Write-Host "      Firewall App Rule for Storage Access exists, skipping"}
 else {$UpdateFWPolicyObject = $true}
