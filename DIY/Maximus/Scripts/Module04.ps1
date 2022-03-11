@@ -41,7 +41,11 @@ $TenantSpace  = "10.1.1.0/24"
 $AppGWSpace   = "10.1.2.0/24"
 $VMSize       = "Standard_B2S"
 $VMNamePrefix = "Spoke01-VM"
+$UserName01   = "User01"
+$UserName02   = "User02"
+$UserName03   = "User03"
 $AppGWName    = "Spoke01-AppGw"
+
 
 # Start nicely
 Write-Host
