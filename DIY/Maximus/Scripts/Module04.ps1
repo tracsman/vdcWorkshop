@@ -71,7 +71,7 @@ If ($myContext.Account.Id -notmatch $RegEx) {
 Write-Host "  Current User: ",$myContext.Account.Id
 
 # Pulling required components
-$fwRouteTable = Get-AzRouteTable -Name $VNetName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
+$fwRouteTable = Get-AzRouteTable -Name $HubName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
 
 # 4.2 Create Spoke VNet and NSG, apply UDR
 
