@@ -161,13 +161,13 @@ Try {Get-AzVmss -ResourceGroupName $RGName -VMScaleSetName $VMSSName -ErrorActio
 Catch {$IPCfg = New-AzVmssIPConfig -Name "VMSSIPConfig" -LoadBalancerInboundNatPoolsId $Spoke02LB.InboundNatPools[0].Id `
 				-LoadBalancerBackendAddressPoolsId $Spoke02LB.BackendAddressPools[0].Id -SubnetId $vnet.Subnets[0].Id
 	  $VMSSConfig = New-AzVmssConfig -Location $ShortRegion -SkuCapacity 2 -SkuName $VMSize -UpgradePolicyMode "Automatic" | `
-                     Add-AzVmssNetworkInterfaceConfiguration -Name "NIC1" -Primary $True -IPConfiguration $IPCfg | `
-                     Set-AzVmssOSProfile -ComputerNamePrefix $VMSSName -AdminUsername $UserName -AdminPassword $kvs  | `
-                     Set-AzVmssStorageProfile -OsDiskCreateOption 'FromImage' -OsDiskCaching "None" -ImageReferencePublisher MicrosoftWindowsServer `
-                                              -ImageReferenceOffer WindowsServer -ImageReferenceSku 2022-Datacenter -ImageReferenceVersion latest `
-                                              -ManagedDisk Standard_LRS | `
-                    Add-AzVmssExtension -Name $ExtensionName -Publisher 'Microsoft.Compute' -Type 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
-                                        -Setting $PublicConfiguration -AutoUpgradeMinorVersion $True
+                        Add-AzVmssNetworkInterfaceConfiguration -Name "NIC1" -Primary $True -IPConfiguration $IPCfg | `
+                        Set-AzVmssOSProfile -ComputerNamePrefix $VMSSName -AdminUsername $UserName -AdminPassword $kvs  | `
+                        Set-AzVmssStorageProfile -OsDiskCreateOption 'FromImage' -OsDiskCaching "None" -ImageReferencePublisher MicrosoftWindowsServer `
+                                                 -ImageReferenceOffer WindowsServer -ImageReferenceSku 2022-Datacenter -ImageReferenceVersion latest `
+                                                 -ManagedDisk Standard_LRS | `
+                        Add-AzVmssExtension -Name $ExtensionName -Publisher 'Microsoft.Compute' -Type 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
+                                            -Setting $PublicConfiguration -AutoUpgradeMinorVersion $True
 	   New-AzVmss -ResourceGroupName $RGName -Name $VMSSName -VirtualMachineScaleSet $VMSSConfig | Out-Null}
 
 # End Nicely
