@@ -37,18 +37,15 @@ $VNetName    = $SpokeName + "-VNet"
 $VNetAddress = "10.2.0.0/16"
 $snTenant    = "10.2.1.0/24"
 $HubName     = "Hub-VNet"
-$HubVMName   = "Hub-VM01"
-$FWName      = "Hub-FW"
 $SpokeLBIP   = "10.2.1.254" # Using the last usable IP of the tenant subnet
-$VMName      = $SpokeName + "-VM01"
+$VMSSName    = $SpokeName + "-VM"
 $VMSize      = "Standard_B2S"
 $UserName    = "User01"
-$RDPRules    = ("10.11.12.0/27"), ("10.11.12.128/25"), ("10.3.12.0/25")
 
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 5, estimated total time 25 minutes" -ForegroundColor Cyan
+Write-Host "Starting Module 5, estimated total time 25 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
