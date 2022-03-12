@@ -178,11 +178,12 @@ $ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 For ($i=1; $i -le 3; $i++) {
 	$VMName = $VMNamePrefix + $i.ToString("00")
-	Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Name $ExtensionName -ErrorAction Stop | Out-Null}
-	Catch {Write-Host "  queuing IIS build job for $VMName"
-		   Set-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Location $ShortRegion -Name $ExtensionName `
-						 -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
-                               -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
+     Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Name $ExtensionName -ErrorAction Stop
+          Write-Host "  extension on VM $VMName has already run, skipping"}
+     Catch {Write-Host "  queuing IIS build job for $VMName"
+            Set-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Location $ShortRegion -Name $ExtensionName `
+                              -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
+                              -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 }
 
 # 4.7 Create AppGateway
@@ -206,7 +207,7 @@ Catch {$gipconfig = New-AzApplicationGatewayIPConfiguration -Name myAGIPConfig -
 	  $address3 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMNamePrefix"03-nic"
 
 	  $backendPool = New-AzApplicationGatewayBackendAddressPool -Name myAGBackendPool -BackendIPAddresses $address1.ipconfigurations[0].privateipaddress, $address2.ipconfigurations[0].privateipaddress, $address3.ipconfigurations[0].privateipaddress
-	  $poolSettings = New-AzApplicationGatewayBackendHttpSettings -Name myPoolSettings -Port 80 -Protocol Http -CookieBasedAffinity Enabled -RequestTimeout 120
+	  $poolSettings = New-AzApplicationGatewayBackendHttpSettings -Name myPoolSettings -Port 80 -Protocol Http -CookieBasedAffinity Disabled -RequestTimeout 120
 
 	  $defaultlistener = New-AzApplicationGatewayHttpListener -Name myAGListener -Protocol Http -FrontendIPConfiguration $fipconfig -FrontendPort $frontendport
 	  $frontendRule = New-AzApplicationGatewayRequestRoutingRule -Name rule1 -RuleType Basic -HttpListener $defaultlistener -BackendAddressPool $backendPool -BackendHttpSettings $poolSettings
