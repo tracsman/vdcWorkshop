@@ -245,3 +245,12 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Module 1 deployed successfully" -ForegroundColor Green
 Write-Host "  Explore your new Resource Group and Key Vault in the Azure Portal."
 Write-Host
+
+
+#TODO: Create AppGW listener for https://showmetherealheaders.azure.jackstromberg.com
+#TODO: Create AppGW Customer rule to block Australia
+#TODO: Send AppGW WAF logs to Log Analytics
+#TODO: Rename MaxBuildIIS script to MaxBuildSimpleIIS (for hub VM)
+#TODO: Update MaxBuildIIS script to contain web page with javascript to pull from File Server and Private Endpoint, display nice message if data sources aren't available
+#TODO: Ensure Hub VM can reach Windows Update
+#TODO: Spoke02 Load Balancer, upgrade to Standard IP, update VMSS to be zonal
