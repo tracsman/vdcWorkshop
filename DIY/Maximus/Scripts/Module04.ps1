@@ -18,7 +18,6 @@
 # 4.6 Do post deploy IIS build
 # 4.7 Create AppGateway
 
-
 # 4.1 Validate and Initialize
 # Load Initialization Variables
 $ScriptDir = "$env:HOME/Scripts"
@@ -106,16 +105,16 @@ Catch {Write-Warning "Hub VNet not found, please execute Module 1 from this work
 	  Return}
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Hub to Spoke" -ForegroundColor Cyan
-Try {Get-AzVirtualNetworkPeering -Name Hub01toSpoke01 -VirtualNetworkName $hubvnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
+Try {Get-AzVirtualNetworkPeering -Name HubToSpoke01 -VirtualNetworkName $hubvnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
 	Write-Host "  peering exists, skipping" }
-Catch {Try {Add-AzVirtualNetworkPeering -Name Hub01toSpoke01 -VirtualNetwork $hubvnet -RemoteVirtualNetworkId $vnet.Id -AllowGatewayTransit -ErrorAction Stop | Out-Null}
+Catch {Try {Add-AzVirtualNetworkPeering -Name HubToSpoke01 -VirtualNetwork $hubvnet -RemoteVirtualNetworkId $vnet.Id -AllowGatewayTransit -ErrorAction Stop | Out-Null}
 	  Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Spoke to Hub" -ForegroundColor Cyan
-Try {Get-AzVirtualNetworkPeering -Name Spoke01toHub01 -VirtualNetworkName $vnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
+Try {Get-AzVirtualNetworkPeering -Name Spoke01ToHub -VirtualNetworkName $vnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
 	Write-Host "  peering exists, skipping" }
-Catch {Try {Add-AzVirtualNetworkPeering -Name Spoke01toHub01 -VirtualNetwork $vnet -RemoteVirtualNetworkId $hubvnet.Id -ErrorAction Stop | Out-Null}
+Catch {Try {Add-AzVirtualNetworkPeering -Name Spoke01ToHub -VirtualNetwork $vnet -RemoteVirtualNetworkId $hubvnet.Id -ErrorAction Stop | Out-Null}
 	  Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
 # 4.4 Get secrets from KeyVault
@@ -178,7 +177,7 @@ $ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 For ($i=1; $i -le 3; $i++) {
 	$VMName = $VMNamePrefix + $i.ToString("00")
-     Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Name $ExtensionName -ErrorAction Stop
+     Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Name $ExtensionName -ErrorAction Stop | Out-Null
           Write-Host "  extension on VM $VMName has already run, skipping"}
      Catch {Write-Host "  queuing IIS build job for $VMName"
             Set-AzVMExtension -ResourceGroupName $RGName -VMName $VMName -Location $ShortRegion -Name $ExtensionName `
