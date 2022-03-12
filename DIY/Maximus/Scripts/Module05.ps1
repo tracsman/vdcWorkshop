@@ -38,7 +38,7 @@ $VNetAddress = "10.2.0.0/16"
 $snTenant    = "10.2.1.0/24"
 $HubName     = "Hub-VNet"
 $SpokeLBIP   = "10.2.1.254" # Using the last usable IP of the tenant subnet
-$VMSSName    = $SpokeName + "-VM"
+$VMSSName    = $SpokeName + "VM"
 $VMSize      = "Standard_B2S"
 $UserName    = "User01"
 
