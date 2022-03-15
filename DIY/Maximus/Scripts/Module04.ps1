@@ -125,6 +125,12 @@ $kvs01 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName01 -ErrorAction 
 $kvs02 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName02 -ErrorAction Stop
 $kvs03 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName03 -ErrorAction Stop 
 $cred = New-Object System.Management.Automation.PSCredential ($kvs01.Name, $kvs01.SecretValue)
+$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs01.SecretValue)
+try {
+    $kvs02 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
+} finally {
+    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
+}
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs02.SecretValue)
 try {
     $kvs02 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
@@ -169,11 +175,11 @@ Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Running post VM deploy build scripts" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "MaxIISBuild.ps1"
-$ExtensionName = 'MaxBuildIIS'
+$ScriptName = "MaxIISBuildS1.ps1"
+$ExtensionName = 'MaxIISBuildS1'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
+$ScriptExe = "(.\$ScriptName -User1 '$UserName01' -Pass1 '" + $kvs01 + "' -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 For ($i=1; $i -le 3; $i++) {
 	$VMName = $VMNamePrefix + $i.ToString("00")

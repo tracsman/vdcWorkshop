@@ -226,8 +226,8 @@ Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Running post VM deploy build script" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "MaxIISBuild.ps1"
-$ExtensionName = 'MaxIISBuild'
+$ScriptName = "MaxIISBuildHUB.ps1"
+$ExtensionName = 'MaxIISBuildHUB'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
 $ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
