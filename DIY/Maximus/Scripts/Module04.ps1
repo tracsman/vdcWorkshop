@@ -45,7 +45,6 @@ $UserName02   = "User02"
 $UserName03   = "User03"
 $AppGWName    = "Spoke01-AppGw"
 
-
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
@@ -127,7 +126,7 @@ $kvs03 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName03 -ErrorAction 
 $cred = New-Object System.Management.Automation.PSCredential ($kvs01.Name, $kvs01.SecretValue)
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs01.SecretValue)
 try {
-    $kvs02 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
+    $kvs01 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
 } finally {
     [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
 }
