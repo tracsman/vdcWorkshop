@@ -22,14 +22,12 @@ add-windowsfeature Web-Server, Web-WebServer, Web-Common-Http, Web-Default-Doc, 
 
 # Create Web App PagesWeb
 Write-Host "Creating Web page and Web.Config file" -ForegroundColor Cyan
-$AddressArrary = ((Get-NetIPAddress -AddressFamily IPv4 -AddressState Preferred -PrefixOrigin Dhcp).IPAddress).split(".")
-$VMSSIP = $AddressArrary[0]+"."+$AddressArrary[1]+"."+$AddressArrary[2]+".142"
 $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
 <%@ Import Namespace="System.IO" %>
 <script language="vb" runat="server">
     Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
     '' Test Endpoints (VMSS and Private EP)
-      Dim ipVMSS as String = "' + $VMSSIP + '"
+      Dim ipVMSS as String = "10.2.1.254"
       Dim ipPvEP as String = ""
       Dim IsVMSSReady as Boolean = False
       Dim IsEndPointReady as Boolean = False
@@ -41,7 +39,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
       Do While Not testSocket.Connected
         Threading.Thread.Sleep(250)
         i=i+1
-        If i >= 12 Then Exit Do
+        If i >= 12 Then Exit Do '' Wait 3 seconds and exit
       Loop
       IsVMSSReady = testSocket.Connected.ToString()
       testSocket.Close
