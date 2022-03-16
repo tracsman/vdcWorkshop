@@ -126,6 +126,7 @@ else {$UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall App Rule for Windows Update Access"
 $fwAppRuleWU = New-AzFirewallPolicyApplicationRule -Name "Allow-WU" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" `
                          -FqdnTag "WindowsUpdate" -WebCategory * -Description "Allow Tenant subnet VM access to Windows Update"
+$fwAppRuleWU.WebCategories = $null
 if ($fwAppRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-WU") {
     Write-Host "      Firewall App Rule for Windows Update Access exists, skipping"}
 else {$UpdateFWPolicyObject = $true}
