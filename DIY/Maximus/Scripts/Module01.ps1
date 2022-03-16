@@ -252,5 +252,4 @@ Write-Host
 #TODO: Create AppGW listener for https://showmetherealheaders.azure.jackstromberg.com
 #TODO: Create AppGW Customer rule to block Australia
 #TODO: Send AppGW WAF logs to Log Analytics
-#TODO: Ensure Hub VM can reach Windows Update
 #TODO: Spoke02 Load Balancer, upgrade to Standard IP, update VMSS to be zonal
