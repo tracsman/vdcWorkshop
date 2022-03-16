@@ -18,7 +18,7 @@ Catch {New-NetFirewallRule -DisplayName "Allow ICMPv4" -Name Allow_ICMPv4_in -Ac
 
 # Install IIS
 Write-Host "Installing IIS and .Net 4.5, this can take some time, around 5+ minutes..." -ForegroundColor Cyan
-add-windowsfeature Web-Server, Web-WebServer, Web-Common-Http, Web-Default-Doc, Web-Dir-Browsing, Web-Http-Errors, Web-Static-Content, Web-Health, Web-Http-Logging, Web-Performance, Web-Stat-Compression, Web-Security, Web-Filtering, Web-App-Dev, Web-ISAPI-Ext, Web-ISAPI-Filter, Web-Net-Ext, Web-Net-Ext45, Web-Asp-Net45, Web-Mgmt-Tools, Web-Mgmt-Console
+add-windowsfeature Web-Server,Web-Asp-Net45
 
 # Create Web App PagesWeb
 Write-Host "Creating Web page and Web.Config file" -ForegroundColor Cyan
@@ -61,7 +61,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
       '' Get Private Endpoint File Server File (Code to be added later)
       lblEndPoint.Text = "<font color=red>Content not reachable, this resource is created in Module 6.</font>"
 
-      lblName.Test = "Hub-VM01"
+      lblName.Text = "Hub-VM01"
       lblTime.Text = Now()
     End Sub
 </script>
