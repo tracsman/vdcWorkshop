@@ -161,7 +161,7 @@ if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-Web") {
     Write-Host "      Firewall Web Network Rule exists, skipping"}
 else {$UpdateFWPolicyObject = $true}
 $fwNetRuleSMB = New-AzFirewallPolicyNetworkRule -Name "Allow-SMB" -SourceAddress $RDPRules `
-                    -DestinationAddress $RDPRules -DestinationPort 445, 137, 139 -Protocol * `
+                    -DestinationAddress $RDPRules -DestinationPort 445, 137, 139 -Protocol Any `
                     -Description "Allow SMB inside the private network for all Azure VMs"
 if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-SMB") {
      Write-Host "      Firewall SMB Network Rule exists, skipping"}
