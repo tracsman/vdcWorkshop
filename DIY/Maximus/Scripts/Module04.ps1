@@ -17,6 +17,7 @@
 # 4.5 Loop: Create VMs
 # 4.6 Do post deploy IIS build
 # 4.7 Create AppGateway
+# 4.8 Configure WAF and AppGW Diagnostics
 
 # 4.1 Validate and Initialize
 # Load Initialization Variables
@@ -74,9 +75,9 @@ Write-Host "  Current User: ",$myContext.Account.Id
 
 # Pulling required components
 $fwRouteTable = Get-AzRouteTable -Name $HubName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
+$logWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs'
 
 # 4.2 Create Spoke VNet and NSG, apply UDR
-
 # Create Tenant Subnet NSG
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Spoke01 NSG" -ForegroundColor Cyan
@@ -202,48 +203,58 @@ Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Location $ShortR
 Write-Host "  creating Application Gateway"
 Try {Get-AzApplicationGateway -ResourceGroupName $RGName -Name $AppGWName -ErrorAction Stop | Out-Null
 	 Write-Host "    resource exists, skipping"}
-Catch {$gipconfig = New-AzApplicationGatewayIPConfiguration -Name myAGIPConfig -Subnet $snAppGW
-	  $fipconfig = New-AzApplicationGatewayFrontendIPConfig -Name myAGFrontendIPConfig -PublicIPAddress $pip
-	  $frontendport = New-AzApplicationGatewayFrontendPort -Name myFrontendPort -Port 80
+Catch {# Create Front End Config 
+	   $gipconfig = New-AzApplicationGatewayIPConfiguration -Name myAGIPConfig -Subnet $snAppGW
+	   $fipconfig = New-AzApplicationGatewayFrontendIPConfig -Name myAGFrontendIPConfig -PublicIPAddress $pip
+	   $frontendport = New-AzApplicationGatewayFrontendPort -Name myFrontendPort -Port 80
+	   $defaultlistener = New-AzApplicationGatewayHttpListener -Name myAGListener -Protocol Http -FrontendIPConfiguration $fipconfig -FrontendPort $frontendport
 
-	  $address1 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMNamePrefix"01-nic"
-	  $address2 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMNamePrefix"02-nic"
-	  $address3 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMNamePrefix"03-nic"
+	   # Create Backend Pools and Http Settings
+	   $address1 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMNamePrefix"01-nic"
+	   $address2 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMNamePrefix"02-nic"
+	   $address3 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMNamePrefix"03-nic"
 
-	  $backendPool = New-AzApplicationGatewayBackendAddressPool -Name myAGBackendPool -BackendIPAddresses $address1.ipconfigurations[0].privateipaddress, $address2.ipconfigurations[0].privateipaddress, $address3.ipconfigurations[0].privateipaddress
-	  $poolSettings = New-AzApplicationGatewayBackendHttpSettings -Name myPoolSettings -Port 80 -Protocol Http -CookieBasedAffinity Disabled -RequestTimeout 120
+	   $backendPoolDefault = New-AzApplicationGatewayBackendAddressPool -Name myDefaultPool -BackendIPAddresses $address1.ipconfigurations[0].privateipaddress, $address2.ipconfigurations[0].privateipaddress, $address3.ipconfigurations[0].privateipaddress
+	   $backendPoolJacks   = New-AzApplicationGatewayBackendAddressPool -Name myJacksPool   -BackendFqdns "showmetherealheaders.azure.jackstromberg.com"
 
-	  $defaultlistener = New-AzApplicationGatewayHttpListener -Name myAGListener -Protocol Http -FrontendIPConfiguration $fipconfig -FrontendPort $frontendport
-	 
-	  $backendPoolJacks = New-AzApplicationGatewayBackendAddressPool -Name myAGJacksPool -BackendFqdns "showmetherealheaders.azure.jackstromberg.com"
-	  $poolSettingsJacks = New-AzApplicationGatewayBackendHttpSettings -Name myJacksPoolSettings -Port 443 -Protocol Https -CookieBasedAffinity Disabled -RequestTimeout 120 -PickHostNameFromBackendAddress
-	  $urlPathRule = New-AzApplicationGatewayPathRuleConfig -Name redirectPathRule -Paths "/headers*" -BackendAddressPool $backendPoolJacks -BackendHttpSettings $poolSettingsJacks
+	   $poolSettingsDefault = New-AzApplicationGatewayBackendHttpSettings -Name myPoolSettingsDefault -Port 80  -Protocol Http  -CookieBasedAffinity Disabled -RequestTimeout 120
+	   $poolSettingsJacks   = New-AzApplicationGatewayBackendHttpSettings -Name myPoolSettingsJack    -Port 443 -Protocol Https -CookieBasedAffinity Disabled -RequestTimeout 120 -PickHostNameFromBackendAddress
+	  
+	   # Create URL Based Path Rule and Map
+	   $urlPathRule = New-AzApplicationGatewayPathRuleConfig -Name urlPathRule -Paths "/headers/", "/headers" -BackendAddressPool $backendPoolJacks -BackendHttpSettings $poolSettingsJacks
+	   $urlPathMap = New-AzApplicationGatewayUrlPathMapConfig -Name urlPathMap -PathRules $urlPathRule -DefaultBackendAddressPool $backendPoolDefault -DefaultBackendHttpSettings $poolSettingsDefault
+	   $frontendRule = New-AzApplicationGatewayRequestRoutingRule -Name Rule01 -RuleType PathBasedRouting -UrlPathMap $urlPathMap -HttpListener $defaultlistener
 
-	  $urlPathMap = New-AzApplicationGatewayUrlPathMapConfig `
-	  -Name redirectpathmap `
-	  -PathRules $urlPathRule `
-	  -DefaultBackendAddressPool $backendPool `
-	  -DefaultBackendHttpSettings $poolSettings
+	   # Create WAF config and policy
+	   $wafConfig = New-AzApplicationGatewayWebApplicationFirewallConfiguration -Enabled $true -FirewallMode "Prevention" -RuleSetType "OWASP" -RuleSetVersion "3.0"
+	   $wafMatchVarAUS = New-AzApplicationGatewayFirewallMatchVariable -VariableName RemoteAddr
+	   $wafMatchCondAUS = New-AzApplicationGatewayFirewallCondition -MatchVariable $wafMatchVarAUS -Operator GeoMatch -MatchValue "AU"  -NegationCondition $False
+	   $wafRuleDenyAUS = New-AzApplicationGatewayFirewallCustomRule -Name Deny-AUS -Priority 10 -RuleType MatchRule -MatchCondition $wafMatchCondAUS -Action Block
+	   $wafPolicy = New-AzApplicationGatewayFirewallPolicy -Name wafpolicyNew -ResourceGroup $RGName -Location $ShortRegion -CustomRule $wafRuleDenyAUS
 
-	  $frontendRule = New-AzApplicationGatewayRequestRoutingRule -Name rule1 -RuleType PathBasedRouting -UrlPathMap $urlPathMap
-
-	  $sku = New-AzApplicationGatewaySku -Name WAF_v2 -Tier WAF_v2 -Capacity 2
-
-	  #$variable = New-AzApplicationGatewayFirewallMatchVariable -VariableName RequestHeaders -Selector User-Agent
-	  #$condition = New-AzApplicationGatewayFirewallCondition -MatchVariable $variable -Operator Contains -MatchValue "evilbot" -Transform Lowercase -NegationCondition $False  
-	  #$rule = New-AzApplicationGatewayFirewallCustomRule -Name blockEvilBot -Priority 2 -RuleType MatchRule -MatchCondition $condition -Action Block
-	  #$policy = New-AzApplicationGatewayFirewallPolicySetting -Mode "Prevention"
-	  #$wafPolicy = New-AzApplicationGatewayFirewallPolicy -Name wafPolicy -ResourceGroup $rgname -Location $location -CustomRule $rule -PolicySetting $policy
-
-	  New-AzApplicationGateway -Name $AppGWName -ResourceGroupName $RGName -Location $ShortRegion -Sku $sku `
-						  	   -BackendAddressPools $backendPool -BackendHttpSettingsCollection $poolSettings `
-                               -FrontendIpConfigurations $fipconfig -FrontendPorts $frontendport -RequestRoutingRules $frontendRule `
-                               -GatewayIpConfigurations $gipconfig -HttpListeners $defaultlistener | Out-Null
+	   $sku = New-AzApplicationGatewaySku -Name WAF_v2 -Tier WAF_v2 -Capacity 2
+	   $appgw = New-AzApplicationGateway -Name $AppGWName -ResourceGroupName $RGName -Location $ShortRegion -Sku $sku `
+						  	   			 -BackendAddressPools $backendPoolDefault, $backendPoolJacks -BackendHttpSettingsCollection $poolSettingsDefault, $poolSettingsJacks `
+                                         -FrontendIpConfigurations $fipconfig -FrontendPorts $frontendport -RequestRoutingRules $frontendRule `
+                                         -GatewayIpConfigurations $gipconfig -HttpListeners $defaultlistener -UrlPathMaps $urlPathMap `
+							             -WebApplicationFirewallConfiguration $wafConfig -FirewallPolicy $wafPolicy -AsJob
 	}
+
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Waiting for IIS Build Jobs to finish, this script will continue after 10 minutes or when IIS build jobs complete, whichever is first." -ForegroundColor Cyan
 Get-Job -Command "Set-AzVMExtension" | wait-job -Timeout 600 | Out-Null
+
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Waiting for the AppGW Job to finish, this script will continue after 10 minutes or when the build job completes, whichever is first." -ForegroundColor Cyan
+Get-Job -Command "New-AzApplicationGateway" | wait-job -Timeout 600 | Out-Null
+
+# 4.8 Configure WAF and AppGW Diagnostics
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Configure WAF and AppGW Diagnostics" -ForegroundColor Cyan
+Try {Get-AzDiagnosticSetting -Name AppGW-Diagnostics -ResourceId $appgw.Id -ErrorAction Stop | Out-Null
+	Write-Host "  Diagnostic setting already exists, skipping"}
+Catch {Set-AzDiagnosticSetting -Name AppGW-Diagnostics -ResourceId $appgw.Id -Enabled $true -WorkspaceId $logWorkspace.ResourceId | Out-Null}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
