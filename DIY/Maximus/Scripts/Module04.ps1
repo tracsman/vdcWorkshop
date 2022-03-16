@@ -216,7 +216,7 @@ Catch {$gipconfig = New-AzApplicationGatewayIPConfiguration -Name myAGIPConfig -
 	  $defaultlistener = New-AzApplicationGatewayHttpListener -Name myAGListener -Protocol Http -FrontendIPConfiguration $fipconfig -FrontendPort $frontendport
 	 
 	  $backendPoolJacks = New-AzApplicationGatewayBackendAddressPool -Name myAGJacksPool -BackendFqdns "showmetherealheaders.azure.jackstromberg.com"
-	  $poolSettingsJacks = New-AzApplicationGatewayBackendHttpSettings -Name myJacksPoolSettings -Port 443 -Protocol Https -CookieBasedAffinity Disabled -RequestTimeout 120 -PickHostNameFromBackendAddress $true
+	  $poolSettingsJacks = New-AzApplicationGatewayBackendHttpSettings -Name myJacksPoolSettings -Port 443 -Protocol Https -CookieBasedAffinity Disabled -RequestTimeout 120 -PickHostNameFromBackendAddress
 	  $urlPathRule = New-AzApplicationGatewayPathRuleConfig -Name redirectPathRule -Paths "/headers*" -BackendAddressPool $backendPoolJacks -BackendHttpSettings $poolSettingsJacks
 
 	  $urlPathMap = New-AzApplicationGatewayUrlPathMapConfig `
