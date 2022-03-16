@@ -160,9 +160,15 @@ $fwNetRuleWeb = New-AzFirewallPolicyNetworkRule -Name "Allow-Web" -SourceAddress
 if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-Web") {
     Write-Host "      Firewall Web Network Rule exists, skipping"}
 else {$UpdateFWPolicyObject = $true}
+$fwNetRuleSMB = New-AzFirewallPolicyNetworkRule -Name "Allow-SMB" -SourceAddress $RDPRules `
+                    -DestinationAddress $RDPRules -DestinationPort 445, 137, 139 -Protocol * `
+                    -Description "Allow SMB inside the private network for all Azure VMs"
+if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-SMB") {
+     Write-Host "      Firewall SMB Network Rule exists, skipping"}
+ else {$UpdateFWPolicyObject = $true}
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall Net Rule Collection to Firewall Policy object"
-     $fwNetColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNet-coll" -Priority 100 -ActionType "Allow" -Rule $fwNetRuleRDP, $fwNetRuleWeb
+     $fwNetColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNet-coll" -Priority 100 -ActionType "Allow" -Rule $fwNetRuleRDP, $fwNetRuleWeb, $fwNetRuleSMB
      Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNetRCGroup.Name -Priority 200 -RuleCollection $fwNetColl -FirewallPolicyObject $fwPolicy}
 
 # Create NAT Rule collection and Rules
