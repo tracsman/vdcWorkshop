@@ -22,6 +22,7 @@ add-windowsfeature Web-Server,Web-Asp-Net45
 
 # Create Web App PagesWeb
 Write-Host "Creating Web page and Web.Config file" -ForegroundColor Cyan
+$ServerName = "$env:COMPUTERNAME"
 $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
 <%@ Import Namespace="System.IO" %>
 <script language="vb" runat="server">
@@ -61,7 +62,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
       '' Get Private Endpoint File Server File (Code to be added later)
       lblEndPoint.Text = "<font color=red>Content not reachable, this resource is created in Module 6.</font>"
 
-      lblName.Text = "Hub-VM01"
+      lblName.Text = "' + $ServerName + '"
       lblTime.Text = Now()
     End Sub
 </script>
@@ -69,7 +70,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head runat="server">
-    <title>DMZ Example App</title>
+    <title>Maximus Workshop App Gateway Site</title>
 </head>
 <body style="font-family: Optima,Segoe,Segoe UI,Candara,Calibri,Arial,sans-serif;">
   <form id="frmMain" runat="server">

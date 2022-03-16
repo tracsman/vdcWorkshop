@@ -214,14 +214,31 @@ Catch {$gipconfig = New-AzApplicationGatewayIPConfiguration -Name myAGIPConfig -
 	  $poolSettings = New-AzApplicationGatewayBackendHttpSettings -Name myPoolSettings -Port 80 -Protocol Http -CookieBasedAffinity Disabled -RequestTimeout 120
 
 	  $defaultlistener = New-AzApplicationGatewayHttpListener -Name myAGListener -Protocol Http -FrontendIPConfiguration $fipconfig -FrontendPort $frontendport
-	  $frontendRule = New-AzApplicationGatewayRequestRoutingRule -Name rule1 -RuleType Basic -HttpListener $defaultlistener -BackendAddressPool $backendPool -BackendHttpSettings $poolSettings
+	 
+	  $backendPoolJacks = New-AzApplicationGatewayBackendAddressPool -Name myAGJacksPool -BackendFqdns "showmetherealheaders.azure.jackstromberg.com"
+	  $poolSettingsJacks = New-AzApplicationGatewayBackendHttpSettings -Name myJacksPoolSettings -Port 443 -Protocol Https -CookieBasedAffinity Disabled -RequestTimeout 120 -PickHostNameFromBackendAddress $true
+	  $urlPathRule = New-AzApplicationGatewayPathRuleConfig -Name redirectPathRule -Paths "/headers*" -BackendAddressPool $backendPoolJacks -BackendHttpSettings $poolSettingsJacks
+
+	  $urlPathMap = New-AzApplicationGatewayUrlPathMapConfig `
+	  -Name redirectpathmap `
+	  -PathRules $urlPathRule `
+	  -DefaultBackendAddressPool $backendPool `
+	  -DefaultBackendHttpSettings $poolSettings
+
+	  $frontendRule = New-AzApplicationGatewayRequestRoutingRule -Name rule1 -RuleType PathBasedRouting -UrlPathMap $urlPathMap
 
 	  $sku = New-AzApplicationGatewaySku -Name WAF_v2 -Tier WAF_v2 -Capacity 2
 
+	  #$variable = New-AzApplicationGatewayFirewallMatchVariable -VariableName RequestHeaders -Selector User-Agent
+	  #$condition = New-AzApplicationGatewayFirewallCondition -MatchVariable $variable -Operator Contains -MatchValue "evilbot" -Transform Lowercase -NegationCondition $False  
+	  #$rule = New-AzApplicationGatewayFirewallCustomRule -Name blockEvilBot -Priority 2 -RuleType MatchRule -MatchCondition $condition -Action Block
+	  #$policy = New-AzApplicationGatewayFirewallPolicySetting -Mode "Prevention"
+	  #$wafPolicy = New-AzApplicationGatewayFirewallPolicy -Name wafPolicy -ResourceGroup $rgname -Location $location -CustomRule $rule -PolicySetting $policy
+
 	  New-AzApplicationGateway -Name $AppGWName -ResourceGroupName $RGName -Location $ShortRegion -Sku $sku `
-						  -BackendAddressPools $backendPool -BackendHttpSettingsCollection $poolSettings `
-                                -FrontendIpConfigurations $fipconfig -FrontendPorts $frontendport -RequestRoutingRules $frontendRule `
-                                -GatewayIpConfigurations $gipconfig -HttpListeners $defaultlistener | Out-Null
+						  	   -BackendAddressPools $backendPool -BackendHttpSettingsCollection $poolSettings `
+                               -FrontendIpConfigurations $fipconfig -FrontendPorts $frontendport -RequestRoutingRules $frontendRule `
+                               -GatewayIpConfigurations $gipconfig -HttpListeners $defaultlistener | Out-Null
 	}
 
 Write-Host (Get-Date)' - ' -NoNewline

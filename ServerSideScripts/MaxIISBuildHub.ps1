@@ -36,7 +36,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head runat="server">
-    <title>Maximus Workshop Example App</title>
+    <title>Maximus Workshop Hub Site</title>
 </head>
 <body style="font-family: Optima,Segoe,Segoe UI,Candara,Calibri,Arial,sans-serif;">
   <form id="frmMain" runat="server">
