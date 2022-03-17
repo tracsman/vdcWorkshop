@@ -245,6 +245,3 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Module 1 deployed successfully" -ForegroundColor Green
 Write-Host "  Explore your new Resource Group and Key Vault in the Azure Portal."
 Write-Host
-
-
-#TODO: Spoke02 Load Balancer, upgrade to Standard IP, update VMSS to be zonal

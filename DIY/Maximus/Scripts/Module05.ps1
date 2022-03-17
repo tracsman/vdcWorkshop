@@ -133,17 +133,17 @@ Try {$Spoke02LB = Get-AzLoadBalancer -Name $SpokeName"-lb" -ResourceGroupName $R
 	 Write-Host "  resource exists, skipping"}
 Catch {$FrontEndIPConfig = New-AzLoadBalancerFrontendIpConfig -Name LB-Frontend -PrivateIpAddress $SpokeLBIP -SubnetId $snTenant.Id
        $BackEndPool= New-AzLoadBalancerBackendAddressPoolConfig -Name "LB-backend"
-	  $HealthProbe = New-AzLoadBalancerProbeConfig -Name "HealthProbe" -Protocol Tcp -Port 445 -IntervalInSeconds 15 -ProbeCount 2
+       $HealthProbe = New-AzLoadBalancerProbeConfig -Name "HealthProbe" -Protocol Tcp -Port 445 -IntervalInSeconds 15 -ProbeCount 2
        $LBRule = @()
-	  $LBRule += New-AzLoadBalancerRuleConfig -Name "SMB445" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
-								       -Probe $HealthProbe -Protocol Tcp -FrontendPort 445 -BackendPort 445 -IdleTimeoutInMinutes 15
-	  $LBRule += New-AzLoadBalancerRuleConfig -Name "SMB137" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
-									  -Probe $HealthProbe -Protocol Tcp -FrontendPort 137 -BackendPort 137 -IdleTimeoutInMinutes 15
-	  $LBRule += New-AzLoadBalancerRuleConfig -Name "SMB139" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
-									  -Probe $HealthProbe -Protocol Tcp -FrontendPort 139 -BackendPort 139 -IdleTimeoutInMinutes 15
-	  $Spoke02LB = New-AzLoadBalancer -ResourceGroupName $RGName -Location $ShortRegion -Name $SpokeName"-lb" -FrontendIpConfiguration $FrontEndIPConfig `
-	   						    -LoadBalancingRule $LBRule -BackendAddressPool $BackEndPool -Probe $HealthProbe
-	  $Spoke02LB = Get-AzLoadBalancer -ResourceGroupName $RGName -Name $SpokeName"-lb" -ErrorAction Stop}
+       $LBRule += New-AzLoadBalancerRuleConfig -Name "SMB445" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
+					       -Probe $HealthProbe -Protocol Tcp -FrontendPort 445 -BackendPort 445 -IdleTimeoutInMinutes 15
+       $LBRule += New-AzLoadBalancerRuleConfig -Name "SMB137" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
+					       -Probe $HealthProbe -Protocol Tcp -FrontendPort 137 -BackendPort 137 -IdleTimeoutInMinutes 15
+       $LBRule += New-AzLoadBalancerRuleConfig -Name "SMB139" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
+					       -Probe $HealthProbe -Protocol Tcp -FrontendPort 139 -BackendPort 139 -IdleTimeoutInMinutes 15
+       $Spoke02LB = New-AzLoadBalancer -ResourceGroupName $RGName -Location $ShortRegion -Name $SpokeName"-lb" -FrontendIpConfiguration $FrontEndIPConfig `
+	   			       -LoadBalancingRule $LBRule -BackendAddressPool $BackEndPool -Probe $HealthProbe -Sku Standard -Tier Regional
+       $Spoke02LB = Get-AzLoadBalancer -ResourceGroupName $RGName -Name $SpokeName"-lb" -ErrorAction Stop}
 
 # 5. Create VMSS
 Write-Host (Get-Date)' - ' -NoNewline
@@ -159,16 +159,16 @@ $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = 
 Try {Get-AzVmss -ResourceGroupName $RGName -VMScaleSetName $VMSSName -ErrorAction Stop | Out-Null
 	 Write-Host "  resource exists, skipping"}
 Catch {$IPCfg = New-AzVmssIPConfig -Name "VMSSIPConfig" -LoadBalancerInboundNatPoolsId $Spoke02LB.InboundNatPools[0].Id `
-				-LoadBalancerBackendAddressPoolsId $Spoke02LB.BackendAddressPools[0].Id -SubnetId $vnet.Subnets[0].Id
-	  $VMSSConfig = New-AzVmssConfig -Location $ShortRegion -SkuCapacity 2 -SkuName $VMSize -UpgradePolicyMode "Automatic" | `
-                        Add-AzVmssNetworkInterfaceConfiguration -Name "NIC1" -Primary $True -IPConfiguration $IPCfg | `
-                        Set-AzVmssOSProfile -ComputerNamePrefix $VMSSName -AdminUsername $UserName -AdminPassword $kvs  | `
-                        Set-AzVmssStorageProfile -OsDiskCreateOption 'FromImage' -OsDiskCaching "None" -ImageReferencePublisher MicrosoftWindowsServer `
-                                                 -ImageReferenceOffer WindowsServer -ImageReferenceSku 2022-Datacenter -ImageReferenceVersion latest `
-                                                 -ManagedDisk Standard_LRS | `
-                        Add-AzVmssExtension -Name $ExtensionName -Publisher 'Microsoft.Compute' -Type 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
-                                            -Setting $PublicConfiguration -AutoUpgradeMinorVersion $True
-	   New-AzVmss -ResourceGroupName $RGName -Name $VMSSName -VirtualMachineScaleSet $VMSSConfig | Out-Null}
+				   -LoadBalancerBackendAddressPoolsId $Spoke02LB.BackendAddressPools[0].Id -SubnetId $vnet.Subnets[0].Id
+       $VMSSConfig = New-AzVmssConfig -Location $ShortRegion -SkuCapacity 2 -SkuName $VMSize -UpgradePolicyMode "Automatic" -Zone 1, 2, 3 | `
+                     Add-AzVmssNetworkInterfaceConfiguration -Name "NIC1" -Primary $True -IPConfiguration $IPCfg | `
+                     Set-AzVmssOSProfile -ComputerNamePrefix $VMSSName -AdminUsername $UserName -AdminPassword $kvs  | `
+                     Set-AzVmssStorageProfile -OsDiskCreateOption 'FromImage' -OsDiskCaching "None" -ImageReferencePublisher MicrosoftWindowsServer `
+                                              -ImageReferenceOffer WindowsServer -ImageReferenceSku 2022-Datacenter -ImageReferenceVersion latest `
+                                              -ManagedDisk Standard_LRS | `
+                     Add-AzVmssExtension -Name $ExtensionName -Publisher 'Microsoft.Compute' -Type 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
+                                         -Setting $PublicConfiguration -AutoUpgradeMinorVersion $True
+       New-AzVmss -ResourceGroupName $RGName -Name $VMSSName -VirtualMachineScaleSet $VMSSConfig | Out-Null}
 
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline
