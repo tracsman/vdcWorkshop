@@ -247,6 +247,4 @@ Write-Host "  Explore your new Resource Group and Key Vault in the Azure Portal.
 Write-Host
 
 
-
-#TODO: Send AppGW WAF logs to Log Analytics
 #TODO: Spoke02 Load Balancer, upgrade to Standard IP, update VMSS to be zonal
