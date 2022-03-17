@@ -7,6 +7,7 @@ In this step we change to the Scripts directory and execute the Step 1 PowerShel
 
 The Step 1 Script will create a Resource Group in the subscription you added in the init.txt in the last step. It will then create a Key Vault resource and add three secrets that represent usernames and passwords that will be added to all VMs created in the workshop.
 
+
 ## Observations
 Once you're done with this step, you will see a Resource Group in Azure to which you can now deploy resources, and a Key Vault with secrets.
 
