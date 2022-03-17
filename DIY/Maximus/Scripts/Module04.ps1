@@ -226,12 +226,13 @@ Catch {# Create Front End Config
 	   $frontendRule = New-AzApplicationGatewayRequestRoutingRule -Name Rule01 -RuleType PathBasedRouting -UrlPathMap $urlPathMap -HttpListener $defaultlistener
 
 	   # Create WAF config and policy
-	   $wafConfig = New-AzApplicationGatewayWebApplicationFirewallConfiguration -Enabled $true -FirewallMode "Prevention" -RuleSetType "OWASP" -RuleSetVersion "3.0"
+	   $wafConfig = New-AzApplicationGatewayWebApplicationFirewallConfiguration -Enabled $true -FirewallMode Detection -RuleSetType "OWASP" -RuleSetVersion "3.0"
 	   try {$wafPolicy = Get-AzApplicationGatewayFirewallPolicy -Name $AppGWName'-waf' -ResourceGroup $RGName -ErrorAction Stop}
 	   catch {$wafMatchVarAUS = New-AzApplicationGatewayFirewallMatchVariable -VariableName RemoteAddr
 			  $wafMatchCondAUS = New-AzApplicationGatewayFirewallCondition -MatchVariable $wafMatchVarAUS -Operator GeoMatch -MatchValue "AU"  -NegationCondition $False
 			  $wafRuleDenyAUS = New-AzApplicationGatewayFirewallCustomRule -Name Deny-AUS -Priority 10 -RuleType MatchRule -MatchCondition $wafMatchCondAUS -Action Block
-			  $wafPolicy = New-AzApplicationGatewayFirewallPolicy -Name $AppGWName'-waf' -ResourceGroup $RGName -Location $ShortRegion -CustomRule $wafRuleDenyAUS}
+			  $wafPolicySettings = New-AzApplicationGatewayFirewallPolicySetting -Mode Prevention
+			  $wafPolicy = New-AzApplicationGatewayFirewallPolicy -Name $AppGWName'-waf' -ResourceGroup $RGName -Location $ShortRegion -CustomRule $wafRuleDenyAUS -PolicySetting $wafPolicySettings}
 	   $sku = New-AzApplicationGatewaySku -Name WAF_v2 -Tier WAF_v2 -Capacity 2
 	   $appgw = New-AzApplicationGateway -Name $AppGWName -ResourceGroupName $RGName -Location $ShortRegion -Sku $sku `
 						  	   			 -BackendAddressPools $backendPoolDefault, $backendPoolJacks -BackendHttpSettingsCollection $poolSettingsDefault, $poolSettingsJacks `
