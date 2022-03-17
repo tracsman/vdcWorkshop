@@ -247,7 +247,13 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Log Analytics Workspace for monitoring collection" -ForegroundColor Cyan
 Try {$logWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -ErrorAction Stop
      Write-Host "  Workspace already exists, skipping"}
-Catch {$logWorkspace = New-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -Location $ShortRegion -Sku pernode}
+Catch {# Ok, this is strange but let me explain... Log Analystics Workspaces are softdeleted, so if you create a "new"
+       # Workspace within 14 days of deleting one with the same name, a new one won't be created, you'll just restore
+       # the old one with old data and old diagnostic settings. So we need to create, force delete, then create again
+       # to ensure we get a new, "clean" workspace with no diagnostic settings.
+       New-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -Location $ShortRegion -Sku pernode | Out-Null
+       Remove-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -ForceDelete -Force | Out-Null
+       $logWorkspace = New-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -Location $ShortRegion -Sku pernode}
 
 # 3.3.2 Create Diagnotic Rules on Firewall
 Write-Host (Get-Date)' - ' -NoNewline
