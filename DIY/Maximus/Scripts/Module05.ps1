@@ -45,7 +45,7 @@ $UserName    = "User01"
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting Module 5, estimated total time 25 minutes" -ForegroundColor Cyan
+Write-Host "Starting Module 5, estimated total time 8 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
@@ -131,7 +131,7 @@ Write-Host "Creating Internal Load Balancer" -ForegroundColor Cyan
 $snTenant = Get-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnet
 Try {$Spoke02LB = Get-AzLoadBalancer -Name $SpokeName"-lb" -ResourceGroupName $RGName -ErrorAction Stop
 	 Write-Host "  resource exists, skipping"}
-Catch {$FrontEndIPConfig = New-AzLoadBalancerFrontendIpConfig -Name LB-Frontend -PrivateIpAddress $SpokeLBIP -SubnetId $snTenant.Id
+Catch {$FrontEndIPConfig = New-AzLoadBalancerFrontendIpConfig -Name LB-Frontend -PrivateIpAddress $SpokeLBIP -SubnetId $snTenant.Id -Zone 1, 2, 3
        $BackEndPool= New-AzLoadBalancerBackendAddressPoolConfig -Name "LB-backend"
        $HealthProbe = New-AzLoadBalancerProbeConfig -Name "HealthProbe" -Protocol Tcp -Port 445 -IntervalInSeconds 15 -ProbeCount 2
        $LBRule = @()
@@ -172,6 +172,8 @@ Catch {$IPCfg = New-AzVmssIPConfig -Name "VMSSIPConfig" -LoadBalancerInboundNatP
 
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 5 completed successfully" -ForegroundColor Green
+Write-Host "Module 5 completed successfully" -ForegroundColor Green
 Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
+Write-Host
+Write-Host "  Try going to your AppGW IP again, notice you now have data from the VMSS File Server!"
 Write-Host

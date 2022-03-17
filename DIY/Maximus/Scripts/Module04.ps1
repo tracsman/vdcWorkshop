@@ -49,7 +49,7 @@ $AppGWName    = "Spoke01-AppGw"
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting Module 4, estimated total time 15 minutes" -ForegroundColor Cyan
+Write-Host "Starting Module 4, estimated total time 11 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
@@ -199,9 +199,9 @@ $snAppGW = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name AppGatew
 Write-Host "  creating Public IP address"
 Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $AppGWName'-pip' -ErrorAction Stop
 	 Write-Host "    resource exists, skipping"}
-Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Static -Name $AppGWName'-pip' -Sku Standard}
+Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Static -Name $AppGWName'-pip' -Sku Standard -Zone 1, 2, 3}
 Write-Host "  creating Application Gateway"
-Try {$appgw = Get-AzApplicationGateway -ResourceGroupName $RGName -Name $AppGWName -ErrorAction Stop}
+Try {Get-AzApplicationGateway -ResourceGroupName $RGName -Name $AppGWName -ErrorAction Stop | Out-Null}
 Catch {# Create Front End Config 
 	   Write-Host "  Preping front-end config"
 	   $gipconfig = New-AzApplicationGatewayIPConfiguration -Name myAGIPConfig -Subnet $snAppGW
@@ -240,11 +240,11 @@ Catch {# Create Front End Config
 			  $wafPolicy = New-AzApplicationGatewayFirewallPolicy -Name $AppGWName'-waf' -ResourceGroup $RGName -Location $ShortRegion -CustomRule $wafRuleDenyAUS -PolicySetting $wafPolicySettings}
 	   $sku = New-AzApplicationGatewaySku -Name WAF_v2 -Tier WAF_v2 -Capacity 2
 	   Write-Host "  Submitting App Gateway build job"
-	   $appgw = New-AzApplicationGateway -Name $AppGWName -ResourceGroupName $RGName -Location $ShortRegion -Sku $sku `
-						  	   			 -BackendAddressPools $backendPoolDefault, $backendPoolJacks -BackendHttpSettingsCollection $poolSettingsDefault, $poolSettingsJacks `
-                                         -FrontendIpConfigurations $fipconfig -FrontendPorts $frontendport -RequestRoutingRules $frontendRule `
-                                         -GatewayIpConfigurations $gipconfig -HttpListeners $defaultlistener -UrlPathMaps $urlPathMap `
-							             -WebApplicationFirewallConfiguration $wafConfig -FirewallPolicy $wafPolicy -AsJob
+	   New-AzApplicationGateway -Name $AppGWName -ResourceGroupName $RGName -Location $ShortRegion -Sku $sku `
+			  	   	            -BackendAddressPools $backendPoolDefault, $backendPoolJacks -BackendHttpSettingsCollection $poolSettingsDefault, $poolSettingsJacks `
+                                -FrontendIpConfigurations $fipconfig -FrontendPorts $frontendport -RequestRoutingRules $frontendRule `
+                                -GatewayIpConfigurations $gipconfig -HttpListeners $defaultlistener -UrlPathMaps $urlPathMap `
+							    -WebApplicationFirewallConfiguration $wafConfig -FirewallPolicy $wafPolicy -AsJob | Out-Null
 	}
 
 Write-Host (Get-Date)' - ' -NoNewline
@@ -258,15 +258,19 @@ Get-Job -Command "New-AzApplicationGateway" | wait-job -Timeout 600 | Out-Null
 # 4.8 Configure WAF and AppGW Diagnostics
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Configure WAF and AppGW Diagnostics" -ForegroundColor Cyan
+$appgw = Get-AzApplicationGateway -ResourceGroupName $RGName -Name $AppGWName
 Try {Get-AzDiagnosticSetting -Name AppGW-Diagnostics -ResourceId $appgw.Id -ErrorAction Stop | Out-Null
 	Write-Host "  Diagnostic setting already exists, skipping"}
 Catch {Set-AzDiagnosticSetting -Name AppGW-Diagnostics -ResourceId $appgw.Id -Enabled $true -WorkspaceId $logWorkspace.ResourceId | Out-Null}
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 4 completed successfully" -ForegroundColor Green
+Write-Host "Module 4 completed successfully" -ForegroundColor Green
 Write-Host "  Checkout your new web farm by going to your App Gateway IP ($($pip.IpAddress))."
 Write-Host "  You can also navigate to http://$($pip.IpAddress)/headers to have"
 Write-Host "  App Gateway redirect to another backend pool on a remote site."
-Write-Host "  Also, WAF Rules and VNet Peerings and UDR settings on the Spoke01 vnet."
+Write-Host "  Also, review the WAF Rules and VNet Peerings and UDR settings on the Spoke01 vnet."
+Write-Host
+Write-Host "  For fun try https://geopeeker.com/fetch/?url=" + $pip.IpAddress
+Write-Host "  You should see Australia blocked by the WAF Geo rule." 
 Write-Host

@@ -33,14 +33,13 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # $ShortRegion defined in and pulled from the init.txt file above
 # $RGName    = defined in and pulled from the init.txt file above
 $VNetName    = "Hub-VNet"
-$FWName      = "Hub-FW"
 $BastionName = "Hub-Bastion"
 $NATName     = "Hub-NAT"
 
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 2, estimated total time < 1 minute" -ForegroundColor Cyan
+Write-Host "Starting Module 2, estimated total time 8 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
@@ -86,22 +85,22 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating Bastion Public IP"
 Try {$pipBastion = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $BastionName'-pip' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
-Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $BastionName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
+Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $BastionName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard -Zone 1, 2, 3}
 
 # 2.4 Create IP Prefix for NAT
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating IP Prefix for VNet NAT"
 Try {$ippNAT = Get-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
-Catch {$ippNAT = New-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -Location $ShortRegion -IpAddressVersion "IPv4" -PrefixLength 31}
+Catch {$ippNAT = New-AzPublicIpPrefix -ResourceGroupName $RGName -Name $NATName'-ipp' -Location $ShortRegion -IpAddressVersion "IPv4" -PrefixLength 31 -Sku Standard -Zone 1, 2, 3}
 
 # 2.5 Create Bastion
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Creating Bastion"
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
-Try {$bastion = Get-AzBastion -ResourceGroupName $RGName -Name $BastionName -ErrorAction Stop
+Try {Get-AzBastion -ResourceGroupName $RGName -Name $BastionName -ErrorAction Stop | Out-Null
      Write-Host "    Bastion exists, skipping"}
-Catch {$bastion = New-AzBastion -ResourceGroupName $RGName -Name $BastionName -PublicIpAddress $pipBastion -VirtualNetwork $vnet -AsJob}
+Catch {New-AzBastion -ResourceGroupName $RGName -Name $BastionName -PublicIpAddress $pipBastion -VirtualNetwork $vnet -AsJob | Out-Null}
 
 # 2.6 VNet NAT
 Write-Host (Get-Date)' - ' -NoNewline
@@ -127,6 +126,7 @@ Get-Job -Command "New-AzBastion" | wait-job -Timeout 600 | Out-Null
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 2 completed successfully" -ForegroundColor Green
-Write-Host "  Explore your new virtual network in the Azure Portal."
+Write-Host "Module 2 completed successfully" -ForegroundColor Green
+Write-Host "  Explore your new IP Prefix, NAT, and Bastion in the Azure Portal."
+Write-Host "  Try RDPing to your VM via the Bastion host (use the credentials from Secrets in your Key Vault)."
 Write-Host

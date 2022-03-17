@@ -83,7 +83,7 @@ Write-Host "Creating the firewall" -ForegroundColor Cyan
 Write-Host "  Creating Firewall Public IP"
 Try {$pipFW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pip' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
-Catch {$pipFW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard}
+Catch {$pipFW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard -Zone 1, 2, 3}
 
 # 3.2.2 Create Firewall Policy
 Write-Host "  Creating Firewall Policy"

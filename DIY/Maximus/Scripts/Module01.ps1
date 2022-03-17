@@ -75,7 +75,7 @@ $User03SecPass = ConvertTo-SecureString $User03Pass -AsPlainText -Force
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting step 1, estimated total time < 1 minute" -ForegroundColor Cyan
+Write-Host "Starting Module 1, estimated total time 6 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
@@ -226,8 +226,8 @@ Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Running post VM deploy build script" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "MaxIISBuildHUB.ps1"
-$ExtensionName = 'MaxIISBuildHUB'
+$ScriptName = "MaxIISBuildHub.ps1"
+$ExtensionName = 'MaxIISBuildHub'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
 $ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
@@ -243,5 +243,5 @@ Catch {Write-Host "  queuing build job."
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Module 1 deployed successfully" -ForegroundColor Green
-Write-Host "  Explore your new Resource Group and Key Vault in the Azure Portal."
+Write-Host "  Explore your new Resource Group, Key Vault, and VM in the Azure Portal."
 Write-Host
