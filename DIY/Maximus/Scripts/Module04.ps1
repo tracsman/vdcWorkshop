@@ -201,15 +201,16 @@ Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $AppGWName'-p
 	 Write-Host "    resource exists, skipping"}
 Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Static -Name $AppGWName'-pip' -Sku Standard}
 Write-Host "  creating Application Gateway"
-Try {Get-AzApplicationGateway -ResourceGroupName $RGName -Name $AppGWName -ErrorAction Stop | Out-Null
-	 Write-Host "    resource exists, skipping"}
+Try {$appgw = Get-AzApplicationGateway -ResourceGroupName $RGName -Name $AppGWName -ErrorAction Stop | Out-Null}
 Catch {# Create Front End Config 
+	   Write-Host "  Preping front-end config"
 	   $gipconfig = New-AzApplicationGatewayIPConfiguration -Name myAGIPConfig -Subnet $snAppGW
 	   $fipconfig = New-AzApplicationGatewayFrontendIPConfig -Name myAGFrontendIPConfig -PublicIPAddress $pip
 	   $frontendport = New-AzApplicationGatewayFrontendPort -Name myFrontendPort -Port 80
 	   $defaultlistener = New-AzApplicationGatewayHttpListener -Name myAGListener -Protocol Http -FrontendIPConfiguration $fipconfig -FrontendPort $frontendport
 
 	   # Create Backend Pools and Http Settings
+	   Write-Host "  Preping back-end config"
 	   $address1 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMNamePrefix"01-nic"
 	   $address2 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMNamePrefix"02-nic"
 	   $address3 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMNamePrefix"03-nic"
@@ -221,26 +222,30 @@ Catch {# Create Front End Config
 	   $poolSettingsJacks   = New-AzApplicationGatewayBackendHttpSettings -Name myPoolSettingsJack    -Port 443 -Protocol Https -CookieBasedAffinity Disabled -RequestTimeout 120 -PickHostNameFromBackendAddress
 	  
 	   # Create URL Based Path Rule and Map
+	   Write-Host "  Preping WAF Rules"
 	   $urlPathRule = New-AzApplicationGatewayPathRuleConfig -Name urlPathRule -Paths "/headers/", "/headers" -BackendAddressPool $backendPoolJacks -BackendHttpSettings $poolSettingsJacks
 	   $urlPathMap = New-AzApplicationGatewayUrlPathMapConfig -Name urlPathMap -PathRules $urlPathRule -DefaultBackendAddressPool $backendPoolDefault -DefaultBackendHttpSettings $poolSettingsDefault
 	   $frontendRule = New-AzApplicationGatewayRequestRoutingRule -Name Rule01 -RuleType PathBasedRouting -UrlPathMap $urlPathMap -HttpListener $defaultlistener
 
 	   # Create WAF config and policy
-	   $wafConfig = New-AzApplicationGatewayWebApplicationFirewallConfiguration -Enabled $true -FirewallMode Detection -RuleSetType "OWASP" -RuleSetVersion "3.0"
-	   try {$wafPolicy = Get-AzApplicationGatewayFirewallPolicy -Name $AppGWName'-waf' -ResourceGroup $RGName -ErrorAction Stop}
+	   Write-Host "  Preping WAF Config"
+	   $wafConfig = New-AzApplicationGatewayWebApplicationFirewallConfiguration -Enabled $true -FirewallMode Prevention -RuleSetType "OWASP" -RuleSetVersion "3.0"
+	   Write-Host "  Preping WAF Policy"
+	   try {$wafPolicy = Get-AzApplicationGatewayFirewallPolicy -Name $AppGWName'-waf' -ResourceGroup $RGName -ErrorAction Stop
+	   		Write-Host "    WAF Policy exists, skipping"}
 	   catch {$wafMatchVarAUS = New-AzApplicationGatewayFirewallMatchVariable -VariableName RemoteAddr
 			  $wafMatchCondAUS = New-AzApplicationGatewayFirewallCondition -MatchVariable $wafMatchVarAUS -Operator GeoMatch -MatchValue "AU"  -NegationCondition $False
 			  $wafRuleDenyAUS = New-AzApplicationGatewayFirewallCustomRule -Name Deny-AUS -Priority 10 -RuleType MatchRule -MatchCondition $wafMatchCondAUS -Action Block
 			  $wafPolicySettings = New-AzApplicationGatewayFirewallPolicySetting -Mode Prevention
 			  $wafPolicy = New-AzApplicationGatewayFirewallPolicy -Name $AppGWName'-waf' -ResourceGroup $RGName -Location $ShortRegion -CustomRule $wafRuleDenyAUS -PolicySetting $wafPolicySettings}
 	   $sku = New-AzApplicationGatewaySku -Name WAF_v2 -Tier WAF_v2 -Capacity 2
+	   Write-Host "  Submitting App Gateway build job"
 	   $appgw = New-AzApplicationGateway -Name $AppGWName -ResourceGroupName $RGName -Location $ShortRegion -Sku $sku `
 						  	   			 -BackendAddressPools $backendPoolDefault, $backendPoolJacks -BackendHttpSettingsCollection $poolSettingsDefault, $poolSettingsJacks `
                                          -FrontendIpConfigurations $fipconfig -FrontendPorts $frontendport -RequestRoutingRules $frontendRule `
                                          -GatewayIpConfigurations $gipconfig -HttpListeners $defaultlistener -UrlPathMaps $urlPathMap `
 							             -WebApplicationFirewallConfiguration $wafConfig -FirewallPolicy $wafPolicy -AsJob
 	}
-
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Waiting for IIS Build Jobs to finish, this script will continue after 10 minutes or when IIS build jobs complete, whichever is first." -ForegroundColor Cyan
