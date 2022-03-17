@@ -271,6 +271,6 @@ Write-Host "  You can also navigate to http://$($pip.IpAddress)/headers to have"
 Write-Host "  App Gateway redirect to another backend pool on a remote site."
 Write-Host "  Also, review the WAF Rules and VNet Peerings and UDR settings on the Spoke01 vnet."
 Write-Host
-Write-Host "  For fun try https://geopeeker.com/fetch/?url=" + $pip.IpAddress
+Write-Host "  For fun try https://geopeeker.com/fetch/?url=$($pip.IpAddress)"
 Write-Host "  You should see Australia blocked by the WAF Geo rule." 
 Write-Host
