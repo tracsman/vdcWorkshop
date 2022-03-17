@@ -201,7 +201,7 @@ Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $AppGWName'-p
 	 Write-Host "    resource exists, skipping"}
 Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Static -Name $AppGWName'-pip' -Sku Standard}
 Write-Host "  creating Application Gateway"
-Try {$appgw = Get-AzApplicationGateway -ResourceGroupName $RGName -Name $AppGWName -ErrorAction Stop | Out-Null}
+Try {$appgw = Get-AzApplicationGateway -ResourceGroupName $RGName -Name $AppGWName -ErrorAction Stop}
 Catch {# Create Front End Config 
 	   Write-Host "  Preping front-end config"
 	   $gipconfig = New-AzApplicationGatewayIPConfiguration -Name myAGIPConfig -Subnet $snAppGW
