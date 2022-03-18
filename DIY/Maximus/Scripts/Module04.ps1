@@ -74,8 +74,10 @@ If ($myContext.Account.Id -notmatch $RegEx) {
 Write-Host "  Current User: ",$myContext.Account.Id
 
 # Pulling required components
-$fwRouteTable = Get-AzRouteTable -Name $HubName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
-$logWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs'
+try {$fwRouteTable = Get-AzRouteTable -Name $HubName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop}
+catch {Write-Warning "The $($HubName+'-rt-fw') Route Table was not found, please run Module 3 to ensure this critical resource is created."; Return}
+try {$logWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -ErrorAction Stop}
+catch {Write-Warning "The Log Analytics Workspace was not found, please run Module 3 to ensure this critical resource is created."; Return}
 
 # 4.2 Create Spoke VNet and NSG, apply UDR
 # Create Tenant Subnet NSG
@@ -271,6 +273,6 @@ Write-Host "  You can also navigate to http://$($pip.IpAddress)/headers to have"
 Write-Host "  App Gateway redirect to another backend pool on a remote site."
 Write-Host "  Also, review the WAF Rules and VNet Peerings and UDR settings on the Spoke01 vnet."
 Write-Host
-Write-Host "  For fun try https://geopeeker.com/fetch/?url=" + $pip.IpAddress
+Write-Host "  For fun try https://geopeeker.com/fetch/?url=$($pip.IpAddress)"
 Write-Host "  You should see Australia blocked by the WAF Geo rule." 
 Write-Host
