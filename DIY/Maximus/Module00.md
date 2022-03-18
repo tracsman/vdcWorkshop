@@ -5,7 +5,7 @@
 ## Abstract
 [Azure Cloud Shell][CloudShell] is an interactive, authenticated, browser-accessible shell for managing Azure resources. It provides the flexibility of choosing the shell experience that best suits the way you work, either Bash or PowerShell. We'll be using the Cloud Shell for the deployment of PowerShell scripts in today's workshop. Using the Cloud Shell provides a unified foundation to interact with Azure with all the PowerShell settings and Azure SDKs loaded, so you can start the shell and immediately begin interacting with Azure.
 
-This initialization step (step 0) of the workshop has you start the Cloud Shell, ensure you're using the PowerShell experience, download the Workshop files, and log in using your Azure credentials. 
+This initialization step (step 0) of the workshop has you start the Cloud Shell, ensure you're using the PowerShell experience, download the Workshop files, and log in using your Azure credentials.
 
 ## Observations
 Once you're done with this step, you'll know more about the Azure Cloud Shell and how to get started with it.
