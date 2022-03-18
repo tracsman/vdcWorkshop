@@ -74,8 +74,10 @@ If ($myContext.Account.Id -notmatch $RegEx) {
 Write-Host "  Current User: ",$myContext.Account.Id
 
 # Pulling required components
-$fwRouteTable = Get-AzRouteTable -Name $HubName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
-$logWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs'
+try {$fwRouteTable = Get-AzRouteTable -Name $HubName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop}
+catch {Write-Warning "The $($HubName+'-rt-fw') Route Table was not found, please run Module 3 to ensure this critical resource is created."; Return}
+try {$logWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -ErrorAction Stop}
+catch {Write-Warning "The Log Analytics Workspace was not found, please run Module 3 to ensure this critical resource is created."; Return}
 
 # 4.2 Create Spoke VNet and NSG, apply UDR
 # Create Tenant Subnet NSG

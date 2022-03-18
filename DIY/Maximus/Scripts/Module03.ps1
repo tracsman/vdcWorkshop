@@ -70,10 +70,12 @@ If ($myContext.Account.Id -notmatch $RegEx) {
 Write-Host "  Current User: ",$myContext.Account.Id
 
 # Pulling required components
-$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
+try {$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop}
+catch {Write-Warning "The Hub VNet was not found, please run Module 1 to ensure this critical resource is created."; Return}
 $snTenant = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant"
 $snGateway = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "GatewaySubnet"
-$HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop).IpConfigurations[0].PrivateIpAddress
+try {$HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop).IpConfigurations[0].PrivateIpAddress}
+catch {Write-Warning "The Hub VM was not found, please run Module 1 to ensure this critical resource is created."; Return}
 
 # 3.2 Create Firewall
 Write-Host (Get-Date)' - ' -NoNewline
