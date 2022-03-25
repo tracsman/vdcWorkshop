@@ -16,9 +16,9 @@ Once you're done with this step, you will see a Resource Group in Azure to which
     cd Scripts
     ```
 2. (Optional) in the editor pane you can select and view the script before running
-3. Run workshop script 1 with the following:
+3. Run module script 1 with the following:
     ```powershell
-    ./WorkshopStep1.ps1
+    ./Module01.ps1
     ```
 ## Validation
 1. Browse to your Resource Group in the Portal
