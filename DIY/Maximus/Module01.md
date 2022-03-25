@@ -25,7 +25,7 @@ Once you're done with this step, you will see a Resource Group in Azure to which
 2. You should see a Key Vault resource
 3. Explore the Key Vault, and the secrets therein
 4. Navigate to the VNet within the Resource Group
-5. Review the subnets in the VNEt
+5. Review the 5 subnets in the VNet
 6. Review the VM and the NIC within the Resource Group
 
 ## Application Diagram After this Step is Complete
