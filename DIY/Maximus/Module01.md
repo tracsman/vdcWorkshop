@@ -5,7 +5,7 @@
 ## Abstract
 In this step we change to the Scripts directory and execute the Module 1 PowerShell Script (Module01.ps1). This establishes the pattern for all future steps in this workshop.
 
-The Module 1 Script will create a Resource Group in the subscription you added in the init.txt in the last step. It will then create a Key Vault resource and add three secrets that represent usernames and passwords that will be added to all VMs created in the workshop. This step will also deploy a VNet with subnets, a VM, and a NIC.
+The Module 1 Script will create a Resource Group in the subscription you added in the init.txt in the last step. It will then create a Key Vault resource and add three secrets that represent usernames and passwords that will be added to all VMs created in the workshop. This step will also deploy a VNet with 5 subnets, a VM, and a NIC.
 
 ## Observations
 Once you're done with this step, you will see a Resource Group in Azure to which you can now deploy resources, and a Key Vault with secrets.
