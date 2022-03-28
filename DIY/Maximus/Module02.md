@@ -1,6 +1,6 @@
 << [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 2&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
 
-# DIY Firewall Workshop - Module 2
+# DIY Workshop Maximus - Module 2
 
 ## Abstract
 This module creates an NSG, a public IP for Bastion, an IP Prefix for NAT, a NAT Gateway, and a Bastion host.
