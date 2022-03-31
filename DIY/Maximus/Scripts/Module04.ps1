@@ -78,6 +78,13 @@ try {$fwRouteTable = Get-AzRouteTable -Name $HubName'-rt-fw' -ResourceGroupName 
 catch {Write-Warning "The $($HubName+'-rt-fw') Route Table was not found, please run Module 3 to ensure this critical resource is created."; Return}
 try {$logWorkspace = Get-AzOperationalInsightsWorkspace -ResourceGroupName $RGName -Name $RGName'-logs' -ErrorAction Stop}
 catch {Write-Warning "The Log Analytics Workspace was not found, please run Module 3 to ensure this critical resource is created."; Return}
+$kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
+$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "UniversalKey"
+If ($null -eq $kvs) {Write-Warning "The Universal Key was not found in the Key Vault secrets, please run Module 1 to ensure this critical resource is created."; Return}
+$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
+try {$keyUniversal = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
+$PEPName = $RGName.ToLower() + "sa" + $keyUniversal
 
 # 4.2 Create Spoke VNet and NSG, apply UDR
 # Create Tenant Subnet NSG
@@ -122,7 +129,6 @@ Catch {Try {Add-AzVirtualNetworkPeering -Name Spoke01ToHub -VirtualNetwork $vnet
 # 4.4 Get secrets from KeyVault
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Obtaining secrets from Key Vault" -ForegroundColor Cyan
-$kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
 $kvs01 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName01 -ErrorAction Stop
 $kvs02 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName02 -ErrorAction Stop
 $kvs03 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName03 -ErrorAction Stop 
@@ -181,7 +187,7 @@ $ScriptName = "MaxIISBuildS1.ps1"
 $ExtensionName = 'MaxIISBuildS1'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName -User1 '$UserName01' -Pass1 '" + $kvs01 + "' -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
+$ScriptExe = "(.\$ScriptName -User1 '$UserName01' -Pass1 '" + $kvs01 + "' -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "' -PEPName '" + $PEPName + "')"
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 For ($i=1; $i -le 3; $i++) {
 	$VMName = $VMNamePrefix + $i.ToString("00")

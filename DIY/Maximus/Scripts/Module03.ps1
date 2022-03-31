@@ -120,8 +120,8 @@ if ($fwAppRCGroup.Properties.RuleCollection.Name -contains "HubFWApp-coll") {
      Write-Host "      Firewall App Rule Collection Filter exists, skipping"} 
 else {$UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall App Rule for Storage Access"
-$fwAppRuleStorage = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443" `
-                         -TargetFqdn "vdcworkshop.blob.core.windows.net" -Description "Allow Tenant subnet VM access to Script Storage blob"
+$fwAppRuleStorage = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443", "http:80" `
+                         -TargetFqdn "vdcworkshop.blob.core.windows.net", "maxlabsa904582160.privatelink.web.core.windows.net" -Description "Allow VM subnets access to Storage blobs"
 if ($fwAppRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-storage") {
     Write-Host "      Firewall App Rule for Storage Access exists, skipping"}
 else {$UpdateFWPolicyObject = $true}
@@ -158,7 +158,7 @@ if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-RDP") {
  else {$UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall Web Network Rule"
 $fwNetRuleWeb = New-AzFirewallPolicyNetworkRule -Name "Allow-Web" -SourceAddress * `
-                    -DestinationAddress $HubVMIP -DestinationPort 80 -Protocol TCP `
+                    -DestinationAddress $HubVMIP -DestinationPort 80, 443 -Protocol TCP `
                     -Description "Allow access to the web site on the hub VM"
 if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-Web") {
     Write-Host "      Firewall Web Network Rule exists, skipping"}

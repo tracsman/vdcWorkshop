@@ -121,9 +121,8 @@ if ($null -ne $kvName) {$kv = Get-AzKeyVault -VaultName $kvName -Location $Short
 If ($null -eq $kvName -or $null -ne $kv) {
    Do {$kvRandom = Get-Random
        $kvName = $RGName + '-kv' + "-$kvRandom"
-       $kv = Get-AzKeyVault -VaultName $kvName -Location $ShortRegion -InRemovedState
-       }
-   While ($null -ne $kv)    
+       $kv = Get-AzKeyVault -VaultName $kvName -Location $ShortRegion -InRemovedState}
+   While ($null -ne $kv)
 }
 
 # Get the key vault, create if it doesn't exist
@@ -158,6 +157,11 @@ Else {Write-Host "  $User02Name exists, skipping"}
 $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $User03Name -ErrorAction Stop 
 If ($null -eq $kvs) {$kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name $User03Name -SecretValue $User03SecPass -ErrorAction Stop}
 Else {Write-Host "  $User03Name exists, skipping"}
+# Add random extension for universally unique resources (Key Vault is the first, so it sets this key for the rest)
+$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "UniversalKey" -ErrorAction Stop
+$keyUniversal = ConvertTo-SecureString $kvName.Split("-")[2] -AsPlainText -Force
+If ($null -eq $kvs) {$kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name "UniversalKey" -SecretValue $keyUniversal -ErrorAction Stop}
+Else {Write-Host "  Universal Key exists, skipping"}
 
 # 1.6 Create VNet and subnets
 Write-Host (Get-Date)' - ' -NoNewline

@@ -47,6 +47,9 @@ switch ($MenuItem.Character) {
          $FileName += 'Module03.ps1'
          $FileName += 'Module04.ps1'
          $FileName += 'Module05.ps1'
+         $FileName += 'Module06.ps1'
+         $FileName += 'Module07.ps1'
+         $FileName += 'Module08.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/ModularDIY/DIY/Maximus/Scripts/'}
     "0" {Write-Host "Exiting" -ForegroundColor Cyan
          Write-Host

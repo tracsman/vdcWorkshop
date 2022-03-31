@@ -7,7 +7,8 @@ Param(
 [string]$User2,
 [string]$Pass2,
 [string]$User3,
-[string]$Pass3)
+[string]$Pass3,
+[string]$PEPName)
 
 # Turn On ICMPv4
 Write-Host "Opening ICMPv4 Port"
@@ -26,51 +27,68 @@ $ServerName = "$env:COMPUTERNAME"
 $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
 <%@ Import Namespace="System.IO" %>
 <script language="vb" runat="server">
-    Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
-    '' Test Endpoints (VMSS and Private EP)
-      Dim ipVMSS as String = "10.2.1.254"
-      Dim ipPvEP as String = ""
-      Dim IsVMSSReady as Boolean = False
-      Dim IsEndPointReady as Boolean = False
+  Protected Sub Page_Load(ByVal sender As Object, ByVal e As System.EventArgs) Handles Me.Load
+  '' Test Endpoints (VMSS and Private EP)
+    Dim ipVMSS as String = "10.2.1.254"
+    Dim urlPvEP as String = "' + $PEPName + '.privatelink.web.core.windows.net"
+    Dim IsVMSSReady as Boolean = False
+    Dim IsEndPointReady as Boolean = False
 
-      '' Test VMSS
-      Dim testSocket as New System.Net.Sockets.TcpClient()
-      testSocket.ConnectAsync(ipVMSS, 139)
-      Dim i as Integer
-      Do While Not testSocket.Connected
-        Threading.Thread.Sleep(250)
-        i=i+1
-        If i >= 12 Then Exit Do '' Wait 3 seconds and exit
-      Loop
-      IsVMSSReady = testSocket.Connected.ToString()
-      testSocket.Close
+    '' Test VMSS
+    Dim testSocket as New System.Net.Sockets.TcpClient()
+    testSocket.ConnectAsync(ipVMSS, 445)
+    Dim i as Integer
+    Do While Not testSocket.Connected
+      Threading.Thread.Sleep(250)
+      i=i+1
+      If i >= 12 Then Exit Do '' Wait 3 seconds and exit
+    Loop
+    IsVMSSReady = testSocket.Connected.ToString()
+    testSocket.Close
 
-      '' Test Private Endpoint (Code to be added later)
-      IsEndPointReady = False
+    '' Test Private Endpoint
+    testSocket = New System.Net.Sockets.TcpClient()
+    testSocket.ConnectAsync(urlPvEP, 80)
+    Do While Not testSocket.Connected
+      Threading.Thread.Sleep(250)
+      i=i+1
+      If i >= 12 Then Exit Do '' Wait 3 seconds and exit
+    Loop
+    IsEndPointReady = testSocket.Connected.ToString()
+    testSocket.Close
 
-      '' Get VMSS File Server File
-      If IsVMSSReady Then
-        Dim FILENAME As String = "\\" & ipVMSS & "\WebShare\Rand.txt"
-              Dim objStreamReader As StreamReader = File.OpenText(FILENAME)
-              Dim contents As String = objStreamReader.ReadToEnd()
-              lblVMSS.Text = contents
-        objStreamReader.Close()
-      Else
-        lblVMSS.Text = "<font color=red>Content not reachable, this resource is created in Module 5.</font>"
-      End If
+    '' Get VMSS File Server File
+    If IsVMSSReady Then
+      Dim FILENAME As String = "\\" & ipVMSS & "\WebShare\Rand.txt"
+      Dim objStreamReader As StreamReader = File.OpenText(FILENAME)
+      Dim contents As String = objStreamReader.ReadToEnd()
+      lblVMSS.Text = contents
+      objStreamReader.Close()
+    Else
+      lblVMSS.Text = "<font color=red>Content not reachable, this resource is created in Module 5.</font>"
+    End If
 
-      '' Get Private Endpoint File Server File (Code to be added later)
+    '' Get Private Endpoint File Server File
+    If IsEndPointReady Then
+      Dim objHttp = CreateObject("WinHttp.WinHttpRequest.5.1")
+      objHttp.Open("GET", "http://maxlabsa904582160.privatelink.web.core.windows.net", False)
+      objHttp.Send
+      lblEndPoint.Text = objHttp.ResponseText
+      objHttp = Nothing
+    Else
       lblEndPoint.Text = "<font color=red>Content not reachable, this resource is created in Module 6.</font>"
+    End if
 
-      lblName.Text = "' + $ServerName + '"
-      lblTime.Text = Now()
-    End Sub
+    '' Add Server Name and Time
+    lblName.Text = "' + $ServerName + '"
+    lblTime.Text = Now()
+  End Sub
 </script>
 
 <!DOCTYPE html>
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head runat="server">
-    <title>Maximus Workshop App Gateway Site</title>
+  <title>Maximus Workshop App Gateway Site</title>
 </head>
 <body style="font-family: Optima,Segoe,Segoe UI,Candara,Calibri,Arial,sans-serif;">
   <form id="frmMain" runat="server">
@@ -85,7 +103,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
         <li> File Output - Shows that the web server is reaching Spoke1 VMSS File Server on the backend subnet and successfully returning content</li>
         <li> VMSS File Server - Retrieves contents of a file on the VMSS File Server in Spoke02 (created in Module 5)</li>
         <li> Private Endpoint - Retrieves contents of a file in the storage account behind the Private Endpoint created in Module 6</li>
-              <li> Image from the Internet - Doesn''t really show anything, but it makes me happy to see this when everything works</li>
+        <li> Image from the Internet - Doesn''t really show anything, but it makes me happy to see this when everything works</li>
       </ul>
       <div style="border: 2px solid #8AC007; border-radius: 25px; padding: 20px; margin: 10px; width: 650px;">
         <b>Serving from Server</b>: <asp:Label runat="server" ID="lblName" /></div>
