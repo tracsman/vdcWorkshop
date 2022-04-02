@@ -22,6 +22,7 @@ Once you're done with this step, you will know how to deploy a Bastion host and 
 2. Check the security rules in the NSG.
 3. Review the NAT Gateway, its IP Prefix and the subnet it is associated with.
 4. Review the Bastion host and note any active sessions once you use it to connect to your VM.
+5. Connect to the VM via Bastion using the credentials in the Key Vault.
 
 
 
