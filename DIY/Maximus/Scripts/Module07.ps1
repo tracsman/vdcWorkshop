@@ -15,7 +15,7 @@
 # Module 7 - VPN - Create On-prem and Coffee Shop, VPN Gateway, NVA and VMs 
 # 7.1 Validate and Initialize
 # 7.2 Create VPN Gateway (AsJob)
-# 7.3 Create On-prem and Coffee Shop VNets
+# 7.3 Create On-prem and Coffee Shop VNets and Bastions
 # 7.4 Create Public and Private RSA keys
 # 7.5 Create On-prem NVA (AsJob)
 #     7.5.1 Create Public IP
@@ -24,17 +24,17 @@
 # 7.6 Create On-prem VM (AsJob)
 #     7.6.1 Create NIC
 #     7.6.2 Build VM
-# ????7.6.3 Build On-Prem Bastion
 # 7.7 Create Coffee Shop Laptop (AsJob)
 #     7.7.1 Create NIC
 #     7.7.2 Build VM
-# ????7.7.3 Build On-Prem Bastion
-# 7.8 Create On-Prem Local Gateway
-# 7.9 Run post deployment jobs
-#      7.9.1 Configure On-Prem VM
-#      7.9.2 Configure P2S VPN on Coffee Shop Laptop
-#      7.9.3 Configure On-prem NVA S2S VPN
-# 7.10 Wait for everything to finish
+# 7.8 Create On-Prem UDR Route Table
+# 7.9 Create On-Prem Local Gateway
+# 7.10 Run post deployment jobs
+#      7.10.1 Configure On-Prem VM
+#      7.10.2 Configure P2S VPN on Coffee Shop Laptop
+#      7.10.3 Configure On-prem NVA S2S VPN
+# 7.11 Create S2S Connection
+#
 
 # 7.1 Validate and Initialize
 # Load Initialization Variables
@@ -51,21 +51,31 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # $ShortRegion defined in and pulled from the init.txt file above
 # $RGName    = defined in and pulled from the init.txt file above
 # Non-configurable Variable Initialization (ie don't modify these)
-$OPName        = "OnPrem-VNet"
-$OPAddress     = "10.10.1.0/24"
-$OPVMName      = "OnPrem-VM01"
-$OPASN         = "65000"
+$OPName     = "OnPrem-VNet"
+$OPAddress  = "10.10.1.0/24"
+$OPTenant   = "10.10.1.0/25"
+$OPBastion  = "10.10.1.128/25"
+$OPVMName   = "OnPrem-VM01"
+$OPASN      = "65000"
 
-$CSName        = "CoffeeShop-VNet"
-$CSAddress     = "10.10.2.0/24"
-$CSVMName      = "CoffeeShop-PC"
+$CSName     = "CoffeeShop-VNet"
+$CSAddress  = "10.10.2.0/24"
+$CSTenant   = "10.10.2.0/25"
+$CSBastion  = "10.10.2.128/25"
+$CSVMName   = "CoffeeShop-PC"
 
-$HubVNetName   = "Hub-VNet"
-$VMSize        = "Standard_B2ms"
+$HubName    = "Hub-VNet"
+$HubP2SPool = "172.16.0.0/24"
+$HubAddress = "10.0.0.0/16"
+$S1Address = "10.1.0.0/16"
+$S2Address = "10.2.0.0/16"
+$S3Address = "10.3.0.0/16"
 
-$UserName01    = "User01"
-$UserName02    = "User02"
-$UserName03    = "User03"
+$VMSize     = "Standard_B2ms"
+
+$UserName01 = "User01"
+$UserName02 = "User02"
+$UserName03 = "User03"
 
 # Start nicely
 Write-Host
@@ -97,7 +107,7 @@ Write-Host "  Current User: ",$myContext.Account.Id
 # Pulling required components
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Validating required resources" -ForegroundColor Cyan
-Try {$vnetHub = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubVNetName -ErrorAction Stop}
+Try {$vnetHub = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubName -ErrorAction Stop}
 Catch {Write-Warning "The Hub VNet was not found, please run Module 1 to ensure this critical resource is created."; Return}
 $kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
 If ($null -eq $kvName) {Write-Warning "The Key Vault was not found, please run Module 1 to ensure this critical resource is created."; Return}
@@ -134,17 +144,19 @@ if (-Not $MPTermsAccepted) {Write-Host "MarketPlace terms for the required image
 # 7.2 Create VPN Gateway (AsJob)
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Hub VPN Gateway" -ForegroundColor Cyan
-Try {Get-AzVirtualNetworkGateway -Name $HubVNetName'-gw' -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
+Try {$gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
      Write-Host "  resource exists, skipping"}
 Catch {
     $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'GatewaySubnet' -VirtualNetwork $vnetHub
-    Try {$pip = Get-AzPublicIpAddress -Name $HubVNetName'-gw-pip'  -ResourceGroupName $RGName -ErrorAction Stop}
-    Catch {$pip = New-AzPublicIpAddress -Name $HubVNetName'-gw-pip' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Dynamic}
-    $ipconf = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf" -SubnetId $subnet.Id -PublicIpAddressId $pip.Id
-    New-AzVirtualNetworkGateway -Name $HubVNetName'-gw' -ResourceGroupName $RGName -Location $ShortRegion -IpConfigurations $ipconf -GatewayType Vpn -VpnType RouteBased -GatewaySku VpnGw1 -AsJob | Out-Null
+    Try {$pipHub = Get-AzPublicIpAddress -Name $HubName'-gw-pip'  -ResourceGroupName $RGName -ErrorAction Stop}
+    Catch {$pipHub = New-AzPublicIpAddress -Name $HubName'-gw-pip' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Dynamic}
+    $ipconf = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf" -SubnetId $subnet.Id -PublicIpAddressId $pipHub.Id
+    $gwHub = New-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -Location $ShortRegion `
+                                         -IpConfigurations $ipconf -GatewayType Vpn -VpnType RouteBased -GatewaySku VpnGw1 `
+                                         -VpnClientProtocol "IkeV2" -VpnClientAddressPool $HubP2SPool -AsJob
     }
 
-# 7.3 Create On-prem and Coffee Shop VNets
+# 7.3 Create On-prem and Coffee Shop VNets and Bastions
 # On-Prem VNet
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating On-Prem VNet" -ForegroundColor Cyan
@@ -155,13 +167,24 @@ if ($MPTermsAccepted) {
     Try {$nsg = Get-AzNetworkSecurityGroup -Name $OPName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
          Write-Host "  NSG exists, skipping"}
     Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $OPName'-nsg' -SecurityRules $nsgRule}
-    Try {$vnetOP = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPVNetName -ErrorAction Stop
+    Try {$vnetOP = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName -ErrorAction Stop
     Write-Host "  VNet exists, skipping"}
-    Catch {$vnetOP = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPVNetName -AddressPrefix $OPAddress -Location $ShortRegion  
+    Catch {$vnetOP = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName -AddressPrefix $OPAddress -Location $ShortRegion  
            Write-Host (Get-Date)' - ' -NoNewline
            Write-Host "  Adding subnet" -ForegroundColor Cyan
-           Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnetOP -AddressPrefix $OPAddress -NetworkSecurityGroupId $nsg.Id | Out-Null
+           Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnetOP -AddressPrefix $OPTenant -NetworkSecurityGroupId $nsg.Id | Out-Null
+           Add-AzVirtualNetworkSubnetConfig -Name "AzureBastionSubnet" -VirtualNetwork $vnetOP -AddressPrefix $OPBastion | Out-Null
            Set-AzVirtualNetwork -VirtualNetwork $vnetOP | Out-Null}
+    # Create On-Prem Bastion
+    Write-Host "  Creating On-Prem Bastion Public IP"
+    Try {$pipBastion = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-bas-pip' -ErrorAction Stop
+         Write-Host "    Public IP exists, skipping"}
+    Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-bas-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard -Zone 1, 2, 3}
+    Write-Host "  Creating On-Prem Bastion"
+    $vnetOP = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName -ErrorAction Stop
+    Try {Get-AzBastion -ResourceGroupName $RGName -Name $OPName-bas -ErrorAction Stop | Out-Null
+         Write-Host "    Bastion exists, skipping"}
+    Catch {New-AzBastion -ResourceGroupName $RGName -Name $OPName-bas -PublicIpAddress $pipBastion -VirtualNetwork $vnetOP -AsJob | Out-Null}
 } else {Write-Host "  Marketplace terms not accepted skipping"}
 
 # Coffee Shop VNet
@@ -172,15 +195,27 @@ $nsgRule = New-AzNetworkSecurityRuleConfig -Name AllowAdminAccess -Protocol Tcp 
                                            -DestinationPortRange 3389 -Access Allow
 Try {$nsg = Get-AzNetworkSecurityGroup -Name $CSName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
  Write-Host "  NSG exists, skipping"}
-Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $CSName -Location $ShortRegion -Name $CSName'-nsg' -SecurityRules $nsgRule}
-Try {$vnetCS = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSVNetName -ErrorAction Stop
+Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $CSName'-nsg' -SecurityRules $nsgRule}
+Try {$vnetCS = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSName -ErrorAction Stop
      Write-Host "  resource exists, skipping"}
-Catch {$vnetCS = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSVNetName -AddressPrefix $CSAddress -Location $ShortRegion
+Catch {$vnetCS = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSName -AddressPrefix $CSAddress -Location $ShortRegion
         Write-Host (Get-Date)' - ' -NoNewline
         Write-Host "  Adding subnet" -ForegroundColor Cyan
-        Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnetCS -AddressPrefix $CSAddress -NetworkSecurityGroupId $nsg.Id | Out-Null
+        Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnetCS -AddressPrefix $CSTenant -NetworkSecurityGroupId $nsg.Id | Out-Null
+        Add-AzVirtualNetworkSubnetConfig -Name "AzureBastionSubnet" -VirtualNetwork $vnetCS -AddressPrefix $CSBastion | Out-Null
         Set-AzVirtualNetwork -VirtualNetwork $vnetCS | Out-Null
         }
+# Create Coffee Shop Bastion
+Write-Host "  Creating Coffe Shop Bastion Public IP"
+Try {$pipBastion = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $CSName'-bas-pip' -ErrorAction Stop
+        Write-Host "    Public IP exists, skipping"}
+Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $CSName'-bas-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard -Zone 1, 2, 3}
+Write-Host "  Creating Coffee Shop Bastion"
+$vnetCS = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSName -ErrorAction Stop
+Try {Get-AzBastion -ResourceGroupName $RGName -Name $CSName-bas -ErrorAction Stop | Out-Null
+        Write-Host "    Bastion exists, skipping"}
+Catch {New-AzBastion -ResourceGroupName $RGName -Name $CSName-bas -PublicIpAddress $pipBastion -VirtualNetwork $vnetCS -AsJob | Out-Null}
+    
 # 7.4 Create Public and Private RSA keys
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating RSA keys" -ForegroundColor Cyan
@@ -203,7 +238,7 @@ if ($MPTermsAccepted) {
          Write-Host "  Public IP exists, skipping"}
     Catch {$pipOPGW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -Location $ShortRegion -AllocationMethod Dynamic}
     # 7.5.2 Create NIC
-    $vnetOP = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPVNetName -ErrorAction Stop
+    $vnetOP = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName -ErrorAction Stop
     $snTenant =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnetOP -Name "Tenant"
     Try {$nic = Get-AzNetworkInterface  -ResourceGroupName $RGName -Name $OPName'-Router01-nic' -ErrorAction Stop
          Write-Host "  NIC exists, skipping"}
@@ -277,17 +312,56 @@ Catch {$vmConfig = New-AzVMConfig -VMName $CSVMName -VMSize $VMSize -ErrorAction
        Write-Host "    queuing VM build job"
        New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $vmConfig -AsJob | Out-Null}
 
-# 7.8 Create On-Prem Local Gateway
-New-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -Location $ShortRegion -GatewayIpAddress $pipOPGW.IpAddress -AddressPrefix $OPAddress
+# 7.8 Create On-Prem UDR Route Table
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating VNet Route Table" -ForegroundColor Cyan
+Try {$rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt' -ErrorAction Stop
+     Write-Host "  Route Table exists, skipping"}
+Catch {$rt = New-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt' -location $ShortRegion
+       $rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt' }
 
-# Wait for VMs (not gateway)
+# Add routes to the route table
+$NVAPrivateIP = (Get-AzNetworkInterface  -ResourceGroupName $RGName -Name $OPName'-Router01-nic').IpConfigurations[0].PrivateIpAddress
+Try {Get-AzRouteConfig -RouteTable $rt -Name "ToHub" -ErrorAction Stop | Out-Null
+     Write-Host "  Hub Route exists, skipping"}
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToHub" -AddressPrefix $HubAddress -NextHopType VirtualAppliance -NextHopIpAddress $NVAPrivateIP | Out-Null
+       Set-AzRouteTable -RouteTable $rt | Out-Null}
+Try {Get-AzRouteConfig -RouteTable $rt -Name "ToS1" -ErrorAction Stop | Out-Null
+     Write-Host "  Spoke01 route exists, skipping"}
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToS1" -AddressPrefix $S1Address  -NextHopType VirtualAppliance -NextHopIpAddress $NVAPrivateIP | Out-Null
+       Set-AzRouteTable -RouteTable $rt | Out-Null}
+Try {Get-AzRouteConfig -RouteTable $rt -Name "ToS2" -ErrorAction Stop | Out-Null
+     Write-Host "  Spoke02 route exists, skipping"}
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToS2" -AddressPrefix $S2Address -NextHopType VirtualAppliance -NextHopIpAddress $NVAPrivateIP | Out-Null
+       Set-AzRouteTable -RouteTable $rt | Out-Null}
+Try {Get-AzRouteConfig -RouteTable $rt -Name "ToS3" -ErrorAction Stop | Out-Null
+     Write-Host "  Spoke03 route exists, skipping"}
+Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToS3" -AddressPrefix $S3Address -NextHopType VirtualAppliance -NextHopIpAddress $NVAPrivateIP | Out-Null
+       Set-AzRouteTable -RouteTable $rt | Out-Null}
+
+# Assign Route Table to the subnet
+$snTenant = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnetOP -Name "Tenant"
+if ($null -eq $snTenant.RouteTable) {
+    $snTenant.RouteTable = $rt
+    Set-AzVirtualNetwork -VirtualNetwork $vnetOP | Out-Null}
+Else {Write-Host "  Route Table already assigned to On-Prem subnet, skipping"}
+
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Waiting for the VMs to deploy, this script will continue after 10 minutes or when the VMs are built, whichever comes first." -ForegroundColor Cyan
 Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
 
+# 7.9 Create On-Prem Local Gateway
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating On-Prem Local GW in Azure" -ForegroundColor Cyan
+$pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
+try {$gwOP = Get-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -ErrorAction Stop
+     Write-Host "  resource exists, skipping"}
+catch {$gwOP = New-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -Location $ShortRegion -GatewayIpAddress $pipOPGW.IpAddress -AddressPrefix $OPAddress -Asn $OPASN -BgpPeeringAddress "10.100.1.1"}
+
 # 7.10 Run post deployment jobs
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Running post VM deploy build scripts" -ForegroundColor Cyan
+
 # 7.10.1 Configure On-Prem VM
 Write-Host "  running On-Prem VM build script" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
@@ -322,118 +396,121 @@ Catch {Write-Host "    queuing build job."
                          -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
                          -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 
-#      7.10.3 Configure On-prem NVA S2S VPN
+# 7.10.3 Configure On-prem NVA S2S VPN
+$gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
+$pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
 
-# Non-configurable Variable Initialization (ie don't modify these)
-$site02BGPASN = "65002"
-$site02BGPIP = "10.17." + $CompanyID +".252"
-$site02Tunnel0IP = "10.17." + $CompanyID +".250"
-$site02Tunnel1IP = "10.17." + $CompanyID +".251"
-$site02Prefix = "10.17." + $CompanyID +".160"
-$site02Subnet = "255.255.255.224" # = CIDR /27
-$site02DfGate = "10.17." + $CompanyID +".161"
-
-# Get vWAN VPN Settings
-$URI = 'https://company' + $CompanyID + 'vwanconfig.blob.core.windows.net/config/vWANConfig.json'
-$vWANConfigs = Invoke-RestMethod $URI
-$vWANFound = $false
-foreach ($vWanConfig in $vWANConfigs) {
-    if ($vWANConfig.vpnSiteConfiguration.Name -eq ("C" + $CompanyID + "-Site02-vpn")) {$myvWanConfig = $vWANConfig;$vWANFound = $true}
-}
-if (-Not $vWANFound) {Write-Warning "vWAN Config for Site02 was not found, run Step 5";Return}
-
-# 6.7 Provide configuration instructions
+# Create Router Config
+$azurePubIP   = $gwHub.BgpSettings.BgpPeeringAddresses.TunnelIpAddresses
+$azureBGPIP   = $gwHub.BgpSettings.BgpPeeringAddress
+$siteOPBGPIP  = "10.100.1.1"
+$siteOPPubIP  = $pipOPGW.IpAddress
+$siteOPPrefix = "10.10.1.0"
+$siteOPSubnet = "255.255.255.128"
+$siteOPDfGate = "10.10.1.1"
+$siteOPPSK    = "Apples2Apples"
 $MyOutput = @"
+conf t
 ####
-# Cisco CSR VPN Script
+# Cisco CSR VPN Config
 ####
-interface Loopback0
-ip address $site02BGPIP 255.255.255.255
-no shut
+# IKE Config
 crypto ikev2 proposal az-PROPOSAL
-encryption aes-cbc-256 aes-cbc-128 3des
-integrity sha1
-group 2
+  encryption aes-cbc-256 aes-cbc-128 3des
+  integrity sha1
+  group 2
 crypto ikev2 policy az-POLICY
-proposal az-PROPOSAL
+  proposal az-PROPOSAL
+  match address local $siteOPPubIP
 crypto ikev2 keyring key-peer1
-peer azvpn1
- address $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance0)
- pre-shared-key $($myvWanConfig.vpnSiteConnections.connectionConfiguration.PSK)
-crypto ikev2 keyring key-peer2
-peer azvpn2
- address $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance1)
- pre-shared-key $($myvWanConfig.vpnSiteConnections.connectionConfiguration.PSK)
+  peer azvpn1
+   address $azurePubIP
+   pre-shared-key $siteOPPSK
 crypto ikev2 profile az-PROFILE1
-match address local interface GigabitEthernet1
-match identity remote address $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance0) 255.255.255.255
-authentication remote pre-share
-authentication local pre-share
-keyring local key-peer1
-crypto ikev2 profile az-PROFILE2
-match address local interface GigabitEthernet1
-match identity remote address $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance1) 255.255.255.255
-authentication remote pre-share
-authentication local pre-share
-keyring local key-peer2
-crypto ipsec transform-set az-IPSEC-PROPOSAL-SET esp-aes 256 esp-sha-hmac
-mode tunnel
+  match address local $siteOPPubIP
+  match identity remote address $azurePubIP 255.255.255.255
+  authentication remote pre-share
+  authentication local pre-share
+  keyring local key-peer1
+# IPsec Config
+crypto ipsec transform-set az-IPSEC-PROPOSAL-SET esp-aes 256 esp-sha256-hmac
+  mode tunnel
 crypto ipsec profile az-VTI1
-set transform-set az-IPSEC-PROPOSAL-SET
-set ikev2-profile az-PROFILE1
-crypto ipsec profile az-VTI2
-set transform-set az-IPSEC-PROPOSAL-SET
-set ikev2-profile az-PROFILE2
+  set transform-set az-IPSEC-PROPOSAL-SET
+  set ikev2-profile az-PROFILE1
+# Tunnel Config
 interface Tunnel0
-ip address $site02Tunnel0IP 255.255.255.255
-ip tcp adjust-mss 1350
-tunnel source GigabitEthernet1
-tunnel mode ipsec ipv4
-tunnel destination $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance0)
-tunnel protection ipsec profile az-VTI1
-interface Tunnel1
-ip address $site02Tunnel1IP 255.255.255.255
-ip tcp adjust-mss 1350
-tunnel source GigabitEthernet1
-tunnel mode ipsec ipv4
-tunnel destination $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.IpAddresses.Instance1)
-tunnel protection ipsec profile az-VTI2
-router bgp $site02BGPASN
-bgp router-id interface Loopback0
-bgp log-neighbor-changes
-neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0) remote-as 65515
-neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0) ebgp-multihop 5
-neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0) update-source Loopback0
-neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1) remote-as 65515
-neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1) ebgp-multihop 5
-neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1) update-source Loopback0
-address-family ipv4
- network $site02Prefix mask $site02Subnet
- neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0) activate
- neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0) next-hop-self
- neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0) soft-reconfiguration inbound
- neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1) activate
- neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1) next-hop-self
- neighbor $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1) soft-reconfiguration inbound
- maximum-paths eibgp 2
-ip route 0.0.0.0 0.0.0.0 $site02DfGate
-ip route $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance0) 255.255.255.255 Tunnel0
-ip route $($myvWanConfig.vpnSiteConnections.gatewayConfiguration.BgpSetting.BgpPeeringAddresses.Instance1) 255.255.255.255 Tunnel1
+  ip address 169.254.0.1 255.255.255.255
+  ip tcp adjust-mss 1350
+  tunnel source GigabitEthernet1
+  tunnel mode ipsec ipv4
+  tunnel source $siteOPPubIP
+  tunnel destination $azurePubIP
+  tunnel protection ipsec profile az-VTI1
+interface Loopback0
+  ip address $siteOPBGPIP 255.255.255.255
+# BGP Config
+router bgp $OPASN
+  bgp log-neighbor-changes
+  neighbor $azureBGPIP remote-as 65515
+  neighbor $azureBGPIP ebgp-multihop 5
+  neighbor $azureBGPIP update-source Loopback0
+  address-family ipv4
+   network $siteOPPrefix mask $siteOPSubnet
+   neighbor $azureBGPIP activate
+   neighbor $azureBGPIP next-hop-self
+   neighbor $azureBGPIP soft-reconfiguration inbound
+ip route 0.0.0.0 0.0.0.0 $siteOPDfGate
+ip route $azureBGPIP 255.255.255.255 Tunnel 0
+#ip route $azureBGPIP 255.255.255.255 Tunnel0
+end
+wr
 "@
 
+# Send Router Config
+Write-Host $MyOutput
+# ???
+# ???
+# ???
 
+# 7.11 Create S2S Connection
+# 7.11.1 Wait for VMs to complete (not gateway)
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host 'Connecting S2S VPN between On-Prem NVA and Hub VPN Gateway' -ForegroundColor Cyan
+Try {Get-AzVirtualNetworkGatewayConnection -Name $HubName-gw-op-conn -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
+     Write-Host '  resource exists, skipping'}
+Catch {
+    $gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
+    $i=0
+    If ($gwHub.ProvisioningState -eq 'Updating') {
+        Write-Host '  waiting for VPN gateway to finish provisioning: ' -NoNewline
+        Start-Sleep 10}
+    While ($gwHub.ProvisioningState -eq 'Updating') {
+        $i++
+        If ($i%6) {Write-Host '*' -NoNewline}
+        Else {Write-Host "$($i/6)" -NoNewline}
+        Start-Sleep 10
+        $gwHub = Get-AzVirtualNetworkGateway -Name $HubName-gw -ResourceGroupName $RGName}
+    If ($i -gt 0) {
+        Write-Host
+        Write-Host '  VPN Gateway deployment complete'
+        Write-Host '  building connection'}
 
-#-- Wait for Gateway
-
-
-
-
-
+    # 7.11.2 Create the connection object
+    If ($gwHub.ProvisioningState -eq 'Succeeded') {
+        New-AzVirtualNetworkGatewayConnection -Name $HubName-gw-op-conn -ResourceGroupName $RGName `
+                -Location $ShortRegion -VirtualNetworkGateway1 $gwHub -LocalNetworkGateway2 $gwOP `
+                -ConnectionType IPsec -SharedKey $siteOPPSK -EnableBgp $true | Out-Null}
+    Else {Write-Warning 'An issue occured with VPN gateway provisioning.'
+          Write-Host 'Current Gateway Provisioning State' -NoNewLine
+          Write-Host $gwHub.ProvisioningState
+          Write-Host "Often the easiest fix is to delete the gateway and re-run this script."}
+    }
 
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Module 5 completed successfully" -ForegroundColor Green
+Write-Host "Module 7 completed successfully" -ForegroundColor Green
 Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
 Write-Host
-Write-Host "  Try going to your AppGW IP again, notice you now have data from the VMSS File Server!"
+Write-Host "  Something something something, pretty neat right?"
 Write-Host
