@@ -21,8 +21,9 @@ Once you're done with this step, you will know how to deploy a Bastion host and 
 1. Navigate to your Resource Group in the Portal. You should now see an NSG, a public IP for Bastion, an IP Prefix for NAT, a NAT Gateway, and a Bastion host. 
 2. Check the security rules in the NSG.
 3. Review the NAT Gateway, its IP Prefix and the subnet it is associated with.
-4. Review the Bastion host and note any active sessions once you use it to connect to your VM.
-5. Connect to the VM via Bastion using the credentials in the Key Vault.
+4. Review the settings of the Bastion host.
+5. Connect to the VM via Bastion using the credentials in the Key Vault. Note any active sessions on the Bastion once connect to your VM.
+6. Launch a browser on the VM and connect to the local http service - use the VM's local IP (e.g. http://10.0.1.4) to connect to the web service.
 
 
 
