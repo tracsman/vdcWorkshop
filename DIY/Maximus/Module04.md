@@ -20,7 +20,7 @@ Once you're done with this step, you would have learned how to setup VNet peerin
 2. Review the 3 spoke VMs and the effective routes on each VM's NIC.
 3. Check the settings of your new web farm by going to your App Gateway. Note the public IP of the App Gateway (AppGatewayPIP).
 4. Navigate to http://AppGatewayPIP/headers to have App Gateway redirect to another backend pool on a remote site.
-Also review the WAF Rules and UDR settings on the Spoke01 vnet.
+5. Also review the WAF Rules and UDR settings on the Spoke01 vnet.
 
 ## Application Diagram After this Step is Complete
 [![1]][1]
