@@ -23,7 +23,7 @@ Once you're done with this step, you will know how to deploy a Bastion host and 
 3. Review the NAT Gateway, its IP Prefix and the subnet it is associated with.
 4. Review the settings of the Bastion host.
 5. Connect to the VM via Bastion using the credentials in the Key Vault. Note any active sessions on the Bastion once connect to your VM.
-6. Launch a browser on the VM and connect to the local http service - use the VM's local IP (e.g. http://10.0.1.4) to connect to the web service.
+6. Launch a browser on the VM and connect to the web service on the local IIS server - http to the VM's private IP (e.g. http://10.0.1.4) to see the local web site.
 
 
 
