@@ -29,11 +29,15 @@
 #     7.7.2 Build VM
 # 7.8 Create On-Prem UDR Route Table
 # 7.9 Create On-Prem Local Gateway
-# 7.10 Run post deployment jobs
-#      7.10.1 Configure On-Prem VM
-#      7.10.2 Configure P2S VPN on Coffee Shop Laptop
-#      7.10.3 Configure On-prem NVA S2S VPN
-# 7.11 Create S2S Connection
+# 7.10 Create On-Prem Router Config
+#      7.10.1 Create Managed Identity, assign to VM, SA, and KV
+#      7.10.2 Create Stoage Container for Config Blob
+#      7.10.3 Create Router Config
+#      7.10.4 Push to storage
+# 7.11 Run post deployment jobs
+#      7.11.1 Configure On-Prem VM (and indirectly the NVA)
+#      7.11.2 Configure P2S VPN on Coffee Shop Laptop
+# 7.12 Create S2S Connection
 #
 
 # 7.1 Validate and Initialize
@@ -130,6 +134,15 @@ try {
 } finally {
     [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
 }
+$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "UniversalKey"
+If ($null -eq $kvs) {Write-Warning "The Universal Key was not found in the Key Vault secrets, please run Module 1 to ensure this critical resource is created."; Return}
+$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
+try {$keyUniversal = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
+$SAName = $RGName.ToLower() + "sa" + $keyUniversal
+try {$sa = Get-AzStorageAccount -ResourceGroupName $RGName -Name $SAName -ErrorAction Stop}
+catch {Write-Warning "The Storage Account was not found, please run Module 6 to ensure this critical resource is created."; Return}
+$sactx = $sa.Context
 
 # Accept Marketplace Terms for the NVA
 ##  To install a marketplace image you need to accept the vendor terms. This is done one time for each
@@ -228,6 +241,11 @@ If (-not (Test-Path -Path "$HOME/.ssh/config")) {
 If (-not (Test-Path -Path "$HOME/.ssh/$FileName")) {ssh-keygen.exe -t rsa -b 2048 -f "$HOME/.ssh/$FileName" -P """" | Out-Null}
 Else {Write-Host "  Key Files exists, skipping"}
 $PublicKey =  Get-Content "$HOME/.ssh/$FileName.pub"
+$PrivateKey =  Get-Content "$HOME/.ssh/$FileName"
+$PrivateKeySec = ConvertTo-SecureString $($PrivateKey | Join-String)-AsPlainText -Force
+$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "OnPremNVArsa" -ErrorAction Stop 
+If ($null -eq $kvs) {$kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name "OnPremNVArsa" -SecretValue $PrivateKeySec -ErrorAction Stop}
+Else {Write-Host "  OnPremNVA_rsa exists, skipping"}
 
 # 7.5 Create On-prem NVA (AsJob)
 Write-Host (Get-Date)' - ' -NoNewline
@@ -358,45 +376,23 @@ try {$gwOP = Get-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $R
      Write-Host "  resource exists, skipping"}
 catch {$gwOP = New-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -Location $ShortRegion -GatewayIpAddress $pipOPGW.IpAddress -AddressPrefix $OPAddress -Asn $OPASN -BgpPeeringAddress "10.100.1.1"}
 
-# 7.10 Run post deployment jobs
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Running post VM deploy build scripts" -ForegroundColor Cyan
+# 7.10 Create On-Prem Router Config
+# 7.10.1 Create Managed Identity, assign to VM, SA, and KV
+$vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
+Update-AzVM -ResourceGroupName $RGName -VM $vmOP -IdentityType SystemAssigned | Out-Null
+$vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
+Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId $vmOP.Identity.PrincipalId -PermissionsToSecrets get,list,set,delete | Out-Null
+try {Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName -RoleDefinitionName "Contributor" -ErrorAction Stop | Out-Null
+     Write-Host "  role already assigned, skipping"}
+catch {New-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -RoleDefinitionName "Contributor" -ResourceGroupName $RGName}
 
-# 7.10.1 Configure On-Prem VM
-Write-Host "  running On-Prem VM build script" -ForegroundColor Cyan
-$ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "MaxVMBuildOP.ps1"
-$ExtensionName = 'MaxVMBuildOP'
-$timestamp = (Get-Date).Ticks
-$ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
-$PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
+# 7.10.2 Create Stoage Container for Config Blob
+Write-Host "  adding storage web endpoint"
+try {Get-AzStorageContainer -Context $sactx -Name 'config' -ErrorAction Stop | Out-Null
+     Write-Host "    config container exists, skipping"}
+catch {New-AzStorageContainer -Context $sactx -Name config | Out-Null}
 
-Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
-     Write-Host "    extension exists, skipping"}
-Catch {Write-Host "    queuing build job."
-       Set-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Location $ShortRegion -Name $ExtensionName `
-                         -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
-                         -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
-
-# 7.10.2 Configure P2S VPN on Coffee Shop Laptop
-Write-Host "  running Coffee Shop Laptop build script" -ForegroundColor Cyan
-$ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "MaxVMBuildCS.ps1"
-$ExtensionName = 'MaxVMBuildCS'
-$timestamp = (Get-Date).Ticks
-$ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
-$PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
-
-Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $CSVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
-     Write-Host "    extension exists, skipping"}
-Catch {Write-Host "    queuing build job."
-       Set-AzVMExtension -ResourceGroupName $RGName -VMName $CSVMName -Location $ShortRegion -Name $ExtensionName `
-                         -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
-                         -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
-
-# 7.10.3 Configure On-prem NVA S2S VPN
+# 7.10.3 Create Router Config
 $gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
 $pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
 
@@ -467,14 +463,62 @@ end
 wr
 "@
 
-# Send Router Config
-Write-Host $MyOutput
-# ???
-# ???
-# ???
+# 7.10.4 Push to storage
+# Save config file
+# Get file names in the Web Container
+Write-Host "  adding html files to storage"
+$saFiles = Get-AzStorageBlob -Container 'config' -Context $sactx
 
-# 7.11 Create S2S Connection
-# 7.11.1 Wait for VMs to complete (not gateway)
+# Check for router.txt
+if ($null -ne ($saFiles | Where-Object -Property Name -eq "router.txt")) {
+     Write-Host "    router.txt exists, skipping"}
+ else {$MyOutput | Out-File "router.txt"
+       Set-AzStorageBlobContent -Context $sactx -Container 'config' -File "router.txt" -Properties @{"ContentType" = "text/plain"} | Out-Null}
+
+# Clean up local files
+if (Test-Path -Path "router.txt") {Remove-Item -Path "router.txt"}
+
+# 7.11 Run post deployment jobs
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Running post VM deploy build scripts" -ForegroundColor Cyan
+
+# 7.11.1 Configure On-Prem VM (and indirectly the NVA)
+Write-Host "  running On-Prem VM build script" -ForegroundColor Cyan
+$ScriptStorageAccount = "vdcworkshop"
+$ScriptName = "MaxVMBuildOP.ps1"
+$ExtensionName = 'MaxVMBuildOP'
+$timestamp = (Get-Date).Ticks
+$ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
+$ScriptExe = "(.\$ScriptName -User1 '$UserName01'  -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
+$PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
+
+Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
+     Write-Host "    extension exists, skipping"}
+Catch {Write-Host "    queuing build job."
+       Set-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Location $ShortRegion -Name $ExtensionName `
+                         -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
+                         -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
+
+# 7.11.2 Configure P2S VPN on Coffee Shop Laptop
+Write-Host "  running Coffee Shop Laptop build script" -ForegroundColor Cyan
+$ScriptStorageAccount = "vdcworkshop"
+$ScriptName = "MaxVMBuildCS.ps1"
+$ExtensionName = 'MaxVMBuildCS'
+$timestamp = (Get-Date).Ticks
+$ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
+$ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
+$PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
+
+Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $CSVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
+     Write-Host "    extension exists, skipping"}
+Catch {Write-Host "    queuing build job."
+       Set-AzVMExtension -ResourceGroupName $RGName -VMName $CSVMName -Location $ShortRegion -Name $ExtensionName `
+                         -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
+                         -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
+
+
+# 7.12 Create S2S Connection
+# 7.12.1 Wait for VMs to complete (not gateway)
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host 'Connecting S2S VPN between On-Prem NVA and Hub VPN Gateway' -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkGatewayConnection -Name $HubName-gw-op-conn -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
@@ -496,7 +540,7 @@ Catch {
         Write-Host '  VPN Gateway deployment complete'
         Write-Host '  building connection'}
 
-    # 7.11.2 Create the connection object
+    # 7.12.2 Create the connection object
     If ($gwHub.ProvisioningState -eq 'Succeeded') {
         New-AzVirtualNetworkGatewayConnection -Name $HubName-gw-op-conn -ResourceGroupName $RGName `
                 -Location $ShortRegion -VirtualNetworkGateway1 $gwHub -LocalNetworkGateway2 $gwOP `
