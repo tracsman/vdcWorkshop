@@ -3,7 +3,7 @@
 # DIY Workshop Maximus - Module 4
 
 ## Abstract
-In this step we'll create a web farm using the Azure App Gateway (load balancer) service. The web farm will comprise of IIS servers running on 3 VMs in a spoke VNet (spoke01). This spoke VNet will peer with the hub VNet you worked on in the previous steps.
+In this step we'll create a web farm using the Azure App Gateway (Application Load Balancer) service. The web farm will comprise of IIS servers running on 3 VMs in a spoke VNet (spoke01). This spoke VNet will peer with the hub VNet you worked on in the previous steps.
 
 ## Observations
 Once you're done with this step, you would have learned how to setup VNet peering and use an application load balancer to distribute traffic across backend web servers. 
@@ -20,8 +20,9 @@ Once you're done with this step, you would have learned how to setup VNet peerin
 2. Review the 3 spoke VMs and the effective routes on each VM's NIC.
 3. Check the settings of your new web farm by going to your App Gateway. Note the public IP of the App Gateway (AppGatewayPIP).
 4. Go to the public IP of your App Gateway from an external browser.
-5. Navigate to http://AppGatewayPIP/headers to have App Gateway redirect to another backend pool on a remote site.
-6. Also review the WAF Rules and UDR settings on the Spoke01 vnet.
+5. Navigate to http://AppGatewayPIP/headers to view the http headers.
+6. Have the App Gateway redirect to another backend pool on a remote site.
+7. Also review the WAF Rules and UDR settings on the Spoke01 vnet.
 
 ## Application Diagram After this Step is Complete
 [![1]][1]
