@@ -5,9 +5,11 @@
 # 1. Open Firewall for ICMP
 # 2. Add additional local Admin accounts
 # 3. Test/Create Folders
-# 3. Pull Config File
-# 4. Pull Cert
-# 5. Push Router Config
+# 4. Pull Config File
+# 5. Pull Cert and write to mulitple locations
+# 6. Push Router Config
+# 7. Create P2S Root cert and pfx
+
 
 Param(
 [Parameter()]
@@ -93,6 +95,43 @@ foreach ($File in $Files) {
 $LocalIP = (Get-NetIPConfiguration).IPv4Address.IPAddress | Select-Object -First 1
 $RouterIP = $LocalIP.Split(".")[0] + "." + $LocalIP.Split(".")[1] + "." + $LocalIP.Split(".")[2] + "." + ($LocalIP.Split(".")[3] - 1)
 Get-Content -Path "C:\Workshop\Router.txt" | ssh -o "StrictHostKeyChecking no" $User01@$RouterIP
+
+# 7. Create P2S Root cert and pfx
+# Create root cert
+try {$cert = Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object {$_.Subject -eq 'CN=PathLabRootCert'}}
+catch {$cert = New-SelfSignedCertificate -Type Custom -KeySpec Signature -HashAlgorithm sha256 -KeyLength 2048 `
+                  -Subject "CN=PathLabRootCert" -KeyExportPolicy Exportable -KeyUsageProperty Sign -KeyUsage CertSign `
+                  -CertStoreLocation "Cert:\CurrentUser\My"
+}
+# Create client cert
+$client = Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object {$_.Subject -eq 'CN=PathLabClientCert'}
+If ($null -eq $client){
+    $client = New-SelfSignedCertificate -Type Custom -DnsName P2SChildCert -KeySpec Signature -KeyExportPolicy Exportable `
+                -Subject "CN=PathLabClientCert" -HashAlgorithm sha256 -KeyLength 2048 `
+                -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.2") `
+                -CertStoreLocation "Cert:\CurrentUser\My"-Signer $cert
+}
+
+$FileCert = "C:\Workshop\P2SRoot.cert"
+If (-not (Test-Path -Path $FileCert)) {Export-Certificate -Cert $cert -FilePath $FileCert}
+$FileCer = "C:\Workshop\P2SRoot.cert"
+If (-not (Test-Path -Path $FileCer)) {certutil -encode $FileCert $FileCer}
+
+if ($null -eq (Set-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot")) {
+     $cerKey = -Join (Get-Content "C:\Workshop\P2SRoot.cer")[1..18]
+     $certSec = ConvertTo-SecureString $cerKey -AsPlainText -Force
+     Set-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot" -SecretValue $certSec} 
+
+$FilePfx = "C:\Workshop\Client.pfx"
+If (-not (Test-Path -Path $FilePfx)) {
+     $pwdSec = ConvertTo-SecureString "Apples4Apples" -AsPlainText -Force
+     Export-PfxCertificate -Cert $client -FilePath $FilePfx  -Password $pwdSec}
+
+$sa = (Get-AzStorageAccount | Select-Object -First 1)
+$saFiles = Get-AzStorageBlob -Container '$web' -Context $sa.context
+if ($null -ne ($saFiles | Where-Object -Property Name -eq "Client.pfx")) {
+    Write-Host "    Client cert exists, skipping"}
+else {Set-AzStorageBlobContent -Context $sa.context -Container '$web' -File "C:\Workshop\Client.pfx" -Properties @{"ContentType" = "application/x-pkcs12"} | Out-Null}
 
 # End Nicely
 Write-Host "I think we're good!"

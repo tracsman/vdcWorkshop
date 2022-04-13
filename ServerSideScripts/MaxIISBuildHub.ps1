@@ -7,9 +7,6 @@ Param(
 [string]$User3,
 [string]$Pass3)
 
-$secPass2 = ConvertTo-SecureString $Pass2 -AsPlainText -Force
-$secPass3 = ConvertTo-SecureString $Pass3 -AsPlainText -Force
-
 # Turn On ICMPv4
 Write-Host "Opening ICMPv4 Port"
 Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
@@ -17,8 +14,8 @@ Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
 Catch {New-NetFirewallRule -DisplayName "Allow ICMPv4" -Name Allow_ICMPv4_in -Action Allow -Enabled True -Profile Any -Protocol ICMPv4 | Out-Null
        Write-Host "Port opened"}
 
-# Install IIS
-Write-Host "Installing IIS" -ForegroundColor Cyan
+# Install IIS and NPS
+Write-Host "Installing IIS and NPS" -ForegroundColor Cyan
 Install-WindowsFeature Web-Server,Web-Asp-Net45
 
 # Create Web App PagesWeb
@@ -83,11 +80,25 @@ Write-Host "Restarting the W3SVC" -ForegroundColor Cyan
 Restart-Service -Name W3SVC
 
 # Add additional local Admin accounts
-New-LocalUser -Name $User2 -Password $secPass2 -FullName $User2 -AccountNeverExpires -PasswordNeverExpires | Out-Null
-Add-LocalGroupMember -Group 'Administrators' -Member $User2
-New-LocalUser -Name $User3 -Password $secPass3 -FullName $User3 -AccountNeverExpires -PasswordNeverExpires | Out-Null
-Add-LocalGroupMember -Group 'Administrators' -Member $User3
-Write-Host "Additional Local Accounts added" -ForegroundColor Cyan
+Write-Host "Adding User 2"
+$secPass2 = ConvertTo-SecureString $Pass2 -AsPlainText -Force
+try {Get-LocalUser -Name $User2
+     Write-Host "User 2 exists, skipping"}
+catch {New-LocalUser -Name $User2 -Password $secPass2 -FullName $User2 -AccountNeverExpires -PasswordNeverExpires
+       Write-Host "User 2 created"}
+try {Get-LocalGroupMember -Group 'Administrators' -Member $User2 -ErrorAction Stop | Out-Null
+     Write-Host "$User2 already an admin, skipping"}
+catch {Add-LocalGroupMember -Group 'Administrators' -Member $User2}
+
+Write-Host "Adding User 3"
+$secPass3 = ConvertTo-SecureString $Pass3 -AsPlainText -Force
+try {Get-LocalUser -Name $User3
+     Write-Host "User 3 exists, skipping"}
+catch {New-LocalUser -Name $User3 -Password $secPass3 -FullName $User3 -AccountNeverExpires -PasswordNeverExpires
+       Write-Host "User 3 created"}
+try {Get-LocalGroupMember -Group 'Administrators' -Member $User3 -ErrorAction Stop | Out-Null
+     Write-Host "$User3 already an admin, skipping"}
+catch {Add-LocalGroupMember -Group 'Administrators' -Member $User3}
 
 Write-Host
 Write-Host "Web App Creation Successfull!" -ForegroundColor Green

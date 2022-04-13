@@ -471,7 +471,7 @@ $saFiles = Get-AzStorageBlob -Container 'config' -Context $sactx
 
 # Check for router.txt
 if ($null -ne ($saFiles | Where-Object -Property Name -eq "router.txt")) {
-     Write-Host "    router.txt exists, skipping"}
+    Write-Host "    router.txt exists, skipping"}
  else {$MyOutput | Out-File "router.txt"
        Set-AzStorageBlobContent -Context $sactx -Container 'config' -File "router.txt" -Properties @{"ContentType" = "text/plain"} | Out-Null}
 
