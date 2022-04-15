@@ -3,7 +3,7 @@
 # DIY Workshop Maximus - Module 2
 
 ## Abstract
-This module creates an NSG, a public IP for Bastion, an IP Prefix for NAT, a NAT Gateway, and a Bastion host.
+This module creates an NSG, a public IP for Bastion, an IP Prefix for NAT, a NAT Gateway, and a Bastion host in the hub.
 
 ## Observations
 Once you're done with this step, you will know how to deploy a Bastion host and NAT Gateway, and also use Bastion to securely connect to VMs.

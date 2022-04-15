@@ -3,7 +3,7 @@
 # DIY Workshop Maximus - Module 4
 
 ## Abstract
-In this step we'll create a web farm using the Azure App Gateway (Application Load Balancer) service. The web farm will comprise of IIS servers running on 3 VMs in a spoke VNet (spoke01). This spoke VNet will peer with the hub VNet you worked on in the previous steps.
+In this step you will create a spoke VNet (spoke01) and peer it with the hub VNet you worked on in the previous steps. You will deploy a web farm using the Azure App Gateway (Application Load Balancer) service in the spoke VNet. The web farm will comprise of 3 identical IIS servers (running on 3 VMs) and will serve a web page for external access. 
 
 ## Observations
 Once you're done with this step, you would have learned how to setup VNet peering and use an application load balancer to distribute traffic across backend web servers. 
