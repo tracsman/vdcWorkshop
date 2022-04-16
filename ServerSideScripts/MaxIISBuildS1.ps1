@@ -23,16 +23,16 @@ $userList = @{
   $User3 = $Pass3
 }
 foreach ($User in $userList.Keys) {
-    Write-Host "Adding $User"
-    $secPass = ConvertTo-SecureString $userList[$User] -AsPlainText -Force
-    try {Get-LocalUser -Name $User
-         Write-Host "$User exists, skipping"}
-    catch {New-LocalUser -Name $User -Password $secPass -FullName $User -AccountNeverExpires -PasswordNeverExpires
-          Write-Host "$User created"}
-    try {Get-LocalGroupMember -Group 'Administrators' -Member $User -ErrorAction Stop | Out-Null
-         Write-Host "$User already an admin, skipping"}
-    catch {Add-LocalGroupMember -Group 'Administrators' -Member $User
-           Write-Host "$User added the Administrators group"}
+  Write-Host "Adding $User"
+  $secPass = ConvertTo-SecureString $userList[$User] -AsPlainText -Force
+  try {Get-LocalUser -Name $User -ErrorAction Stop | Out-Null
+       Write-Host "$User exists, skipping"}
+  catch {New-LocalUser -Name $User -Password $secPass -FullName $User -AccountNeverExpires -PasswordNeverExpires | Out-Null
+         Write-Host "$User created"}
+  try {Get-LocalGroupMember -Group 'Administrators' -Member $User -ErrorAction Stop | Out-Null
+       Write-Host "$User already an admin, skipping"}
+  catch {Add-LocalGroupMember -Group 'Administrators' -Member $User | Out-Null
+         Write-Host "$User added the Administrators group"}
 }
 
 # Install IIS

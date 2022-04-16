@@ -87,7 +87,7 @@ $UserName03 = "User03"
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting Module 6, estimated total time 40 minutes" -ForegroundColor Cyan
+Write-Host "Starting Module 7, estimated total time 40 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
@@ -222,7 +222,7 @@ Catch {$vnetCS = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSName -
         Set-AzVirtualNetwork -VirtualNetwork $vnetCS | Out-Null
         }
 # Create Coffee Shop Bastion
-Write-Host "  Creating Coffe Shop Bastion Public IP"
+Write-Host "  Creating Coffee Shop Bastion Public IP"
 Try {$pipBastion = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $CSName'-bas-pip' -ErrorAction Stop
         Write-Host "    Public IP exists, skipping"}
 Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $CSName'-bas-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard -Zone 1, 2, 3}
@@ -405,8 +405,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Waiting for deployments to finish before pushing config" -ForegroundColor Cyan
 
 # Do we need to wait for the VMs?
-If ((Get-Job -State Running -Command "New-AzVM" ).Count -gt 0) {
-     Write-Host (Get-Date)' - ' -NoNewline
+If ((Get-Job -State Running | Where-Object {$_.Command -eq "New-AzVM"}).Count -gt 0) {
      Write-Host "  Waiting for the VMs to deploy, this script will continue after 10 minutes or when the VMs are built, whichever comes first."
      Get-Job -Command "New-AzVM" | Wait-Job -Timeout 600 | Out-Null}
 Write-Host "  VM deployments complete"
@@ -436,13 +435,21 @@ catch {$gwOP = New-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName 
 
 # 7.11 Create On-Prem Router Config
 # 7.11.1 Create Managed Identity, assign to RG and KV
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating On-Prem VM Managed Identity" -ForegroundColor Cyan
 $vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
-Update-AzVM -ResourceGroupName $RGName -VM $vmOP -IdentityType SystemAssigned | Out-Null
-$vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
+If ($vmOP.Identity.Type -ne "SystemAssigned") {
+    Update-AzVM -ResourceGroupName $RGName -VM $vmOP -IdentityType SystemAssigned | Out-Null
+    $vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
+} Else {Write-Host "  Managed Identity already assined, skipping"}
+
+Write-Host "  Assigning Key Vault access policy"
 Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId $vmOP.Identity.PrincipalId -PermissionsToSecrets get,list,set,delete | Out-Null
-try {Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName -RoleDefinitionName "Contributor" -ErrorAction Stop | Out-Null
-     Write-Host "  role already assigned, skipping"}
-catch {New-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -RoleDefinitionName "Contributor" -ResourceGroupName $RGName}
+
+Write-Host "  Assigning Resource Group Contributor role"
+$role = Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName -RoleDefinitionName "Contributor"
+If ($null -ne $role) {Write-Host "    role already assigned, skipping"}
+Else {New-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -RoleDefinitionName "Contributor" -ResourceGroupName $RGName}
 
 # 7.11.2 Create Stoage Container for Config Blob
 Write-Host "  adding storage web endpoint"
@@ -563,13 +570,14 @@ $urlCert = $sa.PrimaryEndpoints.Web + "Client.pfx"
 Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
 Catch {$response = $null}
 $i=0
-if ($response.StatusCode -ne 200) {Write-Host "    waiting for Client cert to be posted to the storage account (max wait 10 minutes)"}
+if ($response.StatusCode -ne 200) {Write-Host "    waiting for Client cert to be posted to the storage account (max wait 15 minutes)"}
 While ($response.StatusCode -ne 200 -or $i -gt 90) {
      Start-Sleep -Seconds 10
      Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
      Catch {$response = $null}
      $i++
 }
+if ($response.StatusCode -ne 200) {Write-Host "    Client cert not written after 15 minutes, proceeding without it"}
 
 # Get the Azure Gateway DNS Name
 $vpnClientConfig = Get-AzVpnClientConfiguration -ResourceGroupName $RGName -Name $HubName-gw

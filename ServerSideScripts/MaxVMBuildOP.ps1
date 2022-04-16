@@ -2,10 +2,10 @@
 #
 # Configures VM, then downloads and send router config to router
 #
-# 1. Install the PowerShell SDK
-# 2. Open Firewall for ICMP
-# 3. Add additional local Admin accounts
-# 4. Test/Create Folders
+# 1. Open Firewall for ICMP
+# 2. Add additional local Admin accounts
+# 3. Test/Create Folders
+# 4. Install the PowerShell SDK
 # 5. Create and push P2S Root cert and pfx
 # 6. Pull Config File
 # 7. Pull Cert and write to mulitple locations
@@ -21,30 +21,14 @@ Param(
 [string]$Pass3,
 [string]$PassP2SCert)
 
-# 1. Install the PowerShell SDK
-try {Get-PackageProvider -Name NuGet -ErrorAction Stop | Out-Null
-     Write-Host "NuGet already registered, skipping"}
-catch {Install-PackageProvider -Name NuGet -MinimumVersion 2.8.5.201 -Force | Out-Null
-       Write-Host "NuGet registered"}
-if ($null -eq (Get-Module Az.Network -ListAvailable)) {
-    Write-Host "Azure SDK already installed, skipping"}
-else {Install-Module Az -Force | Out-Null
-      Write-Host "Azure SDK installed"}
-
-# Connect with the VM's managed identity
-Write-Host "Connecting using the VM Managed Identity"
-try {Connect-AzAccount -Identity -ErrorAction Stop | Out-Null
-     Write-Host "Identity connected"}
-catch{Write-Output "There is no system-assigned user identity. Aborting."; exit 1}
-
-# 2. Open Firewall for ICMP
+# 1. Open Firewall for ICMP
 Write-Host "Opening ICMPv4 Port"
 Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
      Write-Host "Port already open"}
 Catch {New-NetFirewallRule -DisplayName "Allow ICMPv4" -Name Allow_ICMPv4_in -Action Allow -Enabled True -Profile Any -Protocol ICMPv4 | Out-Null
        Write-Host "Port opened"}
 
-# 3. Add additional local Admin accounts
+# 2. Add additional local Admin accounts
 $userList = @{
      $User2 = $Pass2
      $User3 = $Pass3
@@ -52,17 +36,17 @@ $userList = @{
 foreach ($User in $userList.Keys) {
      Write-Host "Adding $User"
      $secPass = ConvertTo-SecureString $userList[$User] -AsPlainText -Force
-     try {Get-LocalUser -Name $User
+     try {Get-LocalUser -Name $User -ErrorAction Stop | Out-Null
           Write-Host "$User exists, skipping"}
-     catch {New-LocalUser -Name $User -Password $secPass -FullName $User -AccountNeverExpires -PasswordNeverExpires
-          Write-Host "$User created"}
+     catch {New-LocalUser -Name $User -Password $secPass -FullName $User -AccountNeverExpires -PasswordNeverExpires | Out-Null
+            Write-Host "$User created"}
      try {Get-LocalGroupMember -Group 'Administrators' -Member $User -ErrorAction Stop | Out-Null
           Write-Host "$User already an admin, skipping"}
-     catch {Add-LocalGroupMember -Group 'Administrators' -Member $User
+     catch {Add-LocalGroupMember -Group 'Administrators' -Member $User | Out-Null
             Write-Host "$User added the Administrators group"}
 }
 
-# 4. Test/Create Folders
+# 3. Test/Create Folders
 Write-Host "Creating required folders"
 $Dirs = @()
 $Dirs += "C:\Workshop\"
@@ -71,6 +55,26 @@ $Dirs += "C:\Users\User01\.ssh\"
 foreach ($Dir in $Dirs) {
      If (-not (Test-Path -Path $Dir)) {New-Item $Dir -ItemType Directory | Out-Null}
 }
+
+# 4. Install the PowerShell SDK
+Write-Host "Installing Azure PS SDK"
+try {Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction Stop | Out-Null
+     Write-Host "NuGet already registered, skipping"}
+catch {Install-PackageProvider -Name NuGet -Scope AllUsers -MinimumVersion 2.8.5.201 -Force | Out-Null
+       Write-Host "NuGet registered"}
+if ($null -ne (Get-Module Az.Network -ListAvailable)) {
+    Write-Host "Azure SDK already installed, skipping"}
+else {Install-Module Az -Scope AllUsers -Force | Out-Null
+      Write-Host "Azure SDK installed"}
+
+# Connect with the VM's managed identity
+Write-Host "Connecting using the VM Managed Identity"
+try {Connect-AzAccount -Identity -ErrorAction Stop | Out-Null
+     $ctx = Get-AzContext
+	Write-Host $ctx.Account.Id
+     Write-Host $ctx.Subscription.Name
+     Write-Host "Identity connected"}
+catch{Write-Output "There is no system-assigned user identity. Aborting."; exit 1}
 
 # 5. Create and push P2S Root cert and pfx
 # Create root cert
@@ -114,6 +118,7 @@ If (-not (Test-Path -Path $FileCer)) {
 
 # Upload to Key Vault
 Write-Host "Uploading root cer file data to Key Vault"
+$kvName = (Get-AzKeyVault | Select-Object -First 1).VaultName
 if ($null -eq (Get-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot")) {
      $cerKey = -Join (Get-Content "C:\Workshop\P2SRoot.cer")[1..16]
      $certSec = ConvertTo-SecureString $cerKey -AsPlainText -Force
@@ -132,16 +137,16 @@ If (-not (Test-Path -Path $FilePfx)) {
 
 # Upload Client to Storage Account (as a static web file)
 Write-Host 'Uploading Client.pfx to storage account $web container'
+$sa = (Get-AzStorageAccount | Select-Object -First 1)
 $saFiles = Get-AzStorageBlob -Container '$web' -Context $sa.context
 if ($null -ne ($saFiles | Where-Object -Property Name -eq "Client.pfx")) {
     Write-Host "    Client cert exists in Storage Account, skipping"}
-else {Set-AzStorageBlobContent -Context $sa.context -Container '$web' -File "C:\Workshop\Client.pfx" -Properties @{"ContentType" = "application/x-pkcs12"} | Out-Null
+else {Set-AzStorageBlobContent -Context $sa.context -Container '$web' -File "C:\Workshop\Client.pfx" -Properties @{"ContentType" = "application/x-pkcs12"} -ErrorAction Stop | Out-Null
       Write-Host "Client.pfx saved to Storage Account"}
 
 # 6. Pull Config File
 # Get sa and download blob (router config file)
 Write-Host "Downloading Router config file from the Storage Account"
-$sa = (Get-AzStorageAccount | Select-Object -First 1)
 Try {Get-AzStorageBlobContent -Container "config" -Blob 'router.txt' -Context $sa.Context -Destination "C:\Workshop\router.txt" -Force -ErrorAction Stop | Out-Null
      $RouterConfigDownloadError = $false
      Write-Host "Config file downloaded"}
@@ -151,7 +156,6 @@ Catch {$RouterConfigDownloadError = $true
 # 7. Pull Cert and write to mulitple locations
 If (-Not $RouterConfigDownloadError) {
      Write-Host "Pulling RSA Key from Key Vault"
-     $kvName = (Get-AzKeyVault | Select-Object -First 1).VaultName
      $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "OnPremNVArsa"
      $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
      try {$PrivateKey = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
