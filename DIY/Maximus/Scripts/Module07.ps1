@@ -449,7 +449,7 @@ Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -Object
 Write-Host "  Assigning Resource Group Contributor role"
 $role = Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName -RoleDefinitionName "Contributor"
 If ($null -ne $role) {Write-Host "    role already assigned, skipping"}
-Else {New-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -RoleDefinitionName "Contributor" -ResourceGroupName $RGName}
+Else {New-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -RoleDefinitionName "Contributor" -ResourceGroupName $RGName | Out-Null}
 
 # 7.11.2 Create Stoage Container for Config Blob
 Write-Host "  adding storage web endpoint"
@@ -565,7 +565,7 @@ Catch {Write-Host "    queuing build job."
 
 # 7.12.2 Configure P2S VPN on Coffee Shop Laptop
 # Wait for Client cert to be uploaded to the Storage Account
-Write-Host "  getting certificate and Gateway URLs" -ForegroundColor Cyan
+Write-Host "  Checking Client certificate"
 $urlCert = $sa.PrimaryEndpoints.Web + "Client.pfx"
 Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
 Catch {$response = $null}
@@ -573,6 +573,7 @@ $i=0
 if ($response.StatusCode -ne 200) {Write-Host "    waiting for Client cert to be posted to the storage account (max wait 15 minutes)"}
 While ($response.StatusCode -ne 200 -or $i -gt 90) {
      Start-Sleep -Seconds 10
+     Write-Host "*" -NoNewline
      Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
      Catch {$response = $null}
      $i++
@@ -580,13 +581,17 @@ While ($response.StatusCode -ne 200 -or $i -gt 90) {
 if ($response.StatusCode -ne 200) {Write-Host "    Client cert not written after 15 minutes, proceeding without it"}
 
 # Get the Azure Gateway DNS Name
+Write-Host "  getting Gateway client zip url"
 $vpnClientConfig = Get-AzVpnClientConfiguration -ResourceGroupName $RGName -Name $HubName-gw
 Invoke-WebRequest -Uri $vpnClientConfig.VpnProfileSASUrl -OutFile ./Client.zip
+Write-Host "  expanding zip file"
 Expand-Archive -Path ./Client.zip
+Write-Host "  getting Gateway URL"
 [xml]$xmlFile = get-content -Path ./Client/Generic/VpnSettings.xml
 $urlAzGW = $xmlFile.VpnProfile.VpnServer
 
 # Clean up local files
+Write-Host "  deleting local zip file and folder"
 if (Test-Path -Path "./Client.zip") {Remove-Item -Path "./Client.zip"}
 if (Test-Path -Path "./Client/") {Remove-Item -Path "./Client/" -Recurse}
 

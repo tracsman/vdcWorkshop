@@ -166,17 +166,18 @@ If (-Not $RouterConfigDownloadError) {
      $Files += "C:\Users\User01\.ssh\id_rsa"
      foreach ($File in $Files) {
           If (-not (Test-Path -Path $File)) {
-               #$PrivateKey | Out-File -Encoding ascii -FilePath $File
-               "-----BEGIN OPENSSH PRIVATE KEY-----`n" + $PrivateKey.Substring(36, 1752).Replace(" ", "`n") + "`n-----END OPENSSH PRIVATE KEY-----" | Out-File -Encoding ascii -FilePath $File
+               $PrivateKey | Out-File -Encoding ascii -FilePath $File -Force
+               #"-----BEGIN OPENSSH PRIVATE KEY-----`n" + $PrivateKey.Substring(36, 1752).Replace(" ", "`n") + "`n-----END OPENSSH PRIVATE KEY-----" | Out-File -Encoding ascii -FilePath $File
                Write-Host "Wrote $File"}
           Else {Write-Host "$File already exists, skipping"}
      }
 
      # 8. Push Router Config to router
-     Write-Host "Sending config to router"
+     Write-Host "Sending config to router " -NoNewline
      $LocalIP = (Get-NetIPConfiguration).IPv4Address.IPAddress | Select-Object -First 1
      $RouterIP = $LocalIP.Split(".")[0] + "." + $LocalIP.Split(".")[1] + "." + $LocalIP.Split(".")[2] + "." + ($LocalIP.Split(".")[3] - 1)
-     Get-Content -Path "C:\Workshop\Router.txt" | ssh -o "StrictHostKeyChecking no" $User01@$RouterIP
+     Write-Host "(ssh -o ""StrictHostKeyChecking no"" $User1@$RouterIP)"
+     Get-Content -Path "C:\Workshop\Router.txt" | ssh -o "StrictHostKeyChecking no" $User1@$RouterIP
      Write-Host "Config sent to router, hopefully successfully"
 }
 
