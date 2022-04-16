@@ -17,6 +17,24 @@ Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
 Catch {New-NetFirewallRule -DisplayName "Allow ICMPv4" -Name Allow_ICMPv4_in -Action Allow -Enabled True -Profile Any -Protocol ICMPv4 | Out-Null
        Write-Host "Port opened"}
 
+# Add additional Local Admins
+$userList = @{
+  $User2 = $Pass2
+  $User3 = $Pass3
+}
+foreach ($User in $userList.Keys) {
+    Write-Host "Adding $User"
+    $secPass = ConvertTo-SecureString $userList[$User] -AsPlainText -Force
+    try {Get-LocalUser -Name $User
+         Write-Host "$User exists, skipping"}
+    catch {New-LocalUser -Name $User -Password $secPass -FullName $User -AccountNeverExpires -PasswordNeverExpires
+          Write-Host "$User created"}
+    try {Get-LocalGroupMember -Group 'Administrators' -Member $User -ErrorAction Stop | Out-Null
+         Write-Host "$User already an admin, skipping"}
+    catch {Add-LocalGroupMember -Group 'Administrators' -Member $User
+           Write-Host "$User added the Administrators group"}
+}
+
 # Install IIS
 Write-Host "Installing IIS and .Net 4.5, this can take some time, around 5+ minutes..." -ForegroundColor Cyan
 add-windowsfeature Web-Server,Web-Asp-Net45
