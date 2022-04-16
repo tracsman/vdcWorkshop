@@ -546,7 +546,7 @@ $ScriptName = "MaxVMBuildOP.ps1"
 $ExtensionName = 'MaxVMBuildOP'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName -User1 '$UserName01'  -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "' -PassP2SCert '" + $pwdP2SCert + "')"
+$ScriptExe = "(.\$ScriptName -User1 '$UserName01' -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "' -PassP2SCert '" + $pwdP2SCert + "')"
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 
 Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
