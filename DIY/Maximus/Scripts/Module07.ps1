@@ -21,23 +21,26 @@
 #     7.5.1 Create Public IP
 #     7.5.2 Create NIC
 #     7.5.3 Build VM
+#     7.5.4 Create and Store S2S PSK
 # 7.6 Create On-prem VM (AsJob)
 #     7.6.1 Create NIC
 #     7.6.2 Build VM
 # 7.7 Create Coffee Shop Laptop (AsJob)
 #     7.7.1 Create NIC
 #     7.7.2 Build VM
+#     7.7.3 Create and Store P2S Client Cert Password
 # 7.8 Create On-Prem UDR Route Table
-# 7.9 Create On-Prem Local Gateway
-# 7.10 Create On-Prem Router Config
-#      7.10.1 Create Managed Identity, assign to VM, SA, and KV
-#      7.10.2 Create Stoage Container for Config Blob
-#      7.10.3 Create Router Config
-#      7.10.4 Push to storage
-# 7.11 Run post deployment jobs
-#      7.11.1 Configure On-Prem VM (and indirectly the NVA)
-#      7.11.2 Configure P2S VPN on Coffee Shop Laptop
-# 7.12 Create S2S Connection
+# 7.9 Wait for deployments to complete
+# 7.10 Create On-Prem Local Gateway
+# 7.11 Create On-Prem Router Config
+#      7.11.1 Create Managed Identity, assign to VM, SA, and KV
+#      7.11.2 Create Stoage Container for Config Blob
+#      7.11.3 Create Router Config
+#      7.11.4 Push to storage
+# 7.12 Run post deployment jobs
+#      7.12.1 Configure On-Prem VM (and indirectly the NVA)
+#      7.12.2 Configure P2S VPN on Coffee Shop Laptop
+# 7.13 Create S2S Connection
 #
 
 # 7.1 Validate and Initialize
@@ -233,7 +236,7 @@ Catch {New-AzBastion -ResourceGroupName $RGName -Name $CSName-bas -PublicIpAddre
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating RSA keys" -ForegroundColor Cyan
 $FileName = "id_rsa"
-If (-not (Test-Path -Path "$HOME/.ssh/")) {New-Item "$HOME\.ssh\" -ItemType Directory | Out-Null}
+If (-not (Test-Path -Path "$HOME/.ssh/")) {New-Item "$HOME/.ssh/" -ItemType Directory | Out-Null}
 If (-not (Test-Path -Path "$HOME/.ssh/config")) {
      $FileContent = "MACs=""hmac-sha2-512,hmac-sha1,hmac-sha1-96""`nServerAliveInterval=120`nServerAliveCountMax=30"
      Out-File -FilePath "$HOME/.ssh/config" -Encoding ascii -InputObject $FileContent -Force
@@ -280,6 +283,22 @@ if ($MPTermsAccepted) {
     }
 } else {Write-Host "  Marketplace terms not accepted skipping"}
 
+# 7.5.4 Create and Store S2S PSK
+Write-Host "  Creating P2S Pre-Shared Key"
+$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "S2SPSK" -ErrorAction Stop 
+If ($null -eq $kvs) {
+     $pskS2S = ([char[]](Get-Random -Input $(65..90 + 97..122) -Count 8)) -join ""
+     $secPskS2S = ConvertTo-SecureString $pskS2S -AsPlainText -Force
+     $kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name "S2SPSK" -SecretValue $secPskS2S -ErrorAction Stop}
+Else {
+     $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
+     try {
+     $pskS2S = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
+     } finally {
+     [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
+     }
+     Write-Host "  S2S PSK exists, skipping"}
+
 # 7.6 Create On-prem VM (AsJob)
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating On-Prem VM" -ForegroundColor Cyan
@@ -308,6 +327,7 @@ Catch {$vmConfig = New-AzVMConfig -VMName $OPVMName -VMSize $VMSize -ErrorAction
 # 7.7 Create Coffee Shop Laptop (AsJob)
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Coffee Shop Laptop" -ForegroundColor Cyan
+
 # 7.7.1 Create NIC
 Write-Host "  Creating NIC"
 $vnetCS = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSName
@@ -321,7 +341,7 @@ Write-Host "  Creating Coffee Shop Laptop"
 Try {Get-AzVM -ResourceGroupName $RGName -Name $CSVMName -ErrorAction Stop | Out-Null
      Write-Host "    VM exists, skipping"}
 Catch {$vmConfig = New-AzVMConfig -VMName $CSVMName -VMSize $VMSize -ErrorAction Stop
-       $vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Windows -ComputerName $OPVMName -Credential $cred -ProvisionVMAgent -EnableAutoUpdate
+       $vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Windows -ComputerName $CSVMName -Credential $cred -ProvisionVMAgent -EnableAutoUpdate
        #$vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2019-Datacenter -Version latest
        $vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsDesktop -Offer windows-11 -Skus win11-21h2-pro -Version latest
        #$vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2022-Datacenter -Version latest
@@ -329,6 +349,22 @@ Catch {$vmConfig = New-AzVMConfig -VMName $CSVMName -VMSize $VMSize -ErrorAction
        $vmConfig = Set-AzVMBootDiagnostic -VM $vmConfig -Disable
        Write-Host "    queuing VM build job"
        New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $vmConfig -AsJob | Out-Null}
+
+# 7.7.3 Create and Store P2S Client Cert Password
+Write-Host "  Creating P2S Client cert password"
+$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "P2SCertPwd" -ErrorAction Stop 
+If ($null -eq $kvs) {
+     $pwdP2SCert = ([char[]](Get-Random -Input $(65..90 + 97..122) -Count 8)) -join ""
+     $secPwdP2SCert = ConvertTo-SecureString $pwdP2SCert -AsPlainText -Force
+     $kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name "P2SCertPwd" -SecretValue $secPwdP2SCert -ErrorAction Stop}
+Else {
+     $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
+     try {
+     $pwdP2SCert = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
+     } finally {
+     [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
+     }
+     Write-Host "  P2S Client cert password exists, skipping"}
 
 # 7.8 Create On-Prem UDR Route Table
 Write-Host (Get-Date)' - ' -NoNewline
@@ -364,11 +400,33 @@ if ($null -eq $snTenant.RouteTable) {
     Set-AzVirtualNetwork -VirtualNetwork $vnetOP | Out-Null}
 Else {Write-Host "  Route Table already assigned to On-Prem subnet, skipping"}
 
+# 7.9 Wait for deployments to complete
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Waiting for the VMs to deploy, this script will continue after 10 minutes or when the VMs are built, whichever comes first." -ForegroundColor Cyan
-Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
+Write-Host "Waiting for deployments to finish before pushing config" -ForegroundColor Cyan
 
-# 7.9 Create On-Prem Local Gateway
+# Do we need to wait for the VMs?
+If ((Get-Job -State Running -Command "New-AzVM" ).Count -gt 0) {
+     Write-Host (Get-Date)' - ' -NoNewline
+     Write-Host "  Waiting for the VMs to deploy, this script will continue after 10 minutes or when the VMs are built, whichever comes first."
+     Get-Job -Command "New-AzVM" | Wait-Job -Timeout 600 | Out-Null}
+Write-Host "  VM deployments complete"
+
+# Do we need to wait for the Gateway?
+$gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
+$i=0
+If ($gwHub.ProvisioningState -eq 'Updating') {
+    Write-Host '  waiting for VPN gateway to finish provisioning: ' -NoNewline
+    Start-Sleep 10}
+While ($gwHub.ProvisioningState -eq 'Updating') {
+    $i++
+    If ($i%6) {Write-Host '*' -NoNewline}
+    Else {Write-Host "$($i/6)" -NoNewline}
+    Start-Sleep 10
+    $gwHub = Get-AzVirtualNetworkGateway -Name $HubName-gw -ResourceGroupName $RGName}
+Write-Host
+Write-Host "  VPN Gateway deployment complete"
+
+# 7.10 Create On-Prem Local Gateway
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating On-Prem Local GW in Azure" -ForegroundColor Cyan
 $pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
@@ -376,8 +434,8 @@ try {$gwOP = Get-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $R
      Write-Host "  resource exists, skipping"}
 catch {$gwOP = New-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -Location $ShortRegion -GatewayIpAddress $pipOPGW.IpAddress -AddressPrefix $OPAddress -Asn $OPASN -BgpPeeringAddress "10.100.1.1"}
 
-# 7.10 Create On-Prem Router Config
-# 7.10.1 Create Managed Identity, assign to VM, SA, and KV
+# 7.11 Create On-Prem Router Config
+# 7.11.1 Create Managed Identity, assign to RG and KV
 $vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
 Update-AzVM -ResourceGroupName $RGName -VM $vmOP -IdentityType SystemAssigned | Out-Null
 $vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
@@ -386,13 +444,13 @@ try {Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupNam
      Write-Host "  role already assigned, skipping"}
 catch {New-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -RoleDefinitionName "Contributor" -ResourceGroupName $RGName}
 
-# 7.10.2 Create Stoage Container for Config Blob
+# 7.11.2 Create Stoage Container for Config Blob
 Write-Host "  adding storage web endpoint"
 try {Get-AzStorageContainer -Context $sactx -Name 'config' -ErrorAction Stop | Out-Null
      Write-Host "    config container exists, skipping"}
 catch {New-AzStorageContainer -Context $sactx -Name config | Out-Null}
 
-# 7.10.3 Create Router Config
+# 7.11.3 Create Router Config
 $gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
 $pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
 
@@ -404,7 +462,6 @@ $siteOPPubIP  = $pipOPGW.IpAddress
 $siteOPPrefix = "10.10.1.0"
 $siteOPSubnet = "255.255.255.128"
 $siteOPDfGate = "10.10.1.1"
-$siteOPPSK    = "Apples2Apples"
 $MyOutput = @"
 conf t
 ####
@@ -421,7 +478,7 @@ crypto ikev2 policy az-POLICY
 crypto ikev2 keyring key-peer1
   peer azvpn1
    address $azurePubIP
-   pre-shared-key $siteOPPSK
+   pre-shared-key $pskS2S
 crypto ikev2 profile az-PROFILE1
   match address local $siteOPPubIP
   match identity remote address $azurePubIP 255.255.255.255
@@ -463,7 +520,7 @@ end
 wr
 "@
 
-# 7.10.4 Push to storage
+# 7.11.4 Push to storage
 # Save config file
 # Get file names in the Web Container
 Write-Host "  adding html files to storage"
@@ -478,18 +535,18 @@ if ($null -ne ($saFiles | Where-Object -Property Name -eq "router.txt")) {
 # Clean up local files
 if (Test-Path -Path "router.txt") {Remove-Item -Path "router.txt"}
 
-# 7.11 Run post deployment jobs
+# 7.12 Run post deployment jobs
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Running post VM deploy build scripts" -ForegroundColor Cyan
 
-# 7.11.1 Configure On-Prem VM (and indirectly the NVA)
+# 7.12.1 Configure On-Prem VM (and indirectly the NVA)
 Write-Host "  running On-Prem VM build script" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
 $ScriptName = "MaxVMBuildOP.ps1"
 $ExtensionName = 'MaxVMBuildOP'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName -User1 '$UserName01'  -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
+$ScriptExe = "(.\$ScriptName -User1 '$UserName01'  -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "' -PassP2SCert '" + $pwdP2SCert + "')"
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 
 Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
@@ -499,14 +556,39 @@ Catch {Write-Host "    queuing build job."
                          -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
                          -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 
-# 7.11.2 Configure P2S VPN on Coffee Shop Laptop
+# 7.12.2 Configure P2S VPN on Coffee Shop Laptop
+# Wait for Client cert to be uploaded to the Storage Account
+Write-Host "  getting certificate and Gateway URLs" -ForegroundColor Cyan
+$urlCert = $sa.PrimaryEndpoints.Web + "Client.pfx"
+Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
+Catch {$response = $null}
+$i=0
+if ($response.StatusCode -ne 200) {Write-Host "    waiting for Client cert to be posted to the storage account (max wait 10 minutes)"}
+While ($response.StatusCode -ne 200 -or $i -gt 90) {
+     Start-Sleep -Seconds 10
+     Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
+     Catch {$response = $null}
+     $i++
+}
+
+# Get the Azure Gateway DNS Name
+$vpnClientConfig = Get-AzVpnClientConfiguration -ResourceGroupName $RGName -Name $HubName-gw
+Invoke-WebRequest -Uri $vpnClientConfig.VpnProfileSASUrl -OutFile ./Client.zip
+Expand-Archive -Path ./Client.zip
+[xml]$xmlFile = get-content -Path ./Client/Generic/VpnSettings.xml
+$urlAzGW = $xmlFile.VpnProfile.VpnServer
+
+# Clean up local files
+if (Test-Path -Path "./Client.zip") {Remove-Item -Path "./Client.zip"}
+if (Test-Path -Path "./Client/") {Remove-Item -Path "./Client/" -Recurse}
+
 Write-Host "  running Coffee Shop Laptop build script" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
 $ScriptName = "MaxVMBuildCS.ps1"
 $ExtensionName = 'MaxVMBuildCS'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "')"
+$ScriptExe = "(.\$ScriptName -User2 '$UserName02' -Pass2 '" + $kvs02 + "' -User3 '$UserName03' -Pass3 '" + $kvs03 + "' -urlCert '" + $urlCert + "' -urlAzGW '" + $urlAzGw + "' -P2SCertPwd '" + $pwdP2SCert + "')"
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 
 Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $CSVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
@@ -516,38 +598,20 @@ Catch {Write-Host "    queuing build job."
                          -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
                          -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 
-
-# 7.12 Create S2S Connection
-# 7.12.1 Wait for VMs to complete (not gateway)
+# 7.13 Create S2S Connection
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host 'Connecting S2S VPN between On-Prem NVA and Hub VPN Gateway' -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkGatewayConnection -Name $HubName-gw-op-conn -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
      Write-Host '  resource exists, skipping'}
 Catch {
     $gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
-    $i=0
-    If ($gwHub.ProvisioningState -eq 'Updating') {
-        Write-Host '  waiting for VPN gateway to finish provisioning: ' -NoNewline
-        Start-Sleep 10}
-    While ($gwHub.ProvisioningState -eq 'Updating') {
-        $i++
-        If ($i%6) {Write-Host '*' -NoNewline}
-        Else {Write-Host "$($i/6)" -NoNewline}
-        Start-Sleep 10
-        $gwHub = Get-AzVirtualNetworkGateway -Name $HubName-gw -ResourceGroupName $RGName}
-    If ($i -gt 0) {
-        Write-Host
-        Write-Host '  VPN Gateway deployment complete'
-        Write-Host '  building connection'}
-
-    # 7.12.2 Create the connection object
     If ($gwHub.ProvisioningState -eq 'Succeeded') {
         New-AzVirtualNetworkGatewayConnection -Name $HubName-gw-op-conn -ResourceGroupName $RGName `
                 -Location $ShortRegion -VirtualNetworkGateway1 $gwHub -LocalNetworkGateway2 $gwOP `
-                -ConnectionType IPsec -SharedKey $siteOPPSK -EnableBgp $true | Out-Null}
+                -ConnectionType IPsec -SharedKey $pskS2S -EnableBgp $true | Out-Null}
     Else {Write-Warning 'An issue occured with VPN gateway provisioning.'
           Write-Host 'Current Gateway Provisioning State' -NoNewLine
-          Write-Host $gwHub.ProvisioningState
+          Write-Host $gwHub.ProvisioningState -ForegroundColor Red
           Write-Host "Often the easiest fix is to delete the gateway and re-run this script."}
     }
 
@@ -556,5 +620,6 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Module 7 completed successfully" -ForegroundColor Green
 Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
 Write-Host
-Write-Host "  Something something something, pretty neat right?"
+Write-Host "  S2S should be connected now"
+Write-Host "  You'll need to RDP (via Bation) to the Coffee Shop VM and manually connect the VPN"
 Write-Host
