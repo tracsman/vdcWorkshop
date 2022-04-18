@@ -92,8 +92,12 @@ ForEach ($File in $FileName) {
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Lab Files Download complete" -ForegroundColor Cyan
 Write-Host 
-Write-Host "Next Steps:`n1. Navigate to the Scripts folder`n2. Update the Init.txt file with your Subscription ID"
+Write-Host "Next Steps:`n1. Navigate to the Scripts folder"
+Write-Host "2. Update the " -NoNewline
+Write-Host "init.txt" -ForegroundColor Yellow -NoNewline
+Write-Host " file with your Subscription ID"
 Write-Host "3. Run the " -NoNewline
 Write-Host "./Validate-Lab.ps1" -ForegroundColor Yellow -NoNewline
-Write-Host " script to validate your sub and region.`n4. Begin the lab per the instructions"
+Write-Host " script to validate your sub and region"
+Write-Host "4. Begin the lab per the instructions"
 Write-Host
