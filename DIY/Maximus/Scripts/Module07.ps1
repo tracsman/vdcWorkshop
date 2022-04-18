@@ -245,7 +245,7 @@ If (-not (Test-Path -Path "$HOME/.ssh/$FileName")) {ssh-keygen.exe -t rsa -b 204
 Else {Write-Host "  Key Files exists, skipping"}
 $PublicKey =  Get-Content "$HOME/.ssh/$FileName.pub"
 $PrivateKey =  Get-Content "$HOME/.ssh/$FileName"
-$PrivateKeySec = ConvertTo-SecureString $($PrivateKey | Join-String)-AsPlainText -Force
+$PrivateKeySec = ConvertTo-SecureString $($PrivateKey[1..($PrivateKey.IndexOf("-----END OPENSSH PRIVATE KEY-----") - 1)] | Join-String)-AsPlainText -Force
 $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "OnPremNVArsa" -ErrorAction Stop 
 If ($null -eq $kvs) {$kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name "OnPremNVArsa" -SecretValue $PrivateKeySec -ErrorAction Stop}
 Else {Write-Host "  OnPremNVA_rsa exists, skipping"}

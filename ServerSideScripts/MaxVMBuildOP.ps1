@@ -21,6 +21,10 @@ Param(
 [string]$Pass3,
 [string]$PassP2SCert)
 
+Write-Host "Passed Arguments"
+Write-Host "PassP2SCert: {0}" -f $PassP2SCert
+Write-Host
+
 # 1. Open Firewall for ICMP
 Write-Host "Opening ICMPv4 Port"
 Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
@@ -166,8 +170,9 @@ If (-Not $RouterConfigDownloadError) {
      $Files += "C:\Users\User01\.ssh\id_rsa"
      foreach ($File in $Files) {
           If (-not (Test-Path -Path $File)) {
-               $PrivateKey | Out-File -Encoding ascii -FilePath $File -Force
+               #$PrivateKey | Out-File -Encoding ascii -FilePath $File -Force
                #"-----BEGIN OPENSSH PRIVATE KEY-----`n" + $PrivateKey.Substring(36, 1752).Replace(" ", "`n") + "`n-----END OPENSSH PRIVATE KEY-----" | Out-File -Encoding ascii -FilePath $File
+               "-----BEGIN OPENSSH PRIVATE KEY-----`n" + $PrivateKey + "`n-----END OPENSSH PRIVATE KEY-----" | Out-File -Encoding ascii -FilePath $File
                Write-Host "Wrote $File"}
           Else {Write-Host "$File already exists, skipping"}
      }

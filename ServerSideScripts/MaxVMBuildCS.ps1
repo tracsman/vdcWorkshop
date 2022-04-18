@@ -19,6 +19,12 @@ Param(
 [string]$P2SCertPwd
 )
 
+Write-Host "Passed Arguments"
+Write-Host "urlCert: {0}" -f $urlCert
+Write-Host "urlAzGW: {0}" -f $urlAzGW
+Write-Host "P2SCertPwd: {0}" -f $P2SCertPwd
+Write-Host
+
 # 1. Open Firewall for ICMP
 Write-Host "Opening ICMPv4 Port"
 Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
@@ -69,7 +75,7 @@ $pwdSec = ConvertTo-SecureString $P2SCertPwd -AsPlainText -Force
 $certClient = Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object {$_.Subject -eq 'CN=PathLabClientCert'}
 If ($null -eq $certClient -and -not $FatalCertIssue) {
      Import-PfxCertificate -CertStoreLocation "cert:CurrentUser\My" -Password $pwdSec -FilePath $File | Out-Null
-     Write-Host "Client Cert Installed"}
+     Write-Host "  Client Cert Installed"}
 ElseIf ($FatalCertIssue) {
      Write-Warning 'A fatal issue occurred retrieving  the Client cert from the storage account $web container'
      Write-Host "The P2S connection won't connect until this cert is downloaded and installed (default locations)"
@@ -100,10 +106,15 @@ Write-Host "Creating P2S VPN"
 </EapHostConfig>
 '@
 
-$vpnConnection = Get-VpnConnection -Name "AzureHub" -AllUserConnection
+$vpnConnection = Get-VpnConnection -Name "AzureHub" -AllUserConnection -ErrorAction SilentlyContinue
 if ($null -eq $vpnConnection) {
-     Add-VpnConnection -Name "AzureHub" -ServerAddress $urlAzGW -AllUserConnection -AuthenticationMethod Eap -SplitTunneling -TunnelType Ikev2 -EapConfigXmlStream $xmlEAPString
-     Write-Host "VPN Connection created"}
+     Try {Add-VpnConnection -Name "AzureHub" -ServerAddress $urlAzGW -AllUserConnection -AuthenticationMethod Eap -SplitTunneling -TunnelType Ikev2 -EapConfigXmlStream $xmlEAPString -ErrorAction Stop}
+     Catch {Write-Warning 'A fatal issue occurred adding the VPN Connection'
+            Write-Host "From the Azure Portal, on the Coffee Shop VM, go to the ""Extension"" blade"
+            Write-Host "and uninstall the 'MaxVMBuildCS' extension, then rerun the Module 7 script"
+            Write-Host "to re-install this extension on this VM."
+            Write-Host "Coffee Shop VM Build Script Failed"
+            Exit 1}}
 else {Write-Host "AzureHub vpn found, skipping"}
 
 # End Nicely
