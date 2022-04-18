@@ -126,17 +126,11 @@ $kvs03 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName03 -ErrorAction 
 If ($null -eq $kvs03) {Write-Warning "The User03 Key Vault secret was not found, please run Module 1 to ensure this critical resource is created."; Return}
 $cred = New-Object System.Management.Automation.PSCredential ($kvs01.Name, $kvs01.SecretValue)
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs02.SecretValue)
-try {
-    $kvs02 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
-} finally {
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
-}
+try {$kvs02 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs03.SecretValue)
-try {
-    $kvs03 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
-} finally {
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
-}
+try {$kvs03 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "UniversalKey"
 If ($null -eq $kvs) {Write-Warning "The Universal Key was not found in the Key Vault secrets, please run Module 1 to ensure this critical resource is created."; Return}
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
@@ -169,7 +163,7 @@ Catch {
     $ipconf = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf" -SubnetId $subnet.Id -PublicIpAddressId $pipHub.Id
     $gwHub = New-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -Location $ShortRegion `
                                          -IpConfigurations $ipconf -GatewayType Vpn -VpnType RouteBased -GatewaySku VpnGw1 `
-                                         -VpnClientProtocol "IkeV2" -VpnClientAddressPool $HubP2SPool -AsJob
+                                         -VpnClientProtocol "IkeV2" -VpnClientAddressPool $HubP2SPool Certificate -AsJob
     }
 
 # 7.3 Create On-prem and Coffee Shop VNets and Bastions
@@ -565,7 +559,7 @@ Catch {Write-Host "    queuing build job."
 
 # 7.12.2 Configure P2S VPN on Coffee Shop Laptop
 # Wait for Client cert to be uploaded to the Storage Account
-Write-Host "  checking Client certificate"
+Write-Host "  checking for Client certificate in storage account"
 $urlCert = $sa.PrimaryEndpoints.Web + "Client.pfx"
 Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
 Catch {$response = $null}
@@ -580,13 +574,38 @@ While ($response.StatusCode -ne 200 -or $i -gt 90) {
 }
 if ($response.StatusCode -ne 200) {Write-Host "    Client cert not written after 15 minutes, proceeding without it"}
 
+# Check for the root cert in KeVault
+Write-Host "  checking for Root certificate in Key Vault"
+$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot" -ErrorAction Stop 
+If ($null -eq $kvs) {Write-Warning "Root certificate data was not written to Key Vault"
+                     Write-Host "An issue happened in the OnPrem VM build script"
+                     Write-Host "that prevented the root cert being uploaded to"
+                     Write-Host "the Key Vault. This is a fatal error and this"
+                     Write-Host "script will end."
+                     Write-Host "You may try deleting the OnPrem VM Extention"
+                     Write-Host "named ""MaxVMBuildOP"" and re-running Module 7."
+                     Write-Host "Script Ending, Module 7, Failure Code 1"
+                     Exit 1
+}
+
+# Update Gateway with root cert
+Write-Host "  pushing Root certificate to Hub Gateway P2S config"
+$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
+try {$certP2SRoot = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
+$gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName
+$gwRootCert = Get-AzVpnClientRootCertificate -VirtualNetworkGatewayName $gwHub.Name -ResourceGroupName MaxLab
+if ($null -eq $gwRootCert) {Add-AzVpnClientRootCertificate -ResourceGroupName $RGName -VirtualNetworkGatewayname $HubName'-gw' `
+                                                           -VpnClientRootCertificateName "P2SRoot" -PublicCertData $certP2SRoot}
+else {Write-Host "    P2S Cert already configured, skipping"}
+
 # Get the Azure Gateway DNS Name
 Write-Host "  getting Gateway client zip url"
 try {$vpnClientConfig = Get-AzVpnClientConfiguration -ResourceGroupName $RGName -Name $HubName-gw -ErrorAction Stop}
 catch {Write-Warning "VPN Client URL was unavailable."
        Write-Host "This URL is required for both the On-Prem and Coffee Shop VM buildout."
        Write-Host "Please rerun this script again to see if the Client URL is now available."
-       Write-Host "Script Ending, Failure Code 2"
+       Write-Host "Script Ending, Module 7, Failure Code 2"
        Exit 2} 
 Invoke-WebRequest -Uri $vpnClientConfig.VpnProfileSASUrl -OutFile ./Client.zip
 Write-Host "  expanding zip file"

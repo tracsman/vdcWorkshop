@@ -20,9 +20,9 @@ Param(
 )
 
 Write-Host "Passed Arguments"
-Write-Host "urlCert: {0}" -f $urlCert
-Write-Host "urlAzGW: {0}" -f $urlAzGW
-Write-Host "P2SCertPwd: {0}" -f $P2SCertPwd
+Write-Host "urlCert: $urlCert"
+Write-Host "urlAzGW: $urlAzGW"
+Write-Host "P2SCertPwd: $P2SCertPwd"
 Write-Host
 
 # 1. Open Firewall for ICMP

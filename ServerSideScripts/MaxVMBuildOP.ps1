@@ -22,7 +22,7 @@ Param(
 [string]$PassP2SCert)
 
 Write-Host "Passed Arguments"
-Write-Host "PassP2SCert: {0}" -f $PassP2SCert
+Write-Host "PassP2SCert: $PassP2SCert"
 Write-Host
 
 # 1. Open Firewall for ICMP
@@ -124,8 +124,8 @@ If (-not (Test-Path -Path $FileCer)) {
 Write-Host "Uploading root cer file data to Key Vault"
 $kvName = (Get-AzKeyVault | Select-Object -First 1).VaultName
 if ($null -eq (Get-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot")) {
-     $cerKey = -Join (Get-Content "C:\Workshop\P2SRoot.cer")[1..16]
-     $certSec = ConvertTo-SecureString $cerKey -AsPlainText -Force
+     $cerKey = Get-Content "C:\Workshop\P2SRoot.cer"
+     $certSec = ConvertTo-SecureString $($cerKey[1..($cerKey.IndexOf("-----END CERTIFICATE-----") - 1)] | Join-String) -AsPlainText -Force
      Set-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot" -SecretValue $certSec | Out-Null
      Write-Host "Root cer file data saved to Key Vault"
 } else {Write-Host "Root data already exists in Key Vault, skipping"}
