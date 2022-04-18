@@ -565,7 +565,7 @@ Catch {Write-Host "    queuing build job."
 
 # 7.12.2 Configure P2S VPN on Coffee Shop Laptop
 # Wait for Client cert to be uploaded to the Storage Account
-Write-Host "  Checking Client certificate"
+Write-Host "  checking Client certificate"
 $urlCert = $sa.PrimaryEndpoints.Web + "Client.pfx"
 Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
 Catch {$response = $null}
@@ -582,7 +582,12 @@ if ($response.StatusCode -ne 200) {Write-Host "    Client cert not written after
 
 # Get the Azure Gateway DNS Name
 Write-Host "  getting Gateway client zip url"
-$vpnClientConfig = Get-AzVpnClientConfiguration -ResourceGroupName $RGName -Name $HubName-gw
+try {$vpnClientConfig = Get-AzVpnClientConfiguration -ResourceGroupName $RGName -Name $HubName-gw -ErrorAction Stop}
+catch {Write-Warning "VPN Client URL was unavailable."
+       Write-Host "This URL is required for both the On-Prem and Coffee Shop VM buildout."
+       Write-Host "Please rerun this script again to see if the Client URL is now available."
+       Write-Host "Script Ending, Failure Code 2"
+       Exit 2} 
 Invoke-WebRequest -Uri $vpnClientConfig.VpnProfileSASUrl -OutFile ./Client.zip
 Write-Host "  expanding zip file"
 Expand-Archive -Path ./Client.zip
