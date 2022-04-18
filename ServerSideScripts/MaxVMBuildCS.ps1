@@ -114,6 +114,7 @@ if ($null -eq $vpnConnection) {
             Write-Host "and uninstall the 'MaxVMBuildCS' extension, then rerun the Module 7 script"
             Write-Host "to re-install this extension on this VM."
             Write-Host "Coffee Shop VM Build Script Failed"
+            Write-Host "Script Ending, MaxVMBuildCS Script, Failure Code 1"
             Exit 1}}
 else {Write-Host "AzureHub vpn found, skipping"}
 

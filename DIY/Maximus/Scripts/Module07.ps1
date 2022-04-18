@@ -596,12 +596,12 @@ finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 $gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName
 $gwRootCert = Get-AzVpnClientRootCertificate -VirtualNetworkGatewayName $gwHub.Name -ResourceGroupName MaxLab
 if ($null -eq $gwRootCert) {Add-AzVpnClientRootCertificate -ResourceGroupName $RGName -VirtualNetworkGatewayname $HubName'-gw' `
-                                                           -VpnClientRootCertificateName "P2SRoot" -PublicCertData $certP2SRoot}
+                                                           -VpnClientRootCertificateName "P2SRoot" -PublicCertData $certP2SRoot | Out-Null}
 else {Write-Host "    P2S Cert already configured, skipping"}
 
 # Get the Azure Gateway DNS Name
 Write-Host "  getting Gateway client zip url"
-try {$vpnClientConfig = Get-AzVpnClientConfiguration -ResourceGroupName $RGName -Name $HubName-gw -ErrorAction Stop}
+try {$vpnClientConfig = New-AzVpnClientConfiguration -ResourceGroupName $RGName -Name $HubName-gw -AuthenticationMethod "EAPTLS" -ErrorAction Stop}
 catch {Write-Warning "VPN Client URL was unavailable."
        Write-Host "This URL is required for both the On-Prem and Coffee Shop VM buildout."
        Write-Host "Please rerun this script again to see if the Client URL is now available."
