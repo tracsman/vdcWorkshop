@@ -164,7 +164,7 @@ Catch {
     $ipconf = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf" -SubnetId $subnet.Id -PublicIpAddressId $pipHub.Id
     $gwHub = New-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -Location $ShortRegion `
                                          -IpConfigurations $ipconf -GatewayType Vpn -VpnType RouteBased -GatewaySku VpnGw1 `
-                                         -VpnClientProtocol "IkeV2" -VpnClientAddressPool $HubP2SPool Certificate -AsJob
+                                         -VpnClientProtocol "IkeV2" -VpnClientAddressPool $HubP2SPool -AsJob
     }
 
 # 7.3 Create On-prem and Coffee Shop VNets and Bastions
