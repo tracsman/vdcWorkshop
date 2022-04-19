@@ -28,9 +28,9 @@ Write-Host
 # 1. Open Firewall for ICMP
 Write-Host "Opening ICMPv4 Port"
 Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
-     Write-Host "Port already open"}
+     Write-Host "  Port already open"}
 Catch {New-NetFirewallRule -DisplayName "Allow ICMPv4" -Name Allow_ICMPv4_in -Action Allow -Enabled True -Profile Any -Protocol ICMPv4 | Out-Null
-       Write-Host "Port opened"}
+       Write-Host "  Port opened"}
 
 # 2. Add additional local Admin accounts
 $userList = @{
@@ -41,13 +41,13 @@ foreach ($User in $userList.Keys) {
      Write-Host "Adding $User"
      $secPass = ConvertTo-SecureString $userList[$User] -AsPlainText -Force
      try {Get-LocalUser -Name $User -ErrorAction Stop | Out-Null
-          Write-Host "$User exists, skipping"}
+          Write-Host "  $User exists, skipping"}
      catch {New-LocalUser -Name $User -Password $secPass -FullName $User -AccountNeverExpires -PasswordNeverExpires | Out-Null
-               Write-Host "$User created"}
+               Write-Host "  $User created"}
      try {Get-LocalGroupMember -Group 'Administrators' -Member $User -ErrorAction Stop | Out-Null
-          Write-Host "$User already an admin, skipping"}
+          Write-Host "  $User already an admin, skipping"}
      catch {Add-LocalGroupMember -Group 'Administrators' -Member $User | Out-Null
-               Write-Host "$User added the Administrators group"}
+               Write-Host "  $User added the Administrators group"}
 }
 
 # 3. Test/Create Folders
@@ -60,55 +60,41 @@ Write-Host "Downloading Client Cert"
 $File = "C:\Workshop\Client.pfx"
 $FatalCertIssue = $false
 If (-not (Test-Path -Path $File)) {
-    Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
+    Try {$response = Invoke-WebRequest -UseBasicParsing -Uri $urlCert -ErrorAction Stop}
     Catch {$response = $null}
     If ($response.StatusCode -ne 200) {
          $FatalCertIssue = $true
-         Write-Host "Client cert download failed"}
+         Write-Host "  Client cert download failed"}
     Else {Invoke-WebRequest -Uri $urlCert -OutFile $File
-          Write-Host "Client cert downloaded"}
-} else {Write-Host "Client cert exists, no download needed"}
+          Write-Host "  Client cert downloaded"}
+} else {Write-Host "  Client cert exists, no download needed"}
 
 # 5. Install Client Cert
 Write-Host "Installing Client Cert"
 $pwdSec = ConvertTo-SecureString $P2SCertPwd -AsPlainText -Force
-$certClient = Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object {$_.Subject -eq 'CN=PathLabClientCert'}
+$certClient = Get-ChildItem -Path Cert:\LocalMachine\My | Where-Object {$_.Subject -eq 'CN=PathLabClientCert'}
 If ($null -eq $certClient -and -not $FatalCertIssue) {
-     Import-PfxCertificate -CertStoreLocation "cert:CurrentUser\My" -Password $pwdSec -FilePath $File | Out-Null
+     Import-PfxCertificate -CertStoreLocation "cert:LocalMachine\My" -Password $pwdSec -FilePath $File | Out-Null
      Write-Host "  Client Cert Installed"}
 ElseIf ($FatalCertIssue) {
-     Write-Warning 'A fatal issue occurred retrieving  the Client cert from the storage account $web container'
+     Write-Warning 'A critical issue occurred retrieving the Client cert from the storage account $web container'
      Write-Host "The P2S connection won't connect until this cert is downloaded and installed (default locations)"
      Write-Host 'on this VM. The password for the cert is in the key vault, secret name "P2SCertPwd"'}
 
+# Move Root Cert from CA to Root store
+Write-Host "  moving root cer from CA to Root store"
+$caRoot = Get-ChildItem -Path Cert:\LocalMachine\CA | Where-Object {$_.Subject -eq 'CN=PathLabRootCert'}
+if ($null -ne $caRoot){Move-Item -Path $caRoot.PSPath -Destination "Cert:\LocalMachine\Root"}
+if ($null -eq (Get-ChildItem -Path Cert:\LocalMachine\Root | Where-Object {$_.Subject -eq 'CN=PathLabRootCert'})) {
+     Write-Warning 'A critical issue occurred moving the root CA for the P2S Certificate to the Local Machine Trusted Store'
+     Write-Host "The P2S connection won't connect until this the root is moved."
+     Write-Host 'The easiest solution may be to delete the VM and re-run the module 7 script.' }
+
 # 6. Configure and Create the P2S VPN Connection
 Write-Host "Creating P2S VPN"
-[xml]$xmlEAPString = @'
-<EapHostConfig xmlns="http://www.microsoft.com/provisioning/EapHostConfig">
- <EapMethod>
-  <Type xmlns="http://www.microsoft.com/provisioning/EapCommon">13</Type>
-  <VendorId xmlns="http://www.microsoft.com/provisioning/EapCommon">0</VendorId>
-  <VendorType xmlns="http://www.microsoft.com/provisioning/EapCommon">0</VendorType>
-  <AuthorId xmlns="http://www.microsoft.com/provisioning/EapCommon">0</AuthorId>
- </EapMethod>
- <Config xmlns="http://www.microsoft.com/provisioning/EapHostConfig">
-  <Eap xmlns="http://www.microsoft.com/provisioning/BaseEapConnectionPropertiesV1">
-   <Type>13</Type>
-   <EapType xmlns="http://www.microsoft.com/provisioning/EapTlsConnectionPropertiesV1">
-    <CredentialsSource><CertificateStore><SimpleCertSelection>true</SimpleCertSelection></CertificateStore></CredentialsSource>
-    <ServerValidation><DisableUserPromptForServerValidation>false</DisableUserPromptForServerValidation><ServerNames></ServerNames></ServerValidation>
-    <DifferentUsername>false</DifferentUsername>
-    <PerformServerValidation xmlns="http://www.microsoft.com/provisioning/EapTlsConnectionPropertiesV2">false</PerformServerValidation>
-    <AcceptServerName xmlns="http://www.microsoft.com/provisioning/EapTlsConnectionPropertiesV2">false</AcceptServerName>
-   </EapType>
-  </Eap>
- </Config>
-</EapHostConfig>
-'@
-
 $vpnConnection = Get-VpnConnection -Name "AzureHub" -AllUserConnection -ErrorAction SilentlyContinue
 if ($null -eq $vpnConnection) {
-     Try {Add-VpnConnection -Name "AzureHub" -ServerAddress $urlAzGW -AllUserConnection -AuthenticationMethod Eap -SplitTunneling -TunnelType Ikev2 -EapConfigXmlStream $xmlEAPString -ErrorAction Stop}
+     Try {Add-VpnConnection -Name "AzureHub" -ServerAddress $urlAzGW -AllUserConnection -AuthenticationMethod MachineCertificate -SplitTunneling -TunnelType Ikev2 -ErrorAction Stop}
      Catch {Write-Warning 'A fatal issue occurred adding the VPN Connection'
             Write-Host "From the Azure Portal, on the Coffee Shop VM, go to the ""Extension"" blade"
             Write-Host "and uninstall the 'MaxVMBuildCS' extension, then rerun the Module 7 script"
@@ -116,7 +102,7 @@ if ($null -eq $vpnConnection) {
             Write-Host "Coffee Shop VM Build Script Failed"
             Write-Host "Script Ending, MaxVMBuildCS Script, Failure Code 1"
             Exit 1}}
-else {Write-Host "AzureHub vpn found, skipping"}
+else {Write-Host "  AzureHub vpn found, skipping"}
 
 # End Nicely
 Write-Host "Coffee Shop VM Build Script Complete"

@@ -182,7 +182,7 @@ If (-Not $RouterConfigDownloadError) {
      $LocalIP = (Get-NetIPConfiguration).IPv4Address.IPAddress | Select-Object -First 1
      $RouterIP = $LocalIP.Split(".")[0] + "." + $LocalIP.Split(".")[1] + "." + $LocalIP.Split(".")[2] + "." + ($LocalIP.Split(".")[3] - 1)
      Write-Host "(ssh -o ""StrictHostKeyChecking no"" $User1@$RouterIP)"
-     Get-Content -Path "C:\Workshop\Router.txt" | ssh -o "StrictHostKeyChecking no" $User1@$RouterIP
+     Get-Content -Path "C:\Workshop\Router.txt" | ssh -o "StrictHostKeyChecking no" $User1@$RouterIP > C:\Workshop\Router.log
      Write-Host "Config sent to router, hopefully successfully"
 }
 

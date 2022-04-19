@@ -600,7 +600,7 @@ if ($null -eq $gwRootCert) {Add-AzVpnClientRootCertificate -ResourceGroupName $R
 else {Write-Host "    P2S Cert already configured, skipping"}
 
 # Get the Azure Gateway DNS Name
-Write-Host "  getting Gateway client zip url"
+Write-Host "  getting Gateway P2S Client package url"
 try {$vpnClientConfig = New-AzVpnClientConfiguration -ResourceGroupName $RGName -Name $HubName-gw -AuthenticationMethod "EAPTLS" -ErrorAction Stop}
 catch {Write-Warning "VPN Client URL was unavailable."
        Write-Host "This URL is required for both the On-Prem and Coffee Shop VM buildout."
@@ -658,5 +658,5 @@ Write-Host "Module 7 completed successfully" -ForegroundColor Green
 Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
 Write-Host
 Write-Host "  S2S should be connected now"
-Write-Host "  You'll need to RDP (via Bation) to the Coffee Shop VM and manually connect the VPN"
+Write-Host "  You'll need to RDP (via Bastion) to the Coffee Shop VM and manually connect the VPN"
 Write-Host
