@@ -94,7 +94,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Setting Subscription Context" -ForegroundColor Cyan
 Try {$myContext = Set-AzContext -Subscription $SubID -ErrorAction Stop}
 Catch {Write-Warning "Permission check failed, ensure Sub ID is set correctly!"
-        Return}
+       Return}
 Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscription.Id,")"
 
 Write-Host (Get-Date)' - ' -NoNewline
@@ -107,7 +107,8 @@ If ($myContext.Account.Id -notmatch $RegEx) {
         Write-Host "Connect-AzAccount -UseDeviceAuthentication" -ForegroundColor Yellow
         Write-Host "This command will show a URL and Code. Open a new browser tab and navigate to that URL, enter the code, and login with your Azure credentials"
         Write-Host
-        Return
+        Write-Host "Script Ending, Module 7, Failure Code 1"
+        Exit 1
 }
 Write-Host "  Current User: ",$myContext.Account.Id
 
@@ -189,7 +190,8 @@ if ($MPTermsAccepted) {
     Write-Host "  Creating On-Prem Bastion Public IP"
     Try {$pipBastion = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-bas-pip' -ErrorAction Stop
          Write-Host "    Public IP exists, skipping"}
-    Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-bas-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard -Zone 1, 2, 3}
+    Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-bas-pip' -Location $ShortRegion `
+                                               -AllocationMethod Static -Sku Standard -Zone 1, 2, 3}
     Write-Host "  Creating On-Prem Bastion"
     $vnetOP = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName -ErrorAction Stop
     Try {Get-AzBastion -ResourceGroupName $RGName -Name $OPName-bas -ErrorAction Stop | Out-Null
@@ -218,12 +220,13 @@ Catch {$vnetCS = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSName -
 # Create Coffee Shop Bastion
 Write-Host "  Creating Coffee Shop Bastion Public IP"
 Try {$pipBastion = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $CSName'-bas-pip' -ErrorAction Stop
-        Write-Host "    Public IP exists, skipping"}
-Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $CSName'-bas-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard -Zone 1, 2, 3}
+     Write-Host "    Public IP exists, skipping"}
+Catch {$pipBastion = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $CSName'-bas-pip' -Location $ShortRegion `
+                                           -AllocationMethod Static -Sku Standard -Zone 1, 2, 3}
 Write-Host "  Creating Coffee Shop Bastion"
 $vnetCS = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSName -ErrorAction Stop
 Try {Get-AzBastion -ResourceGroupName $RGName -Name $CSName-bas -ErrorAction Stop | Out-Null
-        Write-Host "    Bastion exists, skipping"}
+     Write-Host "    Bastion exists, skipping"}
 Catch {New-AzBastion -ResourceGroupName $RGName -Name $CSName-bas -PublicIpAddress $pipBastion -VirtualNetwork $vnetCS -AsJob | Out-Null}
     
 # 7.4 Create Public and Private RSA keys
@@ -233,8 +236,7 @@ $FileName = "id_rsa"
 If (-not (Test-Path -Path "$HOME/.ssh/")) {New-Item "$HOME/.ssh/" -ItemType Directory | Out-Null}
 If (-not (Test-Path -Path "$HOME/.ssh/config")) {
      $FileContent = "MACs=""hmac-sha2-512,hmac-sha1,hmac-sha1-96""`nServerAliveInterval=120`nServerAliveCountMax=30"
-     Out-File -FilePath "$HOME/.ssh/config" -Encoding ascii -InputObject $FileContent -Force
-}
+     Out-File -FilePath "$HOME/.ssh/config" -Encoding ascii -InputObject $FileContent -Force}
 If (-not (Test-Path -Path "$HOME/.ssh/$FileName")) {ssh-keygen.exe -t rsa -b 2048 -f "$HOME/.ssh/$FileName" -P """" | Out-Null}
 Else {Write-Host "  Key Files exists, skipping"}
 $PublicKey =  Get-Content "$HOME/.ssh/$FileName.pub"
@@ -255,9 +257,10 @@ if ($MPTermsAccepted) {
     # 7.5.2 Create NIC
     $vnetOP = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName -ErrorAction Stop
     $snTenant =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnetOP -Name "Tenant"
-    Try {$nic = Get-AzNetworkInterface  -ResourceGroupName $RGName -Name $OPName'-Router01-nic' -ErrorAction Stop
+    Try {$nic = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $OPName'-Router01-nic' -ErrorAction Stop
          Write-Host "  NIC exists, skipping"}
-    Catch {$nic = New-AzNetworkInterface  -ResourceGroupName $RGName -Name $OPName'-Router01-nic' -Location $ShortRegion -Subnet $snTenant -PublicIpAddress $pipOPGW -EnableIPForwarding}
+    Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $OPName'-Router01-nic' -Location $ShortRegion `
+                                         -Subnet $snTenant -PublicIpAddress $pipOPGW -EnableIPForwarding}
     # 7.5.3 Build VM
     # Get-AzVMImage -Location westus2 -Offer cisco-csr-1000v -PublisherName cisco -Skus csr-azure-byol -Version latest
     Try {Get-AzVM -ResourceGroupName $RGName -Name $OPName'-Router01' -ErrorAction Stop | Out-Null
@@ -284,13 +287,9 @@ If ($null -eq $kvs) {
      $pskS2S = ([char[]](Get-Random -Input $(65..90 + 97..122) -Count 8)) -join ""
      $secPskS2S = ConvertTo-SecureString $pskS2S -AsPlainText -Force
      $kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name "S2SPSK" -SecretValue $secPskS2S -ErrorAction Stop}
-Else {
-     $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
-     try {
-     $pskS2S = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
-     } finally {
-     [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
-     }
+Else {$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
+     try {$pskS2S = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+     finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
      Write-Host "  S2S PSK exists, skipping"}
 
 # 7.6 Create On-prem VM (AsJob)
@@ -310,8 +309,6 @@ Try {Get-AzVM -ResourceGroupName $RGName -Name $OPVMName -ErrorAction Stop | Out
      Write-Host "    VM exists, skipping"}
 Catch {$vmConfig = New-AzVMConfig -VMName $OPVMName -VMSize $VMSize -ErrorAction Stop
        $vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Windows -ComputerName $OPVMName -Credential $cred -ProvisionVMAgent -EnableAutoUpdate
-       #$vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2019-Datacenter -Version latest
-       #$vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsDesktop -Offer windows-11 -Skus win11-21h2-pro -Version latest
        $vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2022-Datacenter -Version latest
        $vmConfig = Add-AzVMNetworkInterface -VM $vmConfig -Id $nic.Id
        $vmConfig = Set-AzVMBootDiagnostic -VM $vmConfig -Disable
@@ -336,9 +333,7 @@ Try {Get-AzVM -ResourceGroupName $RGName -Name $CSVMName -ErrorAction Stop | Out
      Write-Host "    VM exists, skipping"}
 Catch {$vmConfig = New-AzVMConfig -VMName $CSVMName -VMSize $VMSize -ErrorAction Stop
        $vmConfig = Set-AzVMOperatingSystem -VM $vmConfig -Windows -ComputerName $CSVMName -Credential $cred -ProvisionVMAgent -EnableAutoUpdate
-       #$vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2019-Datacenter -Version latest
        $vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsDesktop -Offer windows-11 -Skus win11-21h2-pro -Version latest
-       #$vmConfig = Set-AzVMSourceImage -VM $vmConfig -PublisherName MicrosoftWindowsServer -Offer WindowsServer -Skus 2022-Datacenter -Version latest
        $vmConfig = Add-AzVMNetworkInterface -VM $vmConfig -Id $nic.Id
        $vmConfig = Set-AzVMBootDiagnostic -VM $vmConfig -Disable
        Write-Host "    queuing VM build job"
@@ -351,13 +346,9 @@ If ($null -eq $kvs) {
      $pwdP2SCert = ([char[]](Get-Random -Input $(65..90 + 97..122) -Count 8)) -join ""
      $secPwdP2SCert = ConvertTo-SecureString $pwdP2SCert -AsPlainText -Force
      $kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name "P2SCertPwd" -SecretValue $secPwdP2SCert -ErrorAction Stop}
-Else {
-     $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
-     try {
-     $pwdP2SCert = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
-     } finally {
-     [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
-     }
+Else {$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
+     try {$pwdP2SCert = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+     finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
      Write-Host "  P2S Client cert password exists, skipping"}
 
 # 7.8 Create On-Prem UDR Route Table
@@ -366,7 +357,7 @@ Write-Host "Creating VNet Route Table" -ForegroundColor Cyan
 Try {$rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt' -ErrorAction Stop
      Write-Host "  Route Table exists, skipping"}
 Catch {$rt = New-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt' -location $ShortRegion
-       $rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt' }
+       $rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt'}
 
 # Add routes to the route table
 $NVAPrivateIP = (Get-AzNetworkInterface  -ResourceGroupName $RGName -Name $OPName'-Router01-nic').IpConfigurations[0].PrivateIpAddress
@@ -425,7 +416,9 @@ Write-Host "Creating On-Prem Local GW in Azure" -ForegroundColor Cyan
 $pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
 try {$gwOP = Get-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -ErrorAction Stop
      Write-Host "  resource exists, skipping"}
-catch {$gwOP = New-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -Location $ShortRegion -GatewayIpAddress $pipOPGW.IpAddress -AddressPrefix $OPAddress -Asn $OPASN -BgpPeeringAddress "10.100.1.1"}
+catch {$gwOP = New-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -Location $ShortRegion `
+                                         -GatewayIpAddress $pipOPGW.IpAddress -AddressPrefix $OPAddress `
+                                         -Asn $OPASN -BgpPeeringAddress "10.100.1.1"}
 
 # 7.11 Create On-Prem Router Config
 # 7.11.1 Create Managed Identity, assign to RG and KV
@@ -464,6 +457,7 @@ $siteOPPrefix = "10.10.1.0"
 $siteOPSubnet = "255.255.255.128"
 $siteOPDfGate = "10.10.1.1"
 $MyOutput = @"
+term width 200
 conf t
 ####
 # Cisco CSR VPN Config
@@ -584,8 +578,8 @@ If ($null -eq $kvs) {Write-Warning "Root certificate data was not written to Key
                      Write-Host "script will end."
                      Write-Host "You may try deleting the OnPrem VM Extention"
                      Write-Host "named ""MaxVMBuildOP"" and re-running Module 7."
-                     Write-Host "Script Ending, Module 7, Failure Code 1"
-                     Exit 1
+                     Write-Host "Script Ending, Module 7, Failure Code 2"
+                     Exit 2
 }
 
 # Update Gateway with root cert
@@ -605,8 +599,8 @@ try {$vpnClientConfig = New-AzVpnClientConfiguration -ResourceGroupName $RGName 
 catch {Write-Warning "VPN Client URL was unavailable."
        Write-Host "This URL is required for both the On-Prem and Coffee Shop VM buildout."
        Write-Host "Please rerun this script again to see if the Client URL is now available."
-       Write-Host "Script Ending, Module 7, Failure Code 2"
-       Exit 2} 
+       Write-Host "Script Ending, Module 7, Failure Code 3"
+       Exit 3} 
 Invoke-WebRequest -Uri $vpnClientConfig.VpnProfileSASUrl -OutFile ./Client.zip
 Write-Host "  expanding zip file"
 Expand-Archive -Path ./Client.zip

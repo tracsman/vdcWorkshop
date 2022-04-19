@@ -21,16 +21,12 @@ Param(
 [string]$Pass3,
 [string]$PassP2SCert)
 
-Write-Host "Passed Arguments"
-Write-Host "PassP2SCert: $PassP2SCert"
-Write-Host
-
 # 1. Open Firewall for ICMP
 Write-Host "Opening ICMPv4 Port"
 Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
-     Write-Host "Port already open"}
+     Write-Host "  Port already open"}
 Catch {New-NetFirewallRule -DisplayName "Allow ICMPv4" -Name Allow_ICMPv4_in -Action Allow -Enabled True -Profile Any -Protocol ICMPv4 | Out-Null
-       Write-Host "Port opened"}
+       Write-Host "  Port opened"}
 
 # 2. Add additional local Admin accounts
 $userList = @{
@@ -41,13 +37,13 @@ foreach ($User in $userList.Keys) {
      Write-Host "Adding $User"
      $secPass = ConvertTo-SecureString $userList[$User] -AsPlainText -Force
      try {Get-LocalUser -Name $User -ErrorAction Stop | Out-Null
-          Write-Host "$User exists, skipping"}
+          Write-Host "  $User exists, skipping"}
      catch {New-LocalUser -Name $User -Password $secPass -FullName $User -AccountNeverExpires -PasswordNeverExpires | Out-Null
-            Write-Host "$User created"}
+            Write-Host "  $User created"}
      try {Get-LocalGroupMember -Group 'Administrators' -Member $User -ErrorAction Stop | Out-Null
-          Write-Host "$User already an admin, skipping"}
+          Write-Host "  $User already an admin, skipping"}
      catch {Add-LocalGroupMember -Group 'Administrators' -Member $User | Out-Null
-            Write-Host "$User added the Administrators group"}
+            Write-Host "  $User added the Administrators group"}
 }
 
 # 3. Test/Create Folders
@@ -63,22 +59,19 @@ foreach ($Dir in $Dirs) {
 # 4. Install the PowerShell SDK
 Write-Host "Installing Azure PS SDK"
 try {Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction Stop | Out-Null
-     Write-Host "NuGet already registered, skipping"}
+     Write-Host "  NuGet already registered, skipping"}
 catch {Install-PackageProvider -Name NuGet -Scope AllUsers -MinimumVersion 2.8.5.201 -Force | Out-Null
-       Write-Host "NuGet registered"}
+       Write-Host "  NuGet registered"}
 if ($null -ne (Get-Module Az.Network -ListAvailable)) {
-    Write-Host "Azure SDK already installed, skipping"}
+    Write-Host "  Azure SDK already installed, skipping"}
 else {Install-Module Az -Scope AllUsers -Force | Out-Null
-      Write-Host "Azure SDK installed"}
+      Write-Host "  Azure SDK installed"}
 
 # Connect with the VM's managed identity
 Write-Host "Connecting using the VM Managed Identity"
 try {Connect-AzAccount -Identity -ErrorAction Stop | Out-Null
-     $ctx = Get-AzContext
-	Write-Host $ctx.Account.Id
-     Write-Host $ctx.Subscription.Name
-     Write-Host "Identity connected"}
-catch{Write-Output "There is no system-assigned user identity. Aborting."; exit 1}
+     Write-Host "  Identity connected"}
+catch{Write-Output "  There is no system-assigned user identity. Aborting."; exit 1}
 
 # 5. Create and push P2S Root cert and pfx
 # Create root cert
@@ -86,11 +79,11 @@ Write-Host "Creating P2S root cert"
 $certRoot = Get-ChildItem -Path Cert:\CurrentUser\My | Where-Object {$_.Subject -eq 'CN=PathLabRootCert'}
 If ($null -eq $certRoot){
      $certRoot = New-SelfSignedCertificate -Type Custom -KeySpec Signature -Subject "CN=PathLabRootCert" `
-                    -KeyExportPolicy Exportable -HashAlgorithm sha256 -KeyLength 2048 `
-                    -CertStoreLocation "Cert:\CurrentUser\My" `
-                    -KeyUsageProperty Sign -KeyUsage CertSign
-     Write-Host "P2S root cert created"
-} Else {Write-Host "P2S root cert exists, skipping"}
+                                           -KeyExportPolicy Exportable -HashAlgorithm sha256 -KeyLength 2048 `
+                                           -CertStoreLocation "Cert:\CurrentUser\My" `
+                                           -KeyUsageProperty Sign -KeyUsage CertSign
+     Write-Host "  P2S root cert created"
+} Else {Write-Host "  P2S root cert exists, skipping"}
 
 # Create client cert
 Write-Host "Creating P2S Client cert"
@@ -101,24 +94,24 @@ If ($null -eq $certClient){
                       -HashAlgorithm sha256 -KeyLength 2048 `
                       -CertStoreLocation "Cert:\CurrentUser\My"-Signer $certRoot `
                       -TextExtension @("2.5.29.37={text}1.3.6.1.5.5.7.3.2")
-     Write-Host "P2S Client cert created"
-} Else {Write-Host "P2S Client cert exists, skipping"}
+     Write-Host "  P2S Client cert created"
+} Else {Write-Host "  P2S Client cert exists, skipping"}
 
 # Save root to file
 Write-Host "Saving root cert cert file"
 $FileCert = "C:\Workshop\P2SRoot.cert"
 If (-not (Test-Path -Path $FileCert)) {
      Export-Certificate -Cert $certRoot -FilePath $FileCert | Out-Null
-     Write-Host "root cert cert file saved"
-} Else {Write-Host "root cert cert file exists, skipping"}
+     Write-Host "  root cert cert file saved"
+} Else {Write-Host "  root cert cert file exists, skipping"}
 
 # Convert to Base64 cer file
 Write-Host "Creating root cer file"
 $FileCer = "C:\Workshop\P2SRoot.cer"
 If (-not (Test-Path -Path $FileCer)) {
      certutil -encode $FileCert $FileCer | Out-Null
-     Write-Host "Created root cer file"
-} Else {Write-Host "Root cer file exists, skipping"}
+     Write-Host "  Created root cer file"
+} Else {Write-Host "  Root cer file exists, skipping"}
 
 # Upload to Key Vault
 Write-Host "Uploading root cer file data to Key Vault"
@@ -127,8 +120,8 @@ if ($null -eq (Get-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot")) {
      $cerKey = Get-Content "C:\Workshop\P2SRoot.cer"
      $certSec = ConvertTo-SecureString $($cerKey[1..($cerKey.IndexOf("-----END CERTIFICATE-----") - 1)] | Join-String) -AsPlainText -Force
      Set-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot" -SecretValue $certSec | Out-Null
-     Write-Host "Root cer file data saved to Key Vault"
-} else {Write-Host "Root data already exists in Key Vault, skipping"}
+     Write-Host "  Root cer file data saved to Key Vault"
+} else {Write-Host "  Root data already exists in Key Vault, skipping"}
 
 # Save Client to file
 Write-Host "Exporting client cert to pfx file"
@@ -136,26 +129,29 @@ $FilePfx = "C:\Workshop\Client.pfx"
 If (-not (Test-Path -Path $FilePfx)) {
      $pwdSec = ConvertTo-SecureString $PassP2SCert -AsPlainText -Force
      Export-PfxCertificate -Cert $certClient -FilePath $FilePfx  -Password $pwdSec | Out-Null
-     Write-Host "Client cert pfx file created"
-} Else {Write-Host "Client pfx file exists, skipping"}
+     Write-Host "  Client cert pfx file created"
+} Else {Write-Host "  Client pfx file exists, skipping"}
 
 # Upload Client to Storage Account (as a static web file)
 Write-Host 'Uploading Client.pfx to storage account $web container'
 $sa = (Get-AzStorageAccount | Select-Object -First 1)
 $saFiles = Get-AzStorageBlob -Container '$web' -Context $sa.context
 if ($null -ne ($saFiles | Where-Object -Property Name -eq "Client.pfx")) {
-    Write-Host "    Client cert exists in Storage Account, skipping"}
+    Write-Host "  Client cert exists in Storage Account, skipping"}
 else {Set-AzStorageBlobContent -Context $sa.context -Container '$web' -File "C:\Workshop\Client.pfx" -Properties @{"ContentType" = "application/x-pkcs12"} -ErrorAction Stop | Out-Null
-      Write-Host "Client.pfx saved to Storage Account"}
+      Write-Host "  Client.pfx saved to Storage Account"}
 
 # 6. Pull Config File
 # Get sa and download blob (router config file)
 Write-Host "Downloading Router config file from the Storage Account"
 Try {Get-AzStorageBlobContent -Container "config" -Blob 'router.txt' -Context $sa.Context -Destination "C:\Workshop\router.txt" -Force -ErrorAction Stop | Out-Null
      $RouterConfigDownloadError = $false
-     Write-Host "Config file downloaded"}
+     Write-Host "  Config file downloaded"
+     #[IO.File]::WriteAllText("C:\Workshop\router.txt", ([IO.File]::ReadAllText("C:\Workshop\router.txt") -replace "`r`n", "`n"))
+     #Write-Host "  Line endings converted to Unix style"
+}
 Catch {$RouterConfigDownloadError = $true
-       Write-Host "Config file download failed!!"}
+       Write-Host "  Config file download failed!!"}
 
 # 7. Pull Cert and write to mulitple locations
 If (-Not $RouterConfigDownloadError) {
@@ -170,20 +166,17 @@ If (-Not $RouterConfigDownloadError) {
      $Files += "C:\Users\User01\.ssh\id_rsa"
      foreach ($File in $Files) {
           If (-not (Test-Path -Path $File)) {
-               #$PrivateKey | Out-File -Encoding ascii -FilePath $File -Force
-               #"-----BEGIN OPENSSH PRIVATE KEY-----`n" + $PrivateKey.Substring(36, 1752).Replace(" ", "`n") + "`n-----END OPENSSH PRIVATE KEY-----" | Out-File -Encoding ascii -FilePath $File
                "-----BEGIN OPENSSH PRIVATE KEY-----`n" + $PrivateKey + "`n-----END OPENSSH PRIVATE KEY-----" | Out-File -Encoding ascii -FilePath $File
-               Write-Host "Wrote $File"}
-          Else {Write-Host "$File already exists, skipping"}
+               Write-Host "  Wrote $File"}
+          Else {Write-Host "  $File already exists, skipping"}
      }
 
      # 8. Push Router Config to router
-     Write-Host "Sending config to router " -NoNewline
+     Write-Host "Sending config to router"
      $LocalIP = (Get-NetIPConfiguration).IPv4Address.IPAddress | Select-Object -First 1
      $RouterIP = $LocalIP.Split(".")[0] + "." + $LocalIP.Split(".")[1] + "." + $LocalIP.Split(".")[2] + "." + ($LocalIP.Split(".")[3] - 1)
-     Write-Host "(ssh -o ""StrictHostKeyChecking no"" $User1@$RouterIP)"
-     Get-Content -Path "C:\Workshop\Router.txt" | ssh -o "StrictHostKeyChecking no" $User1@$RouterIP > C:\Workshop\Router.log
-     Write-Host "Config sent to router, hopefully successfully"
+     Get-Content -Path "C:\Workshop\Router.txt" | ssh -o "StrictHostKeyChecking no" $User1@$RouterIP -E C:\Workshop.err > C:\Workshop\Router.log
+     Write-Host "  Config sent to router, hopefully successfully"
 }
 
 # End Nicely

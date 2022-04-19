@@ -19,12 +19,6 @@ Param(
 [string]$P2SCertPwd
 )
 
-Write-Host "Passed Arguments"
-Write-Host "urlCert: $urlCert"
-Write-Host "urlAzGW: $urlAzGW"
-Write-Host "P2SCertPwd: $P2SCertPwd"
-Write-Host
-
 # 1. Open Firewall for ICMP
 Write-Host "Opening ICMPv4 Port"
 Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
@@ -43,11 +37,11 @@ foreach ($User in $userList.Keys) {
      try {Get-LocalUser -Name $User -ErrorAction Stop | Out-Null
           Write-Host "  $User exists, skipping"}
      catch {New-LocalUser -Name $User -Password $secPass -FullName $User -AccountNeverExpires -PasswordNeverExpires | Out-Null
-               Write-Host "  $User created"}
+            Write-Host "  $User created"}
      try {Get-LocalGroupMember -Group 'Administrators' -Member $User -ErrorAction Stop | Out-Null
           Write-Host "  $User already an admin, skipping"}
      catch {Add-LocalGroupMember -Group 'Administrators' -Member $User | Out-Null
-               Write-Host "  $User added the Administrators group"}
+            Write-Host "  $User added the Administrators group"}
 }
 
 # 3. Test/Create Folders
@@ -63,8 +57,8 @@ If (-not (Test-Path -Path $File)) {
     Try {$response = Invoke-WebRequest -UseBasicParsing -Uri $urlCert -ErrorAction Stop}
     Catch {$response = $null}
     If ($response.StatusCode -ne 200) {
-         $FatalCertIssue = $true
-         Write-Host "  Client cert download failed"}
+        $FatalCertIssue = $true
+        Write-Host "  Client cert download failed"}
     Else {Invoke-WebRequest -Uri $urlCert -OutFile $File
           Write-Host "  Client cert downloaded"}
 } else {Write-Host "  Client cert exists, no download needed"}
