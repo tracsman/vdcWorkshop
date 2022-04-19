@@ -29,8 +29,8 @@
 #     7.7.1 Create NIC
 #     7.7.2 Build VM
 #     7.7.3 Create and Store P2S Client Cert Password
-# 7.8 Create On-Prem UDR Route Table
-# 7.9 Wait for deployments to complete
+# 7.8 Wait for deployments to complete
+# 7.9 Create On-Prem UDR Route Table
 # 7.10 Create On-Prem Local Gateway
 # 7.11 Create On-Prem Router Config
 #      7.11.1 Create Managed Identity, assign to VM, SA, and KV
@@ -351,7 +351,33 @@ Else {$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs
      finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
      Write-Host "  P2S Client cert password exists, skipping"}
 
-# 7.8 Create On-Prem UDR Route Table
+
+# 7.8 Wait for deployments to complete
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Waiting for deployments to finish before pushing config" -ForegroundColor Cyan
+
+# Do we need to wait for the VMs?
+If ((Get-Job -State Running | Where-Object {$_.Command -eq "New-AzVM"}).Count -gt 0) {
+     Write-Host "  Waiting for the VMs to deploy, this script will continue after 10 minutes or when the VMs are built, whichever comes first."
+     Get-Job -Command "New-AzVM" | Wait-Job -Timeout 600 | Out-Null}
+Write-Host "  VM deployments complete"
+
+# Do we need to wait for the Gateway?
+$gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
+$i=0
+If ($gwHub.ProvisioningState -eq 'Updating') {
+    Write-Host '  waiting for VPN gateway to finish provisioning: ' -NoNewline
+    Start-Sleep 10}
+While ($gwHub.ProvisioningState -eq 'Updating') {
+    $i++
+    If ($i%6) {Write-Host '*' -NoNewline}
+    Else {Write-Host "$($i/6)" -NoNewline}
+    Start-Sleep 10
+    $gwHub = Get-AzVirtualNetworkGateway -Name $HubName-gw -ResourceGroupName $RGName}
+Write-Host
+Write-Host "  VPN Gateway deployment complete"
+
+# 7.9 Create On-Prem UDR Route Table
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating VNet Route Table" -ForegroundColor Cyan
 Try {$rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt' -ErrorAction Stop
@@ -384,31 +410,6 @@ if ($null -eq $snTenant.RouteTable) {
     $snTenant.RouteTable = $rt
     Set-AzVirtualNetwork -VirtualNetwork $vnetOP | Out-Null}
 Else {Write-Host "  Route Table already assigned to On-Prem subnet, skipping"}
-
-# 7.9 Wait for deployments to complete
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Waiting for deployments to finish before pushing config" -ForegroundColor Cyan
-
-# Do we need to wait for the VMs?
-If ((Get-Job -State Running | Where-Object {$_.Command -eq "New-AzVM"}).Count -gt 0) {
-     Write-Host "  Waiting for the VMs to deploy, this script will continue after 10 minutes or when the VMs are built, whichever comes first."
-     Get-Job -Command "New-AzVM" | Wait-Job -Timeout 600 | Out-Null}
-Write-Host "  VM deployments complete"
-
-# Do we need to wait for the Gateway?
-$gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
-$i=0
-If ($gwHub.ProvisioningState -eq 'Updating') {
-    Write-Host '  waiting for VPN gateway to finish provisioning: ' -NoNewline
-    Start-Sleep 10}
-While ($gwHub.ProvisioningState -eq 'Updating') {
-    $i++
-    If ($i%6) {Write-Host '*' -NoNewline}
-    Else {Write-Host "$($i/6)" -NoNewline}
-    Start-Sleep 10
-    $gwHub = Get-AzVirtualNetworkGateway -Name $HubName-gw -ResourceGroupName $RGName}
-Write-Host
-Write-Host "  VPN Gateway deployment complete"
 
 # 7.10 Create On-Prem Local Gateway
 Write-Host (Get-Date)' - ' -NoNewline
