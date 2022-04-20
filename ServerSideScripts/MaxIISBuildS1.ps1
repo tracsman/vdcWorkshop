@@ -10,6 +10,8 @@ Param(
 [string]$Pass3,
 [string]$PEPName)
 
+Write-Host "PEPName: $PEPName"
+
 # Turn On ICMPv4
 Write-Host "Opening ICMPv4 Port"
 Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
@@ -37,7 +39,7 @@ foreach ($User in $userList.Keys) {
 
 # Install IIS
 Write-Host "Installing IIS and .Net 4.5, this can take some time, around 5+ minutes..." -ForegroundColor Cyan
-add-windowsfeature Web-Server,Web-Asp-Net45
+Add-WindowsFeature Web-Server, Web-Asp-Net45
 
 # Create Web App PagesWeb
 Write-Host "Creating Web page and Web.Config file" -ForegroundColor Cyan
@@ -89,7 +91,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
     '' Get Private Endpoint File Server File
     If IsEndPointReady Then
       Dim objHttp = CreateObject("WinHttp.WinHttpRequest.5.1")
-      objHttp.Open("GET", "http://maxlabsa904582160.privatelink.web.core.windows.net", False)
+      objHttp.Open("GET", "http://' + $PEPName + '.privatelink.web.core.windows.net", False)
       objHttp.Send
       lblEndPoint.Text = objHttp.ResponseText
       objHttp = Nothing

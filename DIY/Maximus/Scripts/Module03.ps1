@@ -76,6 +76,13 @@ $snTenant = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Tenant
 $snGateway = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "GatewaySubnet"
 try {$HubVMIP = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic' -ErrorAction Stop).IpConfigurations[0].PrivateIpAddress}
 catch {Write-Warning "The Hub VM was not found, please run Module 1 to ensure this critical resource is created."; Return}
+$kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
+$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "UniversalKey"
+If ($null -eq $kvs) {Write-Warning "The Universal Key was not found in the Key Vault secrets, please run Module 1 to ensure this critical resource is created."; Return}
+$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
+try {$keyUniversal = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
+$PEPName = $RGName.ToLower() + "sa" + $keyUniversal
 
 # 3.2 Create Firewall
 Write-Host (Get-Date)' - ' -NoNewline
@@ -108,6 +115,7 @@ try {$ipGrpTenants = Get-AzIpGroup -Name $FWName-ipgroup -ResourceGroupName $RGN
 catch {$ipGrpTenants = New-AzIpGroup -Name $FWName-ipgroup -ResourceGroupName $RGName -Location $ShortRegion -IpAddress $TenantSubnets}
 
 # Create App Rule collection and Rule
+$fqdnPEP = $PEPName + ".privatelink.web.core.windows.net"
 $fwPolicy = Get-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -ErrorAction Stop
 $UpdateFWPolicyObject = $false
 Write-Host "    Creating Firewall App Rule Collection"
@@ -121,7 +129,7 @@ if ($fwAppRCGroup.Properties.RuleCollection.Name -contains "HubFWApp-coll") {
 else {$UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall App Rule for Storage Access"
 $fwAppRuleStorage = New-AzFirewallPolicyApplicationRule -Name "Allow-storage" -SourceIpGroup $ipGrpTenants.Id -Protocol "https:443", "http:80" `
-                         -TargetFqdn "vdcworkshop.blob.core.windows.net", "maxlabsa904582160.privatelink.web.core.windows.net" -Description "Allow VM subnets access to Storage blobs"
+                         -TargetFqdn "vdcworkshop.blob.core.windows.net", $fqdnPEP -Description "Allow VM subnets access to Storage blobs"
 if ($fwAppRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-storage") {
     Write-Host "      Firewall App Rule for Storage Access exists, skipping"}
 else {$UpdateFWPolicyObject = $true}

@@ -118,7 +118,7 @@ Write-Host "Uploading root cer file data to Key Vault"
 $kvName = (Get-AzKeyVault | Select-Object -First 1).VaultName
 if ($null -eq (Get-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot")) {
      $cerKey = Get-Content "C:\Workshop\P2SRoot.cer"
-     $certSec = ConvertTo-SecureString $($cerKey[1..($cerKey.IndexOf("-----END CERTIFICATE-----") - 1)] | Join-String) -AsPlainText -Force
+     $certSec = ConvertTo-SecureString $($cerKey[1..($cerKey.IndexOf("-----END CERTIFICATE-----") - 1)] -join('')) -AsPlainText -Force
      Set-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot" -SecretValue $certSec | Out-Null
      Write-Host "  Root cer file data saved to Key Vault"
 } else {Write-Host "  Root data already exists in Key Vault, skipping"}

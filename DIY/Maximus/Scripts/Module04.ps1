@@ -134,23 +134,14 @@ $kvs02 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName02 -ErrorAction 
 $kvs03 = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName03 -ErrorAction Stop 
 $cred = New-Object System.Management.Automation.PSCredential ($kvs01.Name, $kvs01.SecretValue)
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs01.SecretValue)
-try {
-    $kvs01 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
-} finally {
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
-}
+try {$kvs01 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs02.SecretValue)
-try {
-    $kvs02 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
-} finally {
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
-}
+try {$kvs02 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs03.SecretValue)
-try {
-    $kvs03 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
-} finally {
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
-}
+try {$kvs03 = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
+finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 
 # 4.5 Loop: Create VMs
 Write-Host (Get-Date)' - ' -NoNewline
