@@ -354,7 +354,7 @@ Else {$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs
 
 # 7.8 Wait for deployments to complete
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Waiting for deployments to finish before pushing config" -ForegroundColor Cyan
+Write-Host "Waiting for deployments to finish before continuing" -ForegroundColor Cyan
 
 # Do we need to wait for the VMs?
 If ((Get-Job -State Running | Where-Object {$_.Command -eq "New-AzVM"}).Count -gt 0) {
