@@ -589,7 +589,7 @@ $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.Secre
 try {$certP2SRoot = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
 finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 $gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName
-$gwRootCert = Get-AzVpnClientRootCertificate -VirtualNetworkGatewayName $gwHub.Name -ResourceGroupName MaxLab
+$gwRootCert = Get-AzVpnClientRootCertificate -VirtualNetworkGatewayName $gwHub.Name -ResourceGroupName $RGName
 if ($null -eq $gwRootCert) {Add-AzVpnClientRootCertificate -ResourceGroupName $RGName -VirtualNetworkGatewayname $HubName'-gw' `
                                                            -VpnClientRootCertificateName "P2SRoot" -PublicCertData $certP2SRoot | Out-Null}
 else {Write-Host "    P2S Cert already configured, skipping"}
