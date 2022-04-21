@@ -237,7 +237,7 @@ If (-not (Test-Path -Path "$HOME/.ssh/")) {New-Item "$HOME/.ssh/" -ItemType Dire
 If (-not (Test-Path -Path "$HOME/.ssh/config")) {
      $FileContent = "MACs=""hmac-sha2-512,hmac-sha1,hmac-sha1-96""`nServerAliveInterval=120`nServerAliveCountMax=30"
      Out-File -FilePath "$HOME/.ssh/config" -Encoding ascii -InputObject $FileContent -Force}
-If (-not (Test-Path -Path "$HOME/.ssh/$FileName")) {ssh-keygen.exe -t rsa -b 2048 -f "$HOME/.ssh/$FileName" -P """" | Out-Null}
+If (-not (Test-Path -Path "$HOME/.ssh/$FileName")) {ssh-keygen -t rsa -b 2048 -f "$HOME/.ssh/$FileName" -P """" | Out-Null}
 Else {Write-Host "  Key Files exists, skipping"}
 $PublicKey =  Get-Content "$HOME/.ssh/$FileName.pub"
 $PrivateKey =  Get-Content "$HOME/.ssh/$FileName"
