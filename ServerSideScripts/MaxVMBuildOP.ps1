@@ -10,6 +10,7 @@
 # 6. Pull Config File
 # 7. Pull Cert and write to mulitple locations
 # 8. Push Router Config
+# 9. Create and set login job to copy rsa key to .ssh 
 #
 
 Param(
@@ -163,7 +164,7 @@ If (-Not $RouterConfigDownloadError) {
      Write-Host "Writing RSA key to required directories"
      $Files = @()
      $Files += "C:\Windows\System32\config\systemprofile\.ssh\id_rsa"
-     $Files += "C:\Users\User01\.ssh\id_rsa"
+     $Files += "C:\Workshop\id_rsa"
      foreach ($File in $Files) {
           If (-not (Test-Path -Path $File)) {
                "-----BEGIN OPENSSH PRIVATE KEY-----`n" + $PrivateKey + "`n-----END OPENSSH PRIVATE KEY-----" | Out-File -Encoding ascii -FilePath $File
@@ -178,6 +179,23 @@ If (-Not $RouterConfigDownloadError) {
      Get-Content -Path "C:\Workshop\Router.txt" | ssh -o "StrictHostKeyChecking no" $User1@$RouterIP -E C:\Workshop.err > C:\Workshop\Router.log
      Write-Host "  Config sent to router, hopefully successfully"
 }
+
+# 9. Create and set login job to copy rsa key to .ssh
+# Create the logon script, and save to file
+$File = "C:\Workshop\Logon.ps1"
+If (-not (Test-Path -Path $File)) {
+     $textScript = @'
+$Dir = "$($env:USERPROFILE)\.ssh\"
+If (-not (Test-Path -Path $Dir)) {New-Item $Dir -ItemType Directory | Out-Null}
+$File = "$($env:USERPROFILE)\.ssh\id_rsa"
+If (-not (Test-Path -Path $File)) {Copy-Item -Path "C:\Workshop\id_rsa" -Destination $File -Force}
+'@
+     $textScript | Out-File -FilePath $File -Encoding ascii
+}
+# Set to run on login
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "C:\Workshop\Logon.ps1"
+$trigger = New-ScheduledTaskTrigger -AtLogOn
+Register-ScheduledTask -Action $action -Trigger $trigger -User "User01" -TaskName "Copy RSA Key" | Out-Null
 
 # End Nicely
 Write-Host "On-Prem VM Build Script Complete"

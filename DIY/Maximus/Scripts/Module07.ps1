@@ -31,16 +31,17 @@
 #     7.7.3 Create and Store P2S Client Cert Password
 # 7.8 Wait for deployments to complete
 # 7.9 Create On-Prem UDR Route Table
-# 7.10 Create On-Prem Local Gateway
-# 7.11 Create On-Prem Router Config
-#      7.11.1 Create Managed Identity, assign to VM, SA, and KV
-#      7.11.2 Create Stoage Container for Config Blob
-#      7.11.3 Create Router Config
-#      7.11.4 Push to storage
-# 7.12 Run post deployment jobs
-#      7.12.1 Configure On-Prem VM (and indirectly the NVA)
-#      7.12.2 Configure P2S VPN on Coffee Shop Laptop
-# 7.13 Create S2S Connection
+# 7.10 Update Spoke01 and Spoke02 VNet Peerings to use remote gateway
+# 7.11 Create On-Prem Local Gateway
+# 7.12 Create On-Prem Router Config
+#      7.12.1 Create Managed Identity, assign to VM, SA, and KV
+#      7.12.2 Create Stoage Container for Config Blob
+#      7.12.3 Create Router Config
+#      7.12.4 Push to storage
+# 7.13 Run post deployment jobs
+#      7.13.1 Configure On-Prem VM (and indirectly the NVA)
+#      7.13.2 Configure P2S VPN on Coffee Shop Laptop
+# 7.14 Create S2S Connection
 #
 
 # 7.1 Validate and Initialize
@@ -77,6 +78,9 @@ $HubAddress = "10.0.0.0/16"
 $S1Address = "10.1.0.0/16"
 $S2Address = "10.2.0.0/16"
 $S3Address = "10.3.0.0/16"
+
+$S1Name = "Spoke01-VNet"
+$S2Name = "Spoke02-Vnet"
 
 $VMSize     = "Standard_B2ms"
 
@@ -172,12 +176,9 @@ Catch {
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating On-Prem VNet" -ForegroundColor Cyan
 if ($MPTermsAccepted) {
-    $nsgRule = New-AzNetworkSecurityRuleConfig -Name AllowAdminAccess -Protocol Tcp -Direction Inbound -Priority 1000 `
-                                               -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * `
-                                               -DestinationPortRange 22, 3389 -Access Allow
     Try {$nsg = Get-AzNetworkSecurityGroup -Name $OPName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
          Write-Host "  NSG exists, skipping"}
-    Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $OPName'-nsg' -SecurityRules $nsgRule}
+    Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $OPName'-nsg'}
     Try {$vnetOP = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName -ErrorAction Stop
     Write-Host "  VNet exists, skipping"}
     Catch {$vnetOP = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName -AddressPrefix $OPAddress -Location $ShortRegion  
@@ -202,12 +203,9 @@ if ($MPTermsAccepted) {
 # Coffee Shop VNet
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Coffee Shop VNet" -ForegroundColor Cyan
-$nsgRule = New-AzNetworkSecurityRuleConfig -Name AllowAdminAccess -Protocol Tcp -Direction Inbound -Priority 1000 `
-                                           -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * `
-                                           -DestinationPortRange 3389 -Access Allow
 Try {$nsg = Get-AzNetworkSecurityGroup -Name $CSName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
  Write-Host "  NSG exists, skipping"}
-Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $CSName'-nsg' -SecurityRules $nsgRule}
+Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $CSName'-nsg'}
 Try {$vnetCS = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSName -ErrorAction Stop
      Write-Host "  resource exists, skipping"}
 Catch {$vnetCS = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $CSName -AddressPrefix $CSAddress -Location $ShortRegion
@@ -411,7 +409,21 @@ if ($null -eq $snTenant.RouteTable) {
     Set-AzVirtualNetwork -VirtualNetwork $vnetOP | Out-Null}
 Else {Write-Host "  Route Table already assigned to On-Prem subnet, skipping"}
 
-# 7.10 Create On-Prem Local Gateway
+# 7.10 Update Spoke01 and Spoke02 VNet Peerings to use remote gateway
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Updating Spoke VNets peering to the Hub to use the remote gateway" -ForegroundColor Cyan
+$peeringS1 = Get-AzVirtualNetworkPeering -ResourceGroupName $RGName -VirtualNetworkName $S1Name -Name "Spoke01ToHub"
+$peeringS2 = Get-AzVirtualNetworkPeering -ResourceGroupName $RGName -VirtualNetworkName $S2Name -Name "Spoke02ToHub"
+if ($peeringS1.UseRemoteGateways) {
+     Write-Host "  Spoke01 already set to use the remote hub gateway, skipping"}
+else {$peeringS1.UseRemoteGateways = $true
+      Set-AzVirtualNetworkPeering -VirtualNetworkPeering $peeringS1 | Out-Null}
+if ($peeringS2.UseRemoteGateways) {
+    Write-Host "  Spoke02 already set to use the remote hub gateway, skipping"}
+else {$peeringS2.UseRemoteGateways = $true
+     Set-AzVirtualNetworkPeering -VirtualNetworkPeering $peeringS2 | Out-Null}
+
+# 7.11 Create On-Prem Local Gateway
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating On-Prem Local GW in Azure" -ForegroundColor Cyan
 $pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
@@ -421,8 +433,8 @@ catch {$gwOP = New-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName 
                                          -GatewayIpAddress $pipOPGW.IpAddress -AddressPrefix $OPAddress `
                                          -Asn $OPASN -BgpPeeringAddress "10.100.1.1"}
 
-# 7.11 Create On-Prem Router Config
-# 7.11.1 Create Managed Identity, assign to RG and KV
+# 7.12 Create On-Prem Router Config
+# 7.12.1 Create Managed Identity, assign to RG and KV
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating On-Prem VM Managed Identity" -ForegroundColor Cyan
 $vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
@@ -439,13 +451,13 @@ $role = Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroup
 If ($null -ne $role) {Write-Host "    role already assigned, skipping"}
 Else {New-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -RoleDefinitionName "Contributor" -ResourceGroupName $RGName | Out-Null}
 
-# 7.11.2 Create Stoage Container for Config Blob
+# 7.12.2 Create Stoage Container for Config Blob
 Write-Host "  adding storage web endpoint"
 try {Get-AzStorageContainer -Context $sactx -Name 'config' -ErrorAction Stop | Out-Null
      Write-Host "    config container exists, skipping"}
 catch {New-AzStorageContainer -Context $sactx -Name config | Out-Null}
 
-# 7.11.3 Create Router Config
+# 7.12.3 Create Router Config
 $gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
 $pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
 
@@ -470,7 +482,6 @@ crypto ikev2 proposal az-PROPOSAL
   group 2
 crypto ikev2 policy az-POLICY
   proposal az-PROPOSAL
-  match address local $siteOPPubIP
 crypto ikev2 keyring key-peer1
   peer azvpn1
    address $azurePubIP
@@ -493,7 +504,6 @@ interface Tunnel0
   ip tcp adjust-mss 1350
   tunnel source GigabitEthernet1
   tunnel mode ipsec ipv4
-  tunnel source $siteOPPubIP
   tunnel destination $azurePubIP
   tunnel protection ipsec profile az-VTI1
 interface Loopback0
@@ -516,7 +526,7 @@ end
 wr
 "@
 
-# 7.11.4 Push to storage
+# 7.12.4 Push to storage
 # Save config file
 # Get file names in the Web Container
 Write-Host "  adding html files to storage"
@@ -531,11 +541,11 @@ if ($null -ne ($saFiles | Where-Object -Property Name -eq "router.txt")) {
 # Clean up local files
 if (Test-Path -Path "router.txt") {Remove-Item -Path "router.txt"}
 
-# 7.12 Run post deployment jobs
+# 7.13 Run post deployment jobs
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Running post VM deploy build scripts" -ForegroundColor Cyan
 
-# 7.12.1 Configure On-Prem VM (and indirectly the NVA)
+# 7.13.1 Configure On-Prem VM (and indirectly the NVA)
 Write-Host "  running On-Prem VM build script" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
 $ScriptName = "MaxVMBuildOP.ps1"
@@ -552,7 +562,7 @@ Catch {Write-Host "    queuing build job."
                          -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
                          -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 
-# 7.12.2 Configure P2S VPN on Coffee Shop Laptop
+# 7.13.2 Configure P2S VPN on Coffee Shop Laptop
 # Wait for Client cert to be uploaded to the Storage Account
 Write-Host "  checking for Client certificate in storage account"
 $urlCert = $sa.PrimaryEndpoints.Web + "Client.pfx"
@@ -630,7 +640,7 @@ Catch {Write-Host "    queuing build job."
                          -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
                          -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 
-# 7.13 Create S2S Connection
+# 7.14 Create S2S Connection
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host 'Connecting S2S VPN between On-Prem NVA and Hub VPN Gateway' -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkGatewayConnection -Name $HubName-gw-op-conn -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
