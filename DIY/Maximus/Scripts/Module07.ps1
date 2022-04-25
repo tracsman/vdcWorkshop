@@ -572,13 +572,14 @@ $urlCert = $sa.PrimaryEndpoints.Web + "Client.pfx"
 Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
 Catch {$response = $null}
 $i=0
-if ($response.StatusCode -ne 200) {Write-Host "    waiting for Client cert to be posted to the storage account (max wait 15 minutes)"}
-While ($response.StatusCode -ne 200 -or $i -gt 90) {
-     Start-Sleep -Seconds 10
-     Write-Host "*" -NoNewline
-     Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
-     Catch {$response = $null}
-     $i++
+if ($response.StatusCode -ne 200) {Write-Host "    waiting for Client cert to be posted to the storage account (max wait 15 minutes)"
+    Do {Start-Sleep -Seconds 10
+        Write-Host "*" -NoNewline
+        Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
+        Catch {$response = $null}
+        $i++
+    }
+     Until ($response.StatusCode -ne 200 -or $i -gt 90) 
 }
 if ($response.StatusCode -ne 200) {Write-Host "    Client cert not written after 15 minutes, proceeding without it"}
 
