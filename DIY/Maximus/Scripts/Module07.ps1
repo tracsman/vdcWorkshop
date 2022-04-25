@@ -443,6 +443,9 @@ If ($vmOP.Identity.Type -ne "SystemAssigned") {
     $vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
 } Else {Write-Host "  Managed Identity already assined, skipping"}
 
+# Pause for 5 seconds to let the Managed Identity "Soak in"
+Start-Sleep -Seconds 5
+
 Write-Host "  Assigning Key Vault access policy"
 Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId $vmOP.Identity.PrincipalId -PermissionsToSecrets get,list,set,delete | Out-Null
 
