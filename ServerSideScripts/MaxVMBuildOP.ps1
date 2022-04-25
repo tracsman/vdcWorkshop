@@ -70,9 +70,17 @@ else {Install-Module Az -Scope AllUsers -Force | Out-Null
 
 # Connect with the VM's managed identity
 Write-Host "Connecting using the VM Managed Identity"
-try {Connect-AzAccount -Identity -ErrorAction Stop | Out-Null
-     Write-Host "  Identity connected"}
+$i = 0
+try {$ctx = Connect-AzAccount -Identity -ErrorAction Stop
+     If ($null -eq $ctx.Subscription.Id) {
+          Do {Start-Sleep -Seconds 2
+              $ctx = Connect-AzAccount -Identity -ErrorAction Stop}
+          Until ($i -gt 10 -or $null -ne $ctx.Subscription.Id)
+     }
+     Write-Host "  Identity connected"
+}
 catch{Write-Output "  There is no system-assigned user identity. Aborting."; exit 1}
+If ($i -gt 10) {Write-Output "  There is no system-assigned user identity. Aborting."; exit 1}
 
 # 5. Create and push P2S Root cert and pfx
 # Create root cert
