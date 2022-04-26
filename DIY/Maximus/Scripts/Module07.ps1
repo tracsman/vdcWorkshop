@@ -579,7 +579,7 @@ if ($response.StatusCode -ne 200) {Write-Host "    waiting for Client cert to be
         Catch {$response = $null}
         $i++
     }
-     Until ($response.StatusCode -ne 200 -or $i -gt 90) 
+     Until ($response.StatusCode -eq 200 -or $i -gt 90) 
 }
 if ($response.StatusCode -ne 200) {Write-Host "    Client cert not written after 15 minutes, proceeding without it"}
 
