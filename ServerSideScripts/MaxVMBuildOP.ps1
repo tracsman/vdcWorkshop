@@ -52,7 +52,6 @@ Write-Host "Creating required folders"
 $Dirs = @()
 $Dirs += "C:\Workshop\"
 $Dirs += "C:\Windows\System32\config\systemprofile\.ssh\"
-$Dirs += "C:\Users\User01\.ssh\"
 foreach ($Dir in $Dirs) {
      If (-not (Test-Path -Path $Dir)) {New-Item $Dir -ItemType Directory | Out-Null}
 }
