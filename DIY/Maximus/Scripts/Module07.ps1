@@ -82,7 +82,7 @@ $S3Address = "10.3.0.0/16"
 $S1Name = "Spoke01-VNet"
 $S2Name = "Spoke02-Vnet"
 
-$VMSize     = "Standard_B2ms"
+$VMSize     = "Standard_DS2_v2"
 
 $UserName01 = "User01"
 $UserName02 = "User02"
