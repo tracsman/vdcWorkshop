@@ -17,14 +17,16 @@ try {Get-AzVirtualNetworkGateway -ResourceGroupName $RGName -Name $HubName-gw -E
      Remove-AzVirtualNetworkGateway -ResourceGroupName $RGName -Name $HubName-gw -Force -AsJob}
 catch {Write-Host "  It's not there"}
 
-#$vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
-#Remove-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId $vmOP.Identity.PrincipalId
-
-#Write-Host "  Assigning Resource Group Contributor role"
-#$role = Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName -RoleDefinitionName "Contributor"
-#If ($null -ne $role) {Write-Host "    role already assigned, skipping"}
-#Else {New-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -RoleDefinitionName "Contributor" -ResourceGroupName $RGName | Out-Null}
-
+try {$vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName -ErrorAction Stop
+    Write-Host "  Removing Key Vault access policy"
+    Remove-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId $vmOP.Identity.PrincipalId
+    
+    Write-Host "  Unassigning Resource Group Contributor role"
+    $role = Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName -RoleDefinitionName "Contributor"
+    If ($null -eq $role) {Write-Host "  It's not there"}
+    Else {Remove-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName  -RoleDefinitionName "Contributor"}        
+}
+catch {Write-Host "VM doesn't exist, skipping access policy and resource group permission removal"}
 
 $VMNames = @()
 $VMNames += $CSVMName
@@ -99,6 +101,9 @@ Write-Host "Killing $VMName PIP"
 try {Get-AzPublicIPAddress -ResourceGroupName $RGName -Name $VMName"-pip" -ErrorAction Stop | Out-Null
      Remove-AzPublicIPAddress -ResourceGroupName $RGName -Name $VMName"-pip" -Force -AsJob}
 catch {Write-Host "  It's not there"}    
+
+Write-Host "Waiting for GW to delete"
+Get-Job -Command " Remove-AzVirtualNetworkGateway" | Wait-Job -Timeout 600 | Out-Null
 
 Write-Host "Killing GW PIP"
 try {Get-AzPublicIPAddress -ResourceGroupName $RGName -Name $HubName"-gw-pip" -ErrorAction Stop | Out-Null

@@ -465,11 +465,9 @@ if ($null -eq $vmOP.Identity.PrincipalId) {
     }
 }
 Write-Host "VM Principal ID: $($vmOP.Identity.PrincipalId)"
-try {Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId "$($vmOP.Identity.PrincipalId)" -PermissionsToSecrets @("Get", "List", "Set", "Delete") -ErrorAction Stop}
+try {Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId "$($vmOP.Identity.PrincipalId)" -PermissionsToSecrets @("Get", "List", "Set", "Delete") -Debug -ErrorAction Stop}
 catch {Write-Host "Error[0]"
        $error[0]
-       Write-Host "Error[1]"
-       $error[1]
        Write-Host "Script Ending, Module 7, Failure Code WTF"
        Exit "WTF"
 }
