@@ -465,7 +465,15 @@ if ($null -eq $vmOP.Identity.PrincipalId) {
     }
 }
 Write-Host "VM Principal ID: $($vmOP.Identity.PrincipalId)"
-Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId $vmOP.Identity.PrincipalId -PermissionsToSecrets get,list,set,delete | Out-Null
+try {Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId "$($vmOP.Identity.PrincipalId)" -PermissionsToSecrets @("Get", "List", "Set", "Delete") -ErrorAction Stop}
+catch {Write-Host "Error[0]"
+       $error[0]
+       Write-Host "Error[1]"
+       $error[1]
+       Write-Host "Script Ending, Module 7, Failure Code WTF"
+       Exit "WTF"
+}
+
 
 Write-Host "  Assigning Resource Group Contributor role"
 $role = Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName -RoleDefinitionName "Contributor"
