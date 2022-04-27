@@ -449,6 +449,22 @@ If ($vmOP.Identity.Type -ne "SystemAssigned") {
 Start-Sleep -Seconds 5
 
 Write-Host "  Assigning Key Vault access policy"
+if ($null -eq $vmOP.Identity.PrincipalId) {
+    Write-Host "VM Identity not retrived, trying again"
+    $vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
+    if ($null -eq $vmOP.Identity.PrincipalId) {
+        Write-Warning "VM Identity could not be read"
+        Write-Host "An issue happened in the Module 7 script that"
+        Write-Host "prevented the $($vmOP.Name) from being assinged"
+        Write-Host "access to the Key Vault. This is a fatal error"
+        Write-Host "and this script will end."
+        Write-Host "You may try deleting the OnPrem VM Extention"
+        Write-Host "named ""MaxVMBuildOP"" and re-running Module 7."
+        Write-Host "Script Ending, Module 7, Failure Code 2"
+        Exit 2
+    }
+}
+Write-Host "VM Principal ID: $($vmOP.Identity.PrincipalId)"
 Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId $vmOP.Identity.PrincipalId -PermissionsToSecrets get,list,set,delete | Out-Null
 
 Write-Host "  Assigning Resource Group Contributor role"
@@ -595,8 +611,8 @@ If ($null -eq $kvs) {Write-Warning "Root certificate data was not written to Key
                      Write-Host "script will end."
                      Write-Host "You may try deleting the OnPrem VM Extention"
                      Write-Host "named ""MaxVMBuildOP"" and re-running Module 7."
-                     Write-Host "Script Ending, Module 7, Failure Code 2"
-                     Exit 2
+                     Write-Host "Script Ending, Module 7, Failure Code 3"
+                     Exit 3
 }
 
 # Update Gateway with root cert
@@ -616,8 +632,8 @@ try {$vpnClientConfig = New-AzVpnClientConfiguration -ResourceGroupName $RGName 
 catch {Write-Warning "VPN Client URL was unavailable."
        Write-Host "This URL is required for both the On-Prem and Coffee Shop VM buildout."
        Write-Host "Please rerun this script again to see if the Client URL is now available."
-       Write-Host "Script Ending, Module 7, Failure Code 3"
-       Exit 3} 
+       Write-Host "Script Ending, Module 7, Failure Code 4"
+       Exit 4} 
 Invoke-WebRequest -Uri $vpnClientConfig.VpnProfileSASUrl -OutFile ./Client.zip
 Write-Host "  expanding zip file"
 Expand-Archive -Path ./Client.zip
