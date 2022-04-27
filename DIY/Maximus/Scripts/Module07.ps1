@@ -414,14 +414,16 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Updating Spoke VNets peering to the Hub to use the remote gateway" -ForegroundColor Cyan
 $peeringS1 = Get-AzVirtualNetworkPeering -ResourceGroupName $RGName -VirtualNetworkName $S1Name -Name "Spoke01ToHub"
 $peeringS2 = Get-AzVirtualNetworkPeering -ResourceGroupName $RGName -VirtualNetworkName $S2Name -Name "Spoke02ToHub"
-if ($peeringS1.UseRemoteGateways) {
+if ($peeringS1.UseRemoteGateways -and $peeringS1.AllowForwardedTraffic) {
      Write-Host "  Spoke01 already set to use the remote hub gateway, skipping"}
 else {$peeringS1.UseRemoteGateways = $true
+      $peeringS1.AllowForwardedTraffic = $true
       Set-AzVirtualNetworkPeering -VirtualNetworkPeering $peeringS1 | Out-Null}
-if ($peeringS2.UseRemoteGateways) {
+if ($peeringS2.UseRemoteGateways -and $peeringS2.AllowForwardedTraffic) {
     Write-Host "  Spoke02 already set to use the remote hub gateway, skipping"}
 else {$peeringS2.UseRemoteGateways = $true
-     Set-AzVirtualNetworkPeering -VirtualNetworkPeering $peeringS2 | Out-Null}
+      $peeringS2.AllowForwardedTraffic = $true
+      Set-AzVirtualNetworkPeering -VirtualNetworkPeering $peeringS2 | Out-Null}
 
 # 7.11 Create On-Prem Local Gateway
 Write-Host (Get-Date)' - ' -NoNewline
