@@ -22,6 +22,8 @@ Param(
 [string]$Pass3,
 [string]$PassP2SCert)
 
+Start-Transcript -Path "C:\Workshop\log-MaxVMBuildOP.txt"
+
 # 1. Open Firewall for ICMP
 Write-Host "Opening ICMPv4 Port"
 Try {Get-NetFirewallRule -Name Allow_ICMPv4_in -ErrorAction Stop | Out-Null
@@ -206,3 +208,4 @@ Register-ScheduledTask -Action $action -Trigger $trigger -User "User01" -TaskNam
 
 # End Nicely
 Write-Host "On-Prem VM Build Script Complete"
+Stop-Transcript
