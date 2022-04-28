@@ -46,6 +46,7 @@
 
 # 7.1 Validate and Initialize
 # Load Initialization Variables
+Start-Transcript -Path "$env:HOME/Scripts/log-Module07.txt"
 $ScriptDir = "$env:HOME/Scripts"
 If (Test-Path -Path $ScriptDir/init.txt) {
         Get-Content $ScriptDir/init.txt | Foreach-Object{
@@ -448,14 +449,8 @@ Write-Host "VM Principal ID: $($vmOP.Identity.PrincipalId)"
 
 # Pause for 30 seconds to let the Managed Identity "Soak in"
 Start-Sleep -Seconds 30
-
-try {Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId "$($vmOP.Identity.PrincipalId)" -PermissionsToSecrets @("Get", "List", "Set", "Delete") -Debug -ErrorAction Stop}
-catch {Write-Host "Error[0]"
-       $error[0]
-       Write-Host "Script Ending, Module 7, Failure Code WTF"
-       Exit "WTF"
-}
-
+Write-Host "  Assigning Key Vault access policy"
+Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId "$($vmOP.Identity.PrincipalId)" -PermissionsToSecrets @("Get", "List", "Set", "Delete") -ErrorAction Stop
 
 Write-Host "  Assigning Resource Group Contributor role"
 $role = Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName -RoleDefinitionName "Contributor"
@@ -677,3 +672,4 @@ Write-Host
 Write-Host "  S2S should be connected now"
 Write-Host "  You'll need to RDP (via Bastion) to the Coffee Shop VM and manually connect the VPN"
 Write-Host
+Stop-Transcript
