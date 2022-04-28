@@ -444,27 +444,11 @@ If ($vmOP.Identity.Type -ne "SystemAssigned") {
     Update-AzVM -ResourceGroupName $RGName -VM $vmOP -IdentityType SystemAssigned | Out-Null
     $vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
 } Else {Write-Host "  Managed Identity already assined, skipping"}
-
-# Pause for 5 seconds to let the Managed Identity "Soak in"
-Start-Sleep -Seconds 5
-
-Write-Host "  Assigning Key Vault access policy"
-if ($null -eq $vmOP.Identity.PrincipalId) {
-    Write-Host "VM Identity not retrived, trying again"
-    $vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
-    if ($null -eq $vmOP.Identity.PrincipalId) {
-        Write-Warning "VM Identity could not be read"
-        Write-Host "An issue happened in the Module 7 script that"
-        Write-Host "prevented the $($vmOP.Name) from being assinged"
-        Write-Host "access to the Key Vault. This is a fatal error"
-        Write-Host "and this script will end."
-        Write-Host "You may try deleting the OnPrem VM Extention"
-        Write-Host "named ""MaxVMBuildOP"" and re-running Module 7."
-        Write-Host "Script Ending, Module 7, Failure Code 2"
-        Exit 2
-    }
-}
 Write-Host "VM Principal ID: $($vmOP.Identity.PrincipalId)"
+
+# Pause for 30 seconds to let the Managed Identity "Soak in"
+Start-Sleep -Seconds 30
+
 try {Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId "$($vmOP.Identity.PrincipalId)" -PermissionsToSecrets @("Get", "List", "Set", "Delete") -Debug -ErrorAction Stop}
 catch {Write-Host "Error[0]"
        $error[0]
