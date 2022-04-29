@@ -127,6 +127,7 @@ If (-not (Test-Path -Path $FileCer)) {
 # Upload to Key Vault
 Write-Host "Uploading root cer file data to Key Vault"
 $kvName = (Get-AzKeyVault | Select-Object -First 1).VaultName
+Write-Host "kvName: $kvName"
 if ($null -eq (Get-AzKeyVaultSecret -VaultName $kvName -Name "P2SRoot")) {
      $cerKey = Get-Content "C:\Workshop\P2SRoot.cer"
      $certSec = ConvertTo-SecureString $($cerKey[1..($cerKey.IndexOf("-----END CERTIFICATE-----") - 1)] -join('')) -AsPlainText -Force

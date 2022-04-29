@@ -32,7 +32,7 @@ if ($KillGateway) {
     Write-Host "Killing GW"
     try {Get-AzVirtualNetworkGateway -ResourceGroupName $RGName -Name $HubName-gw -ErrorAction Stop | Out-Null
          Remove-AzVirtualNetworkGateway -ResourceGroupName $RGName -Name $HubName-gw -Force -AsJob}
-    catch {Write-Host "  It's not there"}        
+    catch {Write-Host "  It's not there"}
 }
 
 if ($KillOPVM) {
@@ -43,9 +43,9 @@ if ($KillOPVM) {
         Write-Host "  Unassigning Resource Group Contributor role"
         $role = Get-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName -RoleDefinitionName "Contributor"
         If ($null -eq $role) {Write-Host "  It's not there"}
-        Else {Remove-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName  -RoleDefinitionName "Contributor"}        
+        Else {Remove-AzRoleAssignment -ObjectId $vmOP.Identity.PrincipalId -ResourceGroupName $RGName  -RoleDefinitionName "Contributor"}
     }
-    catch {Write-Host "VM doesn't exist, skipping access policy and resource group permission removal"}        
+    catch {Write-Host "VM doesn't exist, skipping access policy and resource group permission removal"}
 }
 
 $VMNames = @()
@@ -56,7 +56,7 @@ foreach ($VMName in $VMNames) {
     Write-Host "Killing $VMName"
     try {Get-AzVM -ResourceGroupName $RGName -Name $VMName -ErrorAction Stop | Out-Null
          Remove-AzVM -ResourceGroupName $RGName -Name $VMName -Force -AsJob}
-    catch {Write-Host "  It's not there"}    
+    catch {Write-Host "  It's not there"}
 }
 
 if ($KillComplete) {
@@ -80,9 +80,9 @@ If ($KillOPVM){
         Write-Host "Deleting Key Vault Secret $SecretName"
         $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $SecretName
         if ($null -eq $kvs) {Write-Host "  It's not there"}
-        Else {Remove-AzKeyVaultSecret -VaultName $kvName -Name $SecretName -Force}        
+        Else {Remove-AzKeyVaultSecret -VaultName $kvName -Name $SecretName -Force}
     }
-    Start-Sleep -Seconds 5
+    Start-Sleep -Seconds 10
     foreach ($SecretName in $SecretNames) {
         Write-Host "Purging Key Vault Secret $SecretName"
         $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $SecretName -InRemovedState
@@ -92,7 +92,7 @@ If ($KillOPVM){
 
     Write-Host "Killing Client.pfx from Storage"
     $sa = Get-AzStorageAccount -ResourceGroupName $RGName -Name $SAName -ErrorAction Stop
-    try {Get-AzStorageBlob -Container $web -Blob "Client.pfx" -Context $sa.Context -ErrorAction Stop| Remove-AzStorageBlob -Force}
+    try {Get-AzStorageBlob -Container '$web' -Blob "Client.pfx" -Context $sa.Context -ErrorAction Stop| Remove-AzStorageBlob -Force}
     catch {Write-Host "  It's not there"}
 
     Write-Host "Killing config container from Storage"
@@ -106,22 +106,18 @@ if ($KillAll) {
         Remove-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -Force -AsJob}
     catch {Write-Host "  It's not there"}
 
-    Write-Host "Killing OnPrem Route Table"
-    try {Get-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt' -ErrorAction Stop | Remove-AzRouteTable -Force}
-    catch {Write-Host "  It's not there"}
-
     Write-Host "Resetting Spoke VNets peering"
     $peeringS1 = Get-AzVirtualNetworkPeering -ResourceGroupName $RGName -VirtualNetworkName $S1Name -Name "Spoke01ToHub"
     $peeringS2 = Get-AzVirtualNetworkPeering -ResourceGroupName $RGName -VirtualNetworkName $S2Name -Name "Spoke02ToHub"
     if ($peeringS1.UseRemoteGateways -or $peeringS1.AllowForwardedTraffic) {
         $peeringS1.UseRemoteGateways = $false
         $peeringS1.AllowForwardedTraffic = $false
-        Set-AzVirtualNetworkPeering -VirtualNetworkPeering $peeringS1}
+        Set-AzVirtualNetworkPeering -VirtualNetworkPeering $peeringS1 -AsJob}
     else {Write-Host "  Spoke01 already reset"}
     if ($peeringS2.UseRemoteGateways -or $peeringS1.AllowForwardedTraffic) {
         $peeringS2.UseRemoteGateways = $false
         $peeringS2.AllowForwardedTraffic = $false
-        Set-AzVirtualNetworkPeering -VirtualNetworkPeering $peeringS2}
+        Set-AzVirtualNetworkPeering -VirtualNetworkPeering $peeringS2 -AsJob}
     else {Write-Host "  Spoke02 already reset"}
 }
 
@@ -132,14 +128,14 @@ foreach ($VMName in $VMNames) {
     Write-Host "Killing $VMName Disk"
     try {$Disk = Get-AzDisk -ResourceGroupName $RGName -Name $VMName"*" -ErrorAction Stop
          Remove-AzDisk -ResourceGroupName $RGName -Name $Disk.Name -Force -AsJob}
-    catch {Write-Host "  It's not there"}    
+    catch {Write-Host "  It's not there"}
 }
 
 foreach ($VMName in $VMNames) {
     Write-Host "Killing $VMName NIC"
     try {Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName"-nic" -ErrorAction Stop | Out-Null
          Remove-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName"-nic" -Force -AsJob}
-    catch {Write-Host "  It's not there"}    
+    catch {Write-Host "  It's not there"}
 }
 
 Write-Host "Waiting for NICs to delete"
@@ -159,17 +155,42 @@ if ($KillOPNVA) {
     Write-Host "Killing $VMName PIP"
     try {Get-AzPublicIPAddress -ResourceGroupName $RGName -Name $VMName"-pip" -ErrorAction Stop | Out-Null
          Remove-AzPublicIPAddress -ResourceGroupName $RGName -Name $VMName"-pip" -Force -AsJob}
-    catch {Write-Host "  It's not there"}    
+    catch {Write-Host "  It's not there"}
 }
 
 If ($KillGateway) {
     Write-Host "Waiting for GW to delete"
-    Get-Job -Command " Remove-AzVirtualNetworkGateway" | Wait-Job -Timeout 600 | Out-Null
+    Get-Job -Command "Remove-AzVirtualNetworkGateway" | Wait-Job -Timeout 600 | Out-Null
 
     Write-Host "Killing GW PIP"
     try {Get-AzPublicIPAddress -ResourceGroupName $RGName -Name $HubName"-gw-pip" -ErrorAction Stop | Out-Null
         Remove-AzPublicIPAddress -ResourceGroupName $RGName -Name $HubName"-gw-pip" -Force -AsJob}
-    catch {Write-Host "  It's not there"}    
+    catch {Write-Host "  It's not there"}
 }
 
-Get-Job
+if ($KillComplete) {
+    $VNetNames = @()
+    $VNetNames += "OnPrem-VNet"
+    $VNetNames += "CoffeeShop-VNet"
+    foreach ($VNetName in $VNetNames) {
+        Write-Host "Killing $VNetName"
+        try {Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop | Remove-AzVirtualNetwork -Force -AsJob}
+        catch {Write-Host "  It's not there"}
+    }
+    foreach ($VNetName in $VNetNames) {
+        Write-Host "Killing $VNetName-nsg"
+        try {Get-AzNetworkSecurityGroup -Name $VNetName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop | Remove-AzNetworkSecurityGroup -Force -AsJob}
+        catch {Write-Host "  It's not there"}
+    }
+
+    Write-Host "Waiting for VNets to delete"
+    Get-Job -Command "Remove-AzVirtualNetwork" | Wait-Job -Timeout 600 | Out-Null
+
+    Write-Host "Killing OnPrem Route Table"
+    try {Get-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt' -ErrorAction Stop | Remove-AzRouteTable -Force}
+    catch {Write-Host "  It's not there"}
+}
+
+Write-Host "Waiting for All Jobs to complete"
+Get-Job  | Wait-Job -Timeout 600 | Out-Null
+Write-Host "All Done!" -ForegroundColor Green

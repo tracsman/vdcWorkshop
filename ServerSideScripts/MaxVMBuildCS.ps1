@@ -44,7 +44,7 @@ foreach ($User in $userList.Keys) {
             Write-Host "  $User added the Administrators group"}
 }
 
-# 3. Test/Create Folders
+# 3. Test/Create Folder
 Write-Host "Creating workshop folder"
 $Dir = "C:\Workshop\"
 If (-not (Test-Path -Path $Dir)) {New-Item $Dir -ItemType Directory | Out-Null}
