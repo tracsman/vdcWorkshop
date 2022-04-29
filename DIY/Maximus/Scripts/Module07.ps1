@@ -92,7 +92,7 @@ $UserName03 = "User03"
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting Module 7, estimated total time 40 minutes" -ForegroundColor Cyan
+Write-Host "Starting Module 7, estimated total time 60 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
@@ -575,16 +575,16 @@ $urlCert = $sa.PrimaryEndpoints.Web + "Client.pfx"
 Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
 Catch {$response = $null}
 $i=0
-if ($response.StatusCode -ne 200) {Write-Host "    waiting for Client cert to be posted to the storage account (max wait 15 minutes)"
+if ($response.StatusCode -ne 200) {Write-Host "    waiting for Client cert to be posted to the storage account (max wait 30 minutes)"
     Do {Start-Sleep -Seconds 10
         Write-Host "*" -NoNewline
         Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
         Catch {$response = $null}
         $i++
     }
-     Until ($response.StatusCode -eq 200 -or $i -gt 90) 
+     Until ($response.StatusCode -eq 200 -or $i -gt 180) 
 }
-if ($response.StatusCode -ne 200) {Write-Host "    Client cert not written after 15 minutes, proceeding without it"}
+if ($response.StatusCode -ne 200) {Write-Host "    Client cert not written after 30 minutes, proceeding without it"}
 
 # Check for the root cert in KeVault
 Write-Host "  checking for Root certificate in Key Vault"
