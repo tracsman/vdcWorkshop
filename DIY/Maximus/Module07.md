@@ -3,7 +3,7 @@
 # DIY Workshop Maximus - Module 7
 
 ## Abstract
-In this module, we will simulate on-prem and remote user connectivity over VPN. We will create an "on-prem" VNet and connect it to a VPN gateway in the hub over S2S VPN. We will also create a "coffee shop" VNet and connect it to the same VPN gateway in the hub over S2S VPN. 
+In this module, we will simulate on-prem and remote user connectivity over VPN. We will create an "on-prem" VNet and connect it to a VPN gateway in the hub over S2S VPN. We will also create a "coffee shop" VNet (remote user) and connect it to the same VPN gateway in the hub over P2S VPN. 
 
 ## Observations
 Once you're done with this step, you would have learnt to deply P2S and S2S VPN connectivity.
