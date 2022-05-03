@@ -22,7 +22,7 @@ Param(
 [string]$Pass3,
 [string]$PassP2SCert)
 
-Start-Transcript -Path "C:\Workshop\log-MaxVMBuildOP.txt"
+Start-Transcript -Path "C:\Workshop\MaxVMBuildOP.log"
 
 # 1. Open Firewall for ICMP
 Write-Host "Opening ICMPv4 Port"
@@ -187,26 +187,37 @@ If (-Not $RouterConfigDownloadError) {
      Write-Host "Sending config to router"
      $LocalIP = (Get-NetIPConfiguration).IPv4Address.IPAddress | Select-Object -First 1
      $RouterIP = $LocalIP.Split(".")[0] + "." + $LocalIP.Split(".")[1] + "." + $LocalIP.Split(".")[2] + "." + ($LocalIP.Split(".")[3] - 1)
-     Get-Content -Path "C:\Workshop\Router.txt" | ssh -o "StrictHostKeyChecking no" $User1@$RouterIP -E C:\Workshop.err > C:\Workshop\Router.log
+     Get-Content -Path "C:\Workshop\Router.txt" | ssh -o "StrictHostKeyChecking no" $User1@$RouterIP -E C:\Workshop\Router.err > C:\Workshop\Router.log
      Write-Host "  Config sent to router, hopefully successfully"
 }
 
 # 9. Create and set login job to copy rsa key to .ssh
 # Create the logon script, and save to file
+Write-Host "Creating logon task to move RSA key for router login"
 $File = "C:\Workshop\Logon.ps1"
 If (-not (Test-Path -Path $File)) {
      $textScript = @'
+Start-Transcript -Path "C:\Workshop\Logon.log"
 $Dir = "$($env:USERPROFILE)\.ssh\"
-If (-not (Test-Path -Path $Dir)) {New-Item $Dir -ItemType Directory | Out-Null}
+If (-not (Test-Path -Path $Dir)) {
+     New-Item $Dir -ItemType Directory | Out-Null
+     Write-Host "Dir created"}
+Else {Write-Host "Dir exists, skipping"}
 $File = "$($env:USERPROFILE)\.ssh\id_rsa"
-If (-not (Test-Path -Path $File)) {Copy-Item -Path "C:\Workshop\id_rsa" -Destination $File -Force}
+If (-not (Test-Path -Path $File)) {
+     Copy-Item -Path "C:\Workshop\id_rsa" -Destination $File -Force
+     Write-Host "File copied"}
+Else {Write-Host "File exists, skipping"}
+Stop-Transcript
 '@
      $textScript | Out-File -FilePath $File -Encoding ascii
 }
 # Set to run on login
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "C:\Workshop\Logon.ps1"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -File C:\Workshop\Logon.ps1"
 $trigger = New-ScheduledTaskTrigger -AtLogOn
-Register-ScheduledTask -Action $action -Trigger $trigger -User "User01" -TaskName "Copy RSA Key" | Out-Null
+Register-ScheduledTask -Action $action -Trigger $trigger -User "User01" -TaskName "User01 Copy RSA Key" | Out-Null
+Register-ScheduledTask -Action $action -Trigger $trigger -User "User02" -TaskName "User02 Copy RSA Key" | Out-Null
+Register-ScheduledTask -Action $action -Trigger $trigger -User "User03" -TaskName "User03 Copy RSA Key" | Out-Null
 
 # End Nicely
 Write-Host "On-Prem VM Build Script Complete"
