@@ -9,7 +9,7 @@
 # Module 5 - Data Tier - Create Spoke2 VNet, Load Balancer, VMSS configured as a File Server
 # Module 6 - PaaS - Create DNS, Storage Account, Private Endpoint
 # Module 7 - VPN - Create On-prem and Coffee Shop, VPN Gateway, NVA and VMs 
-# Module 8 - Kubernetes - Create Spoke3 VNet, AppGW Ingress, AppGW, K8N Cluster with App
+# Module 8 - Geo Load Balance - Create Spoke3 VNet, Web App, AFD
 #
 
 # Module 7 - VPN - Create On-prem and Coffee Shop, VPN Gateway, NVA and VMs 

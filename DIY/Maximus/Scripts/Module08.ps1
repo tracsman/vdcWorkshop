@@ -7,18 +7,23 @@
 # Module 3 - Secure - Create Firewall, Firewall Policy, Log Analytics, UDR
 # Module 4 - Web Tier - Create Spoke1 VNet, VNet Peering, 3xVM with Web Site, App Gateway
 # Module 5 - Data Tier - Create Spoke2 VNet, Load Balancer, VMSS configured as a File Server
-# 
+# Module 6 - PaaS - Create DNS, Storage Account, Private Endpoint
+# Module 7 - VPN - Create On-prem and Coffee Shop, VPN Gateway, NVA and VMs 
+# Module 8 - Geo Load Balance - Create Spoke3 VNet, Web App, AFD
+#
 
-# Module 5 - Data Tier - Create Spoke2 VNet, Load Balancer, VMSS configured as a File Server
-# 5.1 Validate and Initialize
-# 5.2 Create Spoke VNet and NSG
-# 5.3 Enable VNet Peering to the hub
-# 5.4 Get secrets from Key Vault
-# 5.5 Create load balancer
-# 5.6 Create VMSS as File Server
+# Module 8 - Kubernetes - Create Spoke3 VNet, AppGW Ingress, AppGW, K8N Cluster with App
+# 8.1 Validate and Initialize
+# 8.2 Create Spoke VNet, NSG, apply UDR, and DNS
+# 8.3 Enable VNet Peering to the hub using remote gateway
+# 8.4 Create App Service
+# 8.5 Tie Web App to the network
+# 8.6 Create the Azure Front Door
+# ???? 8.7 Configure WAF and AppGW Diagnostics
 
-# 5.1 Validate and Initialize
+# 8.1 Validate and Initialize
 # Load Initialization Variables
+Start-Transcript -Path "$env:HOME/Scripts/log-Module08.txt"
 $ScriptDir = "$env:HOME/Scripts"
 If (Test-Path -Path $ScriptDir/init.txt) {
         Get-Content $ScriptDir/init.txt | Foreach-Object{
@@ -32,20 +37,23 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # $ShortRegion defined in and pulled from the init.txt file above
 # $RGName    = defined in and pulled from the init.txt file above
 # Non-configurable Variable Initialization (ie don't modify these)
-$SpokeName   = "Spoke02"
-$VNetName    = $SpokeName + "-VNet"
-$VNetAddress = "10.2.0.0/16"
-$snTenant    = "10.2.1.0/24"
-$HubName     = "Hub-VNet"
-$SpokeLBIP   = "10.2.1.254" # Using the last usable IP of the tenant subnet
-$VMSSName    = $SpokeName + "VM"
-$VMSize      = "Standard_B2S"
-$UserName    = "User01"
+
+# Override Init.txt value to push deployment to a different region
+if ($ShortRegion -eq "westeurope") {$ShortRegion = "westus2"}
+else {$ShortRegion = "westeurope"}
+ 
+$SpokeName    = "Spoke03"
+$VNetName     = $SpokeName + "-VNet"
+$AddressSpace = "10.3.0.0/16"
+$TenantSpace  = "10.3.1.0/24"
+$HubName      = "Hub-VNet"
+$urlGitRepo   ="https://github.com/Azure-Samples/app-service-web-dotnet-get-started.git"
+
 
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting Module 5, estimated total time 8 minutes" -ForegroundColor Cyan
+Write-Host "Starting Module 8, estimated total time 25 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
@@ -65,7 +73,8 @@ If ($myContext.Account.Id -notmatch $RegEx) {
         Write-Host "Connect-AzAccount -UseDeviceAuthentication" -ForegroundColor Yellow
         Write-Host "This command will show a URL and Code. Open a new browser tab and navigate to that URL, enter the code, and login with your Azure credentials"
         Write-Host
-        Return
+        Write-Host "Script Ending, Module 8, Failure Code 1"
+        Exit 1
 }
 Write-Host "  Current User: ",$myContext.Account.Id
 
@@ -77,10 +86,13 @@ catch {Write-Warning "The $($HubName+'-rt-fw') Route Table was not found, please
 Try {$hubvnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubName -ErrorAction Stop}
 Catch {Write-Warning "The Hub VNet was not found, please run Module 1 to ensure this critical resource is created."; Return}
 
-# 5.2 Create Spoke VNet and NSG
+$webappname=$SpokeName + 'Web' + $UniversalKey
+
+
+# 8.2 Create Spoke VNet, NSG, apply UDR, and DNS
 # Create Tenant Subnet NSG
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating Spoke02 NSG" -ForegroundColor Cyan
+Write-Host "Creating Spoke03 NSG" -ForegroundColor Cyan
 Try {$nsg = Get-AzNetworkSecurityGroup -Name $VNetName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
 Write-Host "  NSG exists, skipping"}
 Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VNetName'-nsg'}
@@ -90,86 +102,78 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Virtual Network" -ForegroundColor Cyan
 Try {$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
      Write-Host "  resource exists, skipping"}
-Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -AddressPrefix $VNetAddress -Location $ShortRegion
+Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -AddressPrefix $AddressSpace -Location $ShortRegion
        # Add Subnets
        Write-Host (Get-Date)' - ' -NoNewline
        Write-Host "Adding subnets" -ForegroundColor Cyan
-       Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnet -AddressPrefix $snTenant -NetworkSecurityGroup $nsg -RouteTable $fwRouteTable | Out-Null
+       Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnet -AddressPrefix $TenantSpace -NetworkSecurityGroup $nsg -RouteTable $fwRouteTable | Out-Null
        Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
        $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
 }
 
-# 5.3 Enable VNet Peering to the hub
+# Enable VNet Peering to the hub
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Hub to Spoke" -ForegroundColor Cyan
-Try {Get-AzVirtualNetworkPeering -Name HubToSpoke02 -VirtualNetworkName $hubvnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
+Try {Get-AzVirtualNetworkPeering -Name HubToSpoke03 -VirtualNetworkName $hubvnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
      Write-Host "  peering exists, skipping" }
-Catch {Try {Add-AzVirtualNetworkPeering -Name HubToSpoke02 -VirtualNetwork $hubvnet -RemoteVirtualNetworkId $vnet.Id -AllowGatewayTransit -ErrorAction Stop | Out-Null}
+Catch {Try {Add-AzVirtualNetworkPeering -Name HubToSpoke03 -VirtualNetwork $hubvnet -RemoteVirtualNetworkId $vnet.Id -AllowGatewayTransit -ErrorAction Stop | Out-Null}
 	   Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Spoke to Hub" -ForegroundColor Cyan
-Try {Get-AzVirtualNetworkPeering -Name Spoke02ToHub -VirtualNetworkName $vnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
+Try {Get-AzVirtualNetworkPeering -Name Spoke03ToHub -VirtualNetworkName $vnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
      Write-Host "  peering exists, skipping" }
-Catch {Try {Add-AzVirtualNetworkPeering -Name Spoke02ToHub -VirtualNetwork $vnet -RemoteVirtualNetworkId $hubvnet.Id -ErrorAction Stop | Out-Null}
+Catch {Try {Add-AzVirtualNetworkPeering -Name Spoke03ToHub -VirtualNetwork $vnet -RemoteVirtualNetworkId $hubvnet.Id -AllowForwardedTraffic -UseRemoteGateways -ErrorAction Stop | Out-Null}
 	   Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
-# 5.4 Get secret from Key Vault
+# 8.4 Create App Service
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Obtaining secret from Key Vault" -ForegroundColor Cyan
-$kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
-$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName -ErrorAction Stop
-$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
-try {
-    $kvs = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)
-} finally {
-    [System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)
+Write-Host "Creating App Servicce" -ForegroundColor Cyan
+
+# https://docs.microsoft.com/en-us/azure/app-service/scripts/powershell-deploy-github?toc=/powershell/module/toc.json#sample-script
+
+# Create a resource group.
+New-AzResourceGroup -Name myResourceGroup -Location $location
+
+# Create an App Service plan in Free tier.
+New-AzAppServicePlan -Name $webappname -Location $location -ResourceGroupName myResourceGroup -Tier Free
+
+# Create a web app.
+New-AzWebApp -Name $webappname -Location $location -AppServicePlan $webappname -ResourceGroupName myResourceGroup
+
+# Configure GitHub deployment from your GitHub repo and deploy once.
+$PropertiesObject = @{
+    repoUrl = "$gitrepo";
+    branch = "master";
+    isManualIntegration = "true";
 }
+Set-AzResource -Properties $PropertiesObject -ResourceGroupName myResourceGroup -ResourceType Microsoft.Web/sites/sourcecontrols -ResourceName $webappname/web -ApiVersion 2015-08-01 -Force
 
-# 5.5 Create load balancer
+# 8.5 Tie Web App to the network
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating Internal Load Balancer" -ForegroundColor Cyan
-$snTenant = Get-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnet
-Try {$Spoke02LB = Get-AzLoadBalancer -Name $SpokeName"-lb" -ResourceGroupName $RGName -ErrorAction Stop
-	 Write-Host "  resource exists, skipping"}
-Catch {$FrontEndIPConfig = New-AzLoadBalancerFrontendIpConfig -Name LB-Frontend -PrivateIpAddress $SpokeLBIP -SubnetId $snTenant.Id -Zone 1, 2, 3
-       $BackEndPool= New-AzLoadBalancerBackendAddressPoolConfig -Name "LB-backend"
-       $HealthProbe = New-AzLoadBalancerProbeConfig -Name "HealthProbe" -Protocol Tcp -Port 445 -IntervalInSeconds 15 -ProbeCount 2
-       $LBRule = @()
-       $LBRule += New-AzLoadBalancerRuleConfig -Name "SMB445" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
-					       -Probe $HealthProbe -Protocol Tcp -FrontendPort 445 -BackendPort 445 -IdleTimeoutInMinutes 15
-       $LBRule += New-AzLoadBalancerRuleConfig -Name "SMB137" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
-					       -Probe $HealthProbe -Protocol Tcp -FrontendPort 137 -BackendPort 137 -IdleTimeoutInMinutes 15
-       $LBRule += New-AzLoadBalancerRuleConfig -Name "SMB139" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
-					       -Probe $HealthProbe -Protocol Tcp -FrontendPort 139 -BackendPort 139 -IdleTimeoutInMinutes 15
-       $Spoke02LB = New-AzLoadBalancer -ResourceGroupName $RGName -Location $ShortRegion -Name $SpokeName"-lb" -FrontendIpConfiguration $FrontEndIPConfig `
-	   			       -LoadBalancingRule $LBRule -BackendAddressPool $BackEndPool -Probe $HealthProbe -Sku Standard -Tier Regional
-       $Spoke02LB = Get-AzLoadBalancer -ResourceGroupName $RGName -Name $SpokeName"-lb" -ErrorAction Stop}
+Write-Host "Connecting Web App to VNet" -ForegroundColor Cyan
 
-# 5. Create VMSS
+# https://docs.microsoft.com/en-us/azure/app-service/configure-vnet-integration-enable
+
+# Parameters
+$siteName = '<app-name>'
+$resourceGroupName = '<group-name>'
+$vNetName = '<vnet-name>'
+$integrationSubnetName = '<subnet-name>'
+$subscriptionId = '<subscription-guid>'
+
+# Configure VNet Integration
+$subnetResourceId = "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Network/virtualNetworks/$vNetName/subnets/$integrationSubnetName"
+$webApp = Get-AzResource -ResourceType Microsoft.Web/sites -ResourceGroupName $resourceGroupName -ResourceName $siteName
+$webApp.Properties.virtualNetworkSubnetId = $subnetResourceId
+$webApp | Set-AzResource -Force
+
+
+
+# 8.6 Create the Azure Front Door
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating VM Scale Set" -ForegroundColor Cyan
-$ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "FSBuild.ps1"
-$ExtensionName = 'BuildFS'
-$timestamp = (Get-Date).Ticks
-$ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = ".\$ScriptName"
-$PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
+Write-Host "Creating Azure Front Door" -ForegroundColor Cyan
 
-Try {Get-AzVmss -ResourceGroupName $RGName -VMScaleSetName $VMSSName -ErrorAction Stop | Out-Null
-	 Write-Host "  resource exists, skipping"}
-Catch {$IPCfg = New-AzVmssIPConfig -Name "VMSSIPConfig" -LoadBalancerInboundNatPoolsId $Spoke02LB.InboundNatPools[0].Id `
-				   -LoadBalancerBackendAddressPoolsId $Spoke02LB.BackendAddressPools[0].Id -SubnetId $vnet.Subnets[0].Id
-       $VMSSConfig = New-AzVmssConfig -Location $ShortRegion -SkuCapacity 2 -SkuName $VMSize -UpgradePolicyMode "Automatic" -Zone 1, 2, 3 | `
-                     Add-AzVmssNetworkInterfaceConfiguration -Name "NIC1" -Primary $True -IPConfiguration $IPCfg | `
-                     Set-AzVmssOSProfile -ComputerNamePrefix $VMSSName -AdminUsername $UserName -AdminPassword $kvs  | `
-                     Set-AzVmssStorageProfile -OsDiskCreateOption 'FromImage' -OsDiskCaching "None" -ImageReferencePublisher MicrosoftWindowsServer `
-                                              -ImageReferenceOffer WindowsServer -ImageReferenceSku 2022-Datacenter -ImageReferenceVersion latest `
-                                              -ManagedDisk Standard_LRS | `
-                     Add-AzVmssExtension -Name $ExtensionName -Publisher 'Microsoft.Compute' -Type 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
-                                         -Setting $PublicConfiguration -AutoUpgradeMinorVersion $True
-       New-AzVmss -ResourceGroupName $RGName -Name $VMSSName -VirtualMachineScaleSet $VMSSConfig | Out-Null}
 
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline
