@@ -213,7 +213,7 @@ Stop-Transcript
      $textScript | Out-File -FilePath $File -Encoding ascii
 }
 # Set to run on login
-$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-WindowStyle Hidden -File C:\Workshop\Logon.ps1"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoLogo -WindowStyle Hidden -File C:\Workshop\Logon.ps1"
 $trigger = New-ScheduledTaskTrigger -AtLogOn
 Register-ScheduledTask -Action $action -Trigger $trigger -User "User01" -TaskName "User01 Copy RSA Key" | Out-Null
 Register-ScheduledTask -Action $action -Trigger $trigger -User "User02" -TaskName "User02 Copy RSA Key" | Out-Null

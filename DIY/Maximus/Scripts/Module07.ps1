@@ -493,7 +493,7 @@ crypto ikev2 keyring key-peer1
    address $azurePubIP
    pre-shared-key $pskS2S
 crypto ikev2 profile az-PROFILE1
-  match address local $siteOPPubIP
+  match address local interface GigabitEthernet1
   match identity remote address $azurePubIP 255.255.255.255
   authentication remote pre-share
   authentication local pre-share

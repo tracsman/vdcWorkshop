@@ -1,8 +1,8 @@
 $KillGateway  = $false  # Remove things related to the gateway
 $KillOPVM     = $true   # Remove things related to the OnPrem VM
-$KillOPNVA    = $false  # Remove things related to the OnPrem Router
+$KillOPNVA    = $true   # Remove things related to the OnPrem Router
 $KillCSVM     = $false  # Remove things related to the Coffee Shop VM
-$KillAll      = $true   # Remove all of the above, plus secrets and files
+$KillAll      = $false  # Remove all of the above, plus secrets and files
 $KillComplete = $false  # Removes everything created in Mod 7, even VNets and Bastion servers
 
 if ($KillAll -or $KillComplete) {
