@@ -471,7 +471,6 @@ $pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Route
 $azurePubIP   = $gwHub.BgpSettings.BgpPeeringAddresses.TunnelIpAddresses
 $azureBGPIP   = $gwHub.BgpSettings.BgpPeeringAddress
 $siteOPBGPIP  = "10.100.1.1"
-$siteOPPubIP  = $pipOPGW.IpAddress
 $siteOPPrefix = "10.10.1.0"
 $siteOPSubnet = "255.255.255.128"
 $siteOPDfGate = "10.10.1.1"
