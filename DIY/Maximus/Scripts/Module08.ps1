@@ -52,7 +52,6 @@ $VNetName     = $SpokeName + "-VNet"
 $AddressSpace = "10.3.0.0/16"
 $TenantSpace  = "10.3.1.0/24"
 $HubName      = "Hub-VNet"
-$urlGitRepo   ="https://github.com/Azure-Samples/app-service-web-dotnet-get-started.git"
 
 # Start nicely
 Write-Host
@@ -84,7 +83,7 @@ Write-Host "  Current User: ",$myContext.Account.Id
 
 # Pulling required components
 $kvName  = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
-if ($null -ne $kvName) {Write-Warning "The Key Vault was not found, please run Module 1 to ensure this critical resource is created."; Return}
+if ($null -eq $kvName) {Write-Warning "The Key Vault was not found, please run Module 1 to ensure this critical resource is created."; Return}
 try {$fwRouteTable = Get-AzRouteTable -Name $HubName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop}
 catch {Write-Warning "The $($HubName+'-rt-fw') Route Table was not found, please run Module 3 to ensure this critical resource is created."; Return}
 Try {$hubvnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubName -ErrorAction Stop}
