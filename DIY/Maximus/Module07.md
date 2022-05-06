@@ -3,10 +3,10 @@
 # DIY Workshop Maximus - Module 7
 
 ## Abstract
-In this module, we will simulate on-prem and remote user connectivity over VPN. We will create an "on-prem" VNet and connect it to a VPN gateway in the hub over S2S VPN. We will also create a "coffee shop" VNet (remote user) and connect it to the same VPN gateway in the hub over P2S VPN. 
+In this module, we will simulate on-prem and remote user connectivity over VPN. We will create an "on-prem" VNet and connect it to a VPN gateway in the hub over Site-to-Site VPN. We will also create a "coffee shop" VNet (remote user) and connect it to the same VPN gateway in the hub over Point-to-Site VPN. 
 
 ## Observations
-Once you're done with this step, you would have learnt to deply P2S and S2S VPN connectivity.
+Once you're done with this step, you would have learnt to deploy Site-to-Site and Point-to-Site VPN connectivity.
 
 ## Deployment
 1. While in the Scripts folder run
@@ -18,8 +18,12 @@ Once you're done with this step, you would have learnt to deply P2S and S2S VPN 
 2. (Optional) in the editor pane you can select and view the script before running
 
 ## Validation
-1. xxx
-2. xxx
+1. Go to your resource group in the Azure Portal and check the newly added resources.
+2. You should see a VPN Gateway in the hub along with other associated resources. You should also see several on-prem and coffee shop resources.
+3. Go to the hub VPN Gateway and check out its settings.
+4. Notice the status of the Site-to-Site connection (it should show 'Connected').
+5. Connect to the On-prem VM via Bastion.
+6. Verify that you have reachability (over VPN) to the hub. You can run a ping to the Firewall IP (10.0.3.4) in the hub.
 
 
 
