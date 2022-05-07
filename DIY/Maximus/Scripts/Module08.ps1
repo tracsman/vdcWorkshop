@@ -52,6 +52,7 @@ $VNetName     = $SpokeName + "-VNet"
 $AddressSpace = "10.3.0.0/16"
 $TenantSpace  = "10.3.1.0/24"
 $HubName      = "Hub-VNet"
+$FWName       = "Hub-FW"
 
 # Start nicely
 Write-Host
@@ -86,6 +87,9 @@ $kvName  = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).
 if ($null -eq $kvName) {Write-Warning "The Key Vault was not found, please run Module 1 to ensure this critical resource is created."; Return}
 Try {$hubvnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubName -ErrorAction Stop}
 Catch {Write-Warning "The Hub VNet was not found, please run Module 1 to ensure this critical resource is created."; Return}
+Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName -ErrorAction Stop}
+Catch {Write-Warning "The Hub Firewall was not found, please run Module 3 to ensure this critical resource is created."; Return}
+$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "UniversalKey"
 If ($null -eq $kvs) {Write-Warning "The Universal Key was not found in the Key Vault secrets, please run Module 1 to ensure this critical resource is created."; Return}
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
