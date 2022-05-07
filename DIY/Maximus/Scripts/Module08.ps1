@@ -84,8 +84,6 @@ Write-Host "  Current User: ",$myContext.Account.Id
 # Pulling required components
 $kvName  = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
 if ($null -eq $kvName) {Write-Warning "The Key Vault was not found, please run Module 1 to ensure this critical resource is created."; Return}
-try {$fwRouteTable = Get-AzRouteTable -Name $HubName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop}
-catch {Write-Warning "The $($HubName+'-rt-fw') Route Table was not found, please run Module 3 to ensure this critical resource is created."; Return}
 Try {$hubvnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubName -ErrorAction Stop}
 Catch {Write-Warning "The Hub VNet was not found, please run Module 1 to ensure this critical resource is created."; Return}
 $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "UniversalKey"
@@ -103,6 +101,15 @@ Write-Host "Creating Spoke03 NSG" -ForegroundColor Cyan
 Try {$nsg = Get-AzNetworkSecurityGroup -Name $VNetName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
 Write-Host "  NSG exists, skipping"}
 Catch {$nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VNetName'-nsg'}
+
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating Tenant UDR Table" -ForegroundColor Cyan
+Try {$fwRouteTable = Get-AzRouteTable -Name $VNetName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
+     Write-Host "  Tenant UDR Table exists, skipping"}
+Catch {$fwRouteName = 'Default-Route'
+       $fwRouteTableName = $VNetName + '-rt-fw'
+       $fwRoute = New-AzRouteConfig -Name $fwRouteName -AddressPrefix "0.0.0.0/0" -NextHopType VirtualAppliance -NextHopIpAddress $fwIP
+       $fwRouteTable = New-AzRouteTable -Name $fwRouteTableName -ResourceGroupName $RGName -location $ShortRegion -Route $fwRoute -DisableBgpRoutePropagation}
 
 # Create Virtual Network, apply NSG and UDR
 Write-Host (Get-Date)' - ' -NoNewline
