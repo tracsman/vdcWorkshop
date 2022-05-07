@@ -278,7 +278,7 @@ catch {New-AzAppServicePlan -ResourceGroupName $RGName -Location $ShortRegion -N
 # Create a web app
 try {Get-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ErrorAction Stop | Out-Null
      Write-Host "  App Service exists, skipping"}
-catch {New-AzWebApp -ResourceGroupName $RGName -Location $ShortRegion -Name $WebAppName -AppServicePlan $WebAppName-plan -}
+catch {New-AzWebApp -ResourceGroupName $RGName -Location $ShortRegion -Name $WebAppName -AppServicePlan $WebAppName-plan}
 
 # Publish the web app
 Publish-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ArchivePath $WebDir/wwwroot.zip -Force | Out-Null
@@ -288,7 +288,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Connecting Web App to VNet" -ForegroundColor Cyan
 # https://docs.microsoft.com/en-us/azure/app-service/configure-vnet-integration-enable
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
-$subnet = Get-AzVirtualNetworkSubnetConfig -Name 'Tenant' -VirtualNetwork $vnetHub
+$subnet = Get-AzVirtualNetworkSubnetConfig -Name 'Tenant' -VirtualNetwork $vnet
 $webApp = Get-AzResource -ResourceType Microsoft.Web/sites -ResourceGroupName $RGName -ResourceName $WebAppName
 if ($null -eq $webApp.Properties.virtualNetworkSubnetId) {
      $webApp.Properties.virtualNetworkSubnetId = $subnet.Id
