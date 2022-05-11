@@ -17,6 +17,7 @@
 # 8.1 Validate and Initialize
 # 8.2 Create Spoke VNet, NSG, apply UDR, and DNS
 # 8.3 Enable VNet Peering to the hub using remote gateway
+# 8.4 
 # 8.4 Create Web App and compress
 # 8.5 Create App Service
 # 8.6 Tie Web App to the network
@@ -129,7 +130,8 @@ Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -
        $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
 }
 
-# Enable VNet Peering to the hub
+# 8.3 Enable VNet Peering to the hub using remote gateway
+# Enable VNet Peering to the spoke
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Hub to Spoke" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkPeering -Name HubToSpoke03 -VirtualNetworkName $hubvnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
@@ -137,6 +139,7 @@ Try {Get-AzVirtualNetworkPeering -Name HubToSpoke03 -VirtualNetworkName $hubvnet
 Catch {Try {Add-AzVirtualNetworkPeering -Name HubToSpoke03 -VirtualNetwork $hubvnet -RemoteVirtualNetworkId $vnet.Id -AllowGatewayTransit -ErrorAction Stop | Out-Null}
        Catch {Write-Warning "Error creating VNet Peering"; Return}}
 
+# Enable VNet Peering to the hub
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Peering Spoke to Hub" -ForegroundColor Cyan
 Try {Get-AzVirtualNetworkPeering -Name Spoke03ToHub -VirtualNetworkName $vnet.Name -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
@@ -291,8 +294,10 @@ $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAc
 $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'Tenant' -VirtualNetwork $vnet
 $webApp = Get-AzResource -ResourceType Microsoft.Web/sites -ResourceGroupName $RGName -ResourceName $WebAppName
 if ($null -eq $webApp.Properties.virtualNetworkSubnetId) {
+     $subnet = Add-AzDelegation -Name "myDelegation" -ServiceName "Microsoft.Web/serverfarms" -Subnet $subnet
+     Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
      $webApp.Properties.virtualNetworkSubnetId = $subnet.Id
-     $webApp | Set-AzResource -Force}
+     $webApp | Set-AzResource -Force | Out-Null}
 else {Write-Host "  App Service already connected to VNet, skipping"}
 
 # 8.6 Create the Azure Front Door
