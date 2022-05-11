@@ -278,7 +278,7 @@ catch {New-AzAppServicePlan -ResourceGroupName $RGName -Location $ShortRegion -N
 # Create a web app
 try {Get-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ErrorAction Stop | Out-Null
      Write-Host "  App Service exists, skipping"}
-catch {New-AzWebApp -ResourceGroupName $RGName -Location $ShortRegion -Name $WebAppName -AppServicePlan $WebAppName-plan}
+catch {New-AzWebApp -ResourceGroupName $RGName -Location $ShortRegion -Name $WebAppName -AppServicePlan $WebAppName-plan | Out-Null}
 
 # Publish the web app
 Publish-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ArchivePath $WebDir/wwwroot.zip -Force | Out-Null
