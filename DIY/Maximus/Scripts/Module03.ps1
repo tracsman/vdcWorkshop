@@ -169,7 +169,7 @@ if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-RDP") {
  else {$UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall Web Network Rule"
 $fwNetRuleWeb = New-AzFirewallPolicyNetworkRule -Name "Allow-Web" -SourceAddress * `
-                    -DestinationAddress $HubVMIP -DestinationPort 80, 443 -Protocol TCP `
+                    -DestinationAddress $HubVMIP, "10.2.1.254" -DestinationPort 80, 443 -Protocol TCP `
                     -Description "Allow access to the web site on the hub VM"
 if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-Web") {
     Write-Host "      Firewall Web Network Rule exists, skipping"}

@@ -145,6 +145,10 @@ Catch {$FrontEndIPConfig = New-AzLoadBalancerFrontendIpConfig -Name LB-Frontend 
 					       -Probe $HealthProbe -Protocol Tcp -FrontendPort 137 -BackendPort 137 -IdleTimeoutInMinutes 15
        $LBRule += New-AzLoadBalancerRuleConfig -Name "SMB139" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
 					       -Probe $HealthProbe -Protocol Tcp -FrontendPort 139 -BackendPort 139 -IdleTimeoutInMinutes 15
+       $LBRule += New-AzLoadBalancerRuleConfig -Name "HTTP80" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
+                                               -Probe $HealthProbe -Protocol Tcp -FrontendPort 80 -BackendPort 80 -IdleTimeoutInMinutes 15
+       $LBRule += New-AzLoadBalancerRuleConfig -Name "HTTPs443" -FrontendIpConfiguration $FrontEndIPConfig -BackendAddressPool $BackEndPool `
+                                               -Probe $HealthProbe -Protocol Tcp -FrontendPort 443 -BackendPort 443 -IdleTimeoutInMinutes 15
        $Spoke02LB = New-AzLoadBalancer -ResourceGroupName $RGName -Location $ShortRegion -Name $SpokeName"-lb" -FrontendIpConfiguration $FrontEndIPConfig `
 	   			       -LoadBalancingRule $LBRule -BackendAddressPool $BackEndPool -Probe $HealthProbe -Sku Standard -Tier Regional
        $Spoke02LB = Get-AzLoadBalancer -ResourceGroupName $RGName -Name $SpokeName"-lb" -ErrorAction Stop}
@@ -153,8 +157,8 @@ Catch {$FrontEndIPConfig = New-AzLoadBalancerFrontendIpConfig -Name LB-Frontend 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating VM Scale Set" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "FSBuild.ps1"
-$ExtensionName = 'BuildFS'
+$ScriptName = "MaxFSBuild.ps1"
+$ExtensionName = 'MaxBuildFS'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
 $ScriptExe = ".\$ScriptName"

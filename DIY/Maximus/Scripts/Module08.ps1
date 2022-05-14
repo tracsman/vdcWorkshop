@@ -90,12 +90,15 @@ Try {$hubvnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubName -
 Catch {Write-Warning "The Hub VNet was not found, please run Module 1 to ensure this critical resource is created."; Return}
 Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName -ErrorAction Stop}
 Catch {Write-Warning "The Hub Firewall was not found, please run Module 3 to ensure this critical resource is created."; Return}
-$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
+try {Get-AzPrivateDnsZone -ResourceGroupName $RGName -Name privatelink.web.core.windows.net -ErrorAction Stop | Out-Null}
+Catch {Write-Warning "The Private DNS Zone was not found, please run Module 6 to ensure this critical resource is created."; Return}
 $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "UniversalKey"
 If ($null -eq $kvs) {Write-Warning "The Universal Key was not found in the Key Vault secrets, please run Module 1 to ensure this critical resource is created."; Return}
 $ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
 try {$keyUniversal = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
 finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
+
+$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 $WebAppName=$SpokeName + 'Web' + $keyUniversal
 $PEPName = $RGName.ToLower() + "sa" + $keyUniversal
 
@@ -129,6 +132,12 @@ Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -
        Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
        $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
 }
+
+# Get/Link Private DNS Zone to Spoke03 VNet
+Write-Host "  linking Private DNS zone to spoke03 vnet"
+try {Get-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $RGName -ZoneName privatelink.web.core.windows.net -Name linkSpoke03 -ErrorAction Stop | Out-Null
+     Write-Host "    DNS link to Spoke03 already exists, skipping"}
+catch {New-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $RGName -ZoneName privatelink.web.core.windows.net -Name linkSpoke03 -VirtualNetworkId $vnet.Id -EnableRegistration | Out-Null}
 
 # 8.3 Enable VNet Peering to the hub using remote gateway
 # Enable VNet Peering to the spoke
@@ -166,7 +175,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
 
     '' Test VMSS
     Dim testSocket as New System.Net.Sockets.TcpClient()
-    testSocket.ConnectAsync(ipVMSS, 445)
+    testSocket.ConnectAsync(ipVMSS, 80)
     Dim i as Integer
     Do While Not testSocket.Connected
       Threading.Thread.Sleep(250)
@@ -189,11 +198,11 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
 
     '' Get VMSS File Server File
     If IsVMSSReady Then
-      Dim FILENAME As String = "\\" & ipVMSS & "\WebShare\Rand.txt"
-      Dim objStreamReader As StreamReader = File.OpenText(FILENAME)
-      Dim contents As String = objStreamReader.ReadToEnd()
-      lblVMSS.Text = contents
-      objStreamReader.Close()
+      Dim objHttp = CreateObject("WinHttp.WinHttpRequest.5.1")
+      objHttp.Open("GET", "http://" + urlPvEP, False)
+      objHttp.Send
+      lblVMSS.Text = objHttp.ResponseText
+      objHttp = Nothing
     Else
       lblVMSS.Text = "<font color=red>Content not reachable, this resource is created in Module 5.</font>"
     End If
@@ -257,7 +266,6 @@ $WebConfig ='<?xml version="1.0" encoding="utf-8"?>
   <system.web>
     <compilation debug="true" strict="false" explicit="true" targetFramework="4.8" />
     <httpRuntime targetFramework="4.8" />
-    <identity impersonate="true" />
     <customErrors mode="Off"/>
   </system.web>
 </configuration>'
@@ -295,6 +303,7 @@ $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'Tenant' -VirtualNetwork $vnet
 $webApp = Get-AzResource -ResourceType Microsoft.Web/sites -ResourceGroupName $RGName -ResourceName $WebAppName
 if ($null -eq $webApp.Properties.virtualNetworkSubnetId) {
      $subnet = Add-AzDelegation -Name "myDelegation" -ServiceName "Microsoft.Web/serverfarms" -Subnet $subnet
+     $subnet.PrivateEndpointNetworkPolicies = $true
      Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
      $webApp.Properties.virtualNetworkSubnetId = $subnet.Id
      $webApp | Set-AzResource -Force | Out-Null}
@@ -307,7 +316,7 @@ Write-Host "  skipping cause I aint be codded yet!"
 
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Module 5 completed successfully" -ForegroundColor Green
+Write-Host "Module 8 completed successfully" -ForegroundColor Green
 Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
 Write-Host
 Write-Host "  Try going to your AppGW IP again, notice you now have data from the VMSS File Server!"
