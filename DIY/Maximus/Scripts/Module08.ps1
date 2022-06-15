@@ -54,6 +54,7 @@ $AddressSpace = "10.3.0.0/16"
 $TenantSpace  = "10.3.1.0/24"
 $HubName      = "Hub-VNet"
 $FWName       = "Hub-FW"
+$S1Name       = "Spoke01"
 
 # Start nicely
 Write-Host
@@ -99,8 +100,9 @@ try {$keyUniversal = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($
 finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 
 $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
-$WebAppName=$SpokeName + 'Web' + $keyUniversal
+$WebAppName=$SpokeName + $keyUniversal + '-app'
 $PEPName = $RGName.ToLower() + "sa" + $keyUniversal
+$fdName = $SpokeName + $keyUniversal + "-fd"
 
 # 8.2 Create Spoke VNet, NSG, apply UDR, and DNS
 # Create Tenant Subnet NSG
@@ -134,7 +136,7 @@ Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -
 }
 
 # Get/Link Private DNS Zone to Spoke03 VNet
-Write-Host "  linking Private DNS zone to spoke03 vnet"
+Write-Host "  linking Private DNS zone to tenant subnet"
 try {Get-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $RGName -ZoneName privatelink.web.core.windows.net -Name linkSpoke03 -ErrorAction Stop | Out-Null
      Write-Host "    DNS link to Spoke03 already exists, skipping"}
 catch {New-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $RGName -ZoneName privatelink.web.core.windows.net -Name linkSpoke03 -VirtualNetworkId $vnet.Id -EnableRegistration | Out-Null}
@@ -199,7 +201,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
     '' Get VMSS File Server File
     If IsVMSSReady Then
       Dim objHttp = CreateObject("WinHttp.WinHttpRequest.5.1")
-      objHttp.Open("GET", "http://" + urlPvEP, False)
+      objHttp.Open("GET", "http://" + ipVMSS, False)
       objHttp.Send
       lblVMSS.Text = objHttp.ResponseText
       objHttp = Nothing
@@ -210,7 +212,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
     '' Get Private Endpoint File Server File
     If IsEndPointReady Then
       Dim objHttp = CreateObject("WinHttp.WinHttpRequest.5.1")
-      objHttp.Open("GET", "http://' + $PEPName + '.privatelink.web.core.windows.net", False)
+      objHttp.Open("GET", "http://" + urlPvEP, False)
       objHttp.Send
       lblEndPoint.Text = objHttp.ResponseText
       objHttp = Nothing
@@ -281,11 +283,6 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating App Service" -ForegroundColor Cyan
 # https://docs.microsoft.com/en-us/azure/app-service/scripts/powershell-deploy-github?toc=/powershell/module/toc.json#sample-script
 
-# Create an App Service plan
-try {Get-AzAppServicePlan -Name $WebAppName-plan -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
-     Write-Host "  App Service Plan exists, skipping"}
-catch {New-AzAppServicePlan -ResourceGroupName $RGName -Location $ShortRegion -Name $WebAppName-plan -Tier Free | Out-Null}
-
 # Create a web app
 try {Get-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ErrorAction Stop | Out-Null
      Write-Host "  App Service exists, skipping"}
@@ -303,7 +300,7 @@ $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'Tenant' -VirtualNetwork $vnet
 $webApp = Get-AzResource -ResourceType Microsoft.Web/sites -ResourceGroupName $RGName -ResourceName $WebAppName
 if ($null -eq $webApp.Properties.virtualNetworkSubnetId) {
      $subnet = Add-AzDelegation -Name "myDelegation" -ServiceName "Microsoft.Web/serverfarms" -Subnet $subnet
-     $subnet.PrivateEndpointNetworkPolicies = $true
+     $subnet.PrivateEndpointNetworkPolicies = "Enabled"
      Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
      $webApp.Properties.virtualNetworkSubnetId = $subnet.Id
      $webApp | Set-AzResource -Force | Out-Null}
@@ -312,7 +309,40 @@ else {Write-Host "  App Service already connected to VNet, skipping"}
 # 8.6 Create the Azure Front Door
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Azure Front Door" -ForegroundColor Cyan
-Write-Host "  skipping cause I aint be codded yet!"
+Try {Get-AzFrontDoor -ResourceGroupName $RGname -Name $fdName -ErrorAction Stop | Out-Null
+     Write-Host '  resource exists, skipping'}
+Catch {
+    # Create Front End Endpoint
+    $fdFE = New-AzFrontDoorFrontendEndpointObject -Name $fdName'-fe' -HostName $fdName".azurefd.net"
+
+    # Create Back End
+    # Create Backend Objects
+    $pipSpoke01 = Get-AzPublicIpAddress -Name $S1Name-AppGw-pip -ResourceGroupName $RGname
+    $urlSpoke03 = $webapp.Properties.defaultHostName
+    $fdBES1 = New-AzFrontDoorBackendObject -Address $pipSpoke01.IpAddress
+    $fdBES3 = New-AzFrontDoorBackendObject -Address $urlSpoke03
+
+    # Create Health Probe
+    $fdHP = New-AzFrontDoorHealthProbeSettingObject -Name $fdName"-probe" -Path "/" -Protocol Http
+
+    # Create Load Balance Settings
+    $fdLB = New-AzFrontDoorLoadBalancingSettingObject -Name $fdName"-lb" -SampleSize 4 -SuccessfulSamplesRequired 2
+
+    # Create Backend Pool
+    $fdBEPool = New-AzFrontDoorBackendPoolObject -ResourceGroupName $RGName -Name $fdName"-pool" -FrontDoorName $fdName `
+                                                 -Backend $fdBES1, $fdBES3 -HealthProbeSettingsName $fdHP.Name `
+                                                 -LoadBalancingSettingsName $fdLB.Name
+
+    # Create Load Balancing Rule
+    # Set rule to accept both http and https, but forward to the back as http (the IIS server is only serving on port 80)
+    $fdRR = New-AzFrontDoorRoutingRuleObject -ResourceGroupName $RGname -Name $fdName"-rule" -FrontDoorName $fdName `
+                                             -FrontendEndpointName $fdFE.Name -BackendPoolName $fdBEPool.Name `
+                                             -AcceptedProtocol Http, Https -PatternToMatch "/*" -ForwardingProtocol HttpOnly
+
+    # Create Front Door
+    New-AzFrontDoor -ResourceGroupName $RGName -Name $fdName -BackendPool $fdBEPool -FrontendEndpoint $fdFE `
+                    -HealthProbeSetting $fdHP -LoadBalancingSetting $fdLB -RoutingRule $fdRR -DisableCertificateNameCheck | Out-Null
+}
 
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline

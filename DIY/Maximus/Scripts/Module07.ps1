@@ -106,14 +106,14 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "  Checking Login" -ForegroundColor Cyan
 $RegEx = '^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$'
 If ($myContext.Account.Id -notmatch $RegEx) {
-        Write-Host "Fatal Error: You are logged in with a Managed Service bearer token" -ForegroundColor Red
-        Write-Host "To correct this, you'll need to login using your Azure credentials."
-        Write-Host "To do this, at the command prompt, enter: " -NoNewline
-        Write-Host "Connect-AzAccount -UseDeviceAuthentication" -ForegroundColor Yellow
-        Write-Host "This command will show a URL and Code. Open a new browser tab and navigate to that URL, enter the code, and login with your Azure credentials"
-        Write-Host
-        Write-Host "Script Ending, Module 7, Failure Code 1"
-        Exit 1
+    Write-Host "Fatal Error: You are logged in with a Managed Service bearer token" -ForegroundColor Red
+    Write-Host "To correct this, you'll need to login using your Azure credentials."
+    Write-Host "To do this, at the command prompt, enter: " -NoNewline
+    Write-Host "Connect-AzAccount -UseDeviceAuthentication" -ForegroundColor Yellow
+    Write-Host "This command will show a URL and Code. Open a new browser tab and navigate to that URL, enter the code, and login with your Azure credentials"
+    Write-Host
+    Write-Host "Script Ending, Module 7, Failure Code 1"
+    Exit 1
 }
 Write-Host "  Current User: ",$myContext.Account.Id
 
