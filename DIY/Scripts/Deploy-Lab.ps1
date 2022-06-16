@@ -30,27 +30,27 @@ Write-Host
 switch ($MenuItem.Character) {
     "1" {Write-Host "Firewall Lab was selected" -ForegroundColor Cyan
          $RGName = "FWLab"
-         $FileName = @()
-         $FileName += 'Validate-Lab.ps1'
-         $FileName += 'WorkshopStep1.ps1'
-         $FileName += 'WorkshopStep2.ps1'
-         $FileName += 'WorkshopStep3.ps1'
-         $FileName += 'WorkshopStep4.ps1'
-         $FileName += 'WorkshopStep5.ps1'
+         $Files = @()
+         $Files += 'Validate-Lab.ps1'
+         $Files += 'WorkshopStep1.ps1'
+         $Files += 'WorkshopStep2.ps1'
+         $Files += 'WorkshopStep3.ps1'
+         $Files += 'WorkshopStep4.ps1'
+         $Files += 'WorkshopStep5.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/master/DIY/Firewall/Scripts/'}
     "2" {Write-Host "Workshop Maximus was selected" -ForegroundColor Cyan
          $RGName = "MaxLab"
-         $FileName = @()
-         $FileName += 'Validate-Lab.ps1'
-         $FileName += 'Module01.ps1'
-         $FileName += 'Module02.ps1'
-         $FileName += 'Module03.ps1'
-         $FileName += 'Module04.ps1'
-         $FileName += 'Module05.ps1'
-         $FileName += 'Module06.ps1'
-         $FileName += 'Module07.ps1'
-         $FileName += 'Module08.ps1'
-         $FileName += 'Module09.ps1'
+         $Files = @()
+         $Files += 'Validate-Lab.ps1'
+         $Files += 'Module01.ps1'
+         $Files += 'Module02.ps1'
+         $Files += 'Module03.ps1'
+         $Files += 'Module04.ps1'
+         $Files += 'Module05.ps1'
+         $Files += 'Module06.ps1'
+         $Files += 'Module07.ps1'
+         $Files += 'Module08.ps1'
+         $Files += 'Module09.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/ModularDIY/DIY/Maximus/Scripts/'}
     "0" {Write-Host "Exiting" -ForegroundColor Cyan
          Write-Host
@@ -85,7 +85,7 @@ If (-Not (Test-Path $ScriptPath\init.txt)){
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Downloading PowerShell Scripts" -ForegroundColor Cyan
-ForEach ($File in $FileName) {
+ForEach ($File in $Files) {
     Invoke-WebRequest -Uri "$uri$File" -OutFile "$ScriptPath\$File" | Out-Null
 }
 
