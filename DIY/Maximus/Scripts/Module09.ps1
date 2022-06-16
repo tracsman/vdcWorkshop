@@ -107,7 +107,7 @@ Write-Host "Creating Hub Cisco Virtual Appliance" -ForegroundColor Cyan
 # 9.3.1 Create Public IP
 Try {$pipHubNVA = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $HubName'-Router-pip' -ErrorAction Stop
         Write-Host "  Public IP exists, skipping"}
-Catch {$pipHubNVA = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $HubName'-Router-pip' -Location $ShortRegion -AllocationMethod Dynamic}
+Catch {$pipHubNVA = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $HubName'-Router-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard -IpAddressVersion IPv4}
 # 9.3.2 Create NIC
 $snTenant =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $hubvnet -Name "Tenant"
 Try {$nic = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $HubName'-Router-nic' -ErrorAction Stop
