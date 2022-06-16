@@ -97,7 +97,7 @@ $rsConfig = @{
     HostedSubnet = $subnetRS.Id
     PublicIP = $pipRS
 }
-try {Get-AzRouteServer -ResourceGroupName $rsConfig.ResourceGroupName -RouteServerName $rsConfig.RouteServerName -ErrorAction Stop
+try {Get-AzRouteServer -ResourceGroupName $rsConfig.ResourceGroupName -RouteServerName $rsConfig.RouteServerName -ErrorAction Stop | Out-Null
     Write-Host "  Route Server exists, skipping"}
 catch {New-AzRouteServer @rsConfig -AsJob | Out-Null}
 
@@ -121,7 +121,7 @@ Try {Get-AzVM -ResourceGroupName $RGName -Name $HubName'-Router' -ErrorAction St
 Catch {$kvs = Get-AzKeyVaultSecret -VaultName $KVName -Name "User01" -ErrorAction Stop
        $cred = New-Object System.Management.Automation.PSCredential ($kvs.Name, $kvs.SecretValue)
        $latestsku = Get-AzVMImageSku -Location $ShortRegion -Offer cisco-csr-1000v -PublisherName cisco | Sort-Object Skus | Where-Object {$_.skus -match 'byol'} | Select-Object Skus -First 1 | ForEach-Object {$_.Skus}
-       $VMConfig = New-AzVMConfig -VMName $OPName'-Router01' -VMSize $VMSize
+       $VMConfig = New-AzVMConfig -VMName $HubName'-Router' -VMSize $VMSize
        Set-AzVMPlan -VM $VMConfig -Publisher "cisco" -Product "cisco-csr-1000v" -Name $latestsku | Out-Null
        $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $HubName'-Router' -Credential $cred
        $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $HubName'-Router-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
