@@ -80,27 +80,8 @@ $MPTermsAccepted = (Get-AzMarketplaceTerms -Publisher "cisco" -Product "cisco-cs
 if (-Not $MPTermsAccepted) {Write-Warning "MarketPlace terms for the required image could not be accepted. please run Module 7 to ensure this critical step is completed."; Return}
 $kvName  = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
 if ($null -eq $kvName) {Write-Warning "The Key Vault was not found, please run Module 1 to ensure this critical resource is created."; Return}
-try {$PublicKey = Get-Content "$HOME/.ssh/$FileName.pub"}
+try {$PublicKey = Get-Content "$HOME/.ssh/id_rsa.pub"}
 catch {Write-Warning "The Public Key RSA file was not found, please run Module 7 to ensure this critical resource is created."; Return}
-
-
-
-
-
-Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName -ErrorAction Stop}
-Catch {Write-Warning "The Hub Firewall was not found, please run Module 3 to ensure this critical resource is created."; Return}
-try {Get-AzPrivateDnsZone -ResourceGroupName $RGName -Name privatelink.web.core.windows.net -ErrorAction Stop | Out-Null}
-Catch {Write-Warning "The Private DNS Zone was not found, please run Module 6 to ensure this critical resource is created."; Return}
-$kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name "UniversalKey"
-If ($null -eq $kvs) {Write-Warning "The Universal Key was not found in the Key Vault secrets, please run Module 1 to ensure this critical resource is created."; Return}
-$ssPtr = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($kvs.SecretValue)
-try {$keyUniversal = [System.Runtime.InteropServices.Marshal]::PtrToStringBSTR($ssPtr)}
-finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
-
-$fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
-$WebAppName=$SpokeName + $keyUniversal + '-app'
-$PEPName = $RGName.ToLower() + "sa" + $keyUniversal
-$fdName = $SpokeName + $keyUniversal + "-fd"
 
 # 9.2 Create RouteServer (AsJob)
 # 9.2.1 Create Public IP
