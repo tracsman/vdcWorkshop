@@ -17,7 +17,6 @@
 # 9.1 Validate and Initialize
 # 9.2 Create RouteServer
 # 9.3 Create VNet NVA
-# 9.4 Create On-Prem NVA
 # 9.5 Kick-off config for Azure NVA
 # 9.6 Kick-off config for On-Prem NVA
 # 9.7 Create additional monitoring to Log Analytics
@@ -44,6 +43,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # Non-configurable Variable Initialization (ie don't modify these)
 $OPName  = "OnPrem-VNet"
 $HubName = "Hub-VNet"
+$VMSize  = "Standard_DS2_v2"
 
 # Start nicely
 Write-Host
@@ -74,10 +74,19 @@ If ($myContext.Account.Id -notmatch $RegEx) {
 Write-Host "  Current User: ",$myContext.Account.Id
 
 # Pulling required components
-$kvName  = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
-if ($null -eq $kvName) {Write-Warning "The Key Vault was not found, please run Module 1 to ensure this critical resource is created."; Return}
 Try {$hubvnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $HubName -ErrorAction Stop}
 Catch {Write-Warning "The Hub VNet was not found, please run Module 1 to ensure this critical resource is created."; Return}
+$MPTermsAccepted = (Get-AzMarketplaceTerms -Publisher "cisco" -Product "cisco-csr-1000v" -Name "csr-azure-byol").Accepted
+if (-Not $MPTermsAccepted) {Write-Warning "MarketPlace terms for the required image could not be accepted. please run Module 7 to ensure this critical step is completed."; Return}
+$kvName  = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).VaultName
+if ($null -eq $kvName) {Write-Warning "The Key Vault was not found, please run Module 1 to ensure this critical resource is created."; Return}
+try {$PublicKey = Get-Content "$HOME/.ssh/$FileName.pub"}
+catch {Write-Warning "The Public Key RSA file was not found, please run Module 7 to ensure this critical resource is created."; Return}
+
+
+
+
+
 Try {$firewall = Get-AzFirewall -ResourceGroupName $RGName -Name $FWName -ErrorAction Stop}
 Catch {Write-Warning "The Hub Firewall was not found, please run Module 3 to ensure this critical resource is created."; Return}
 try {Get-AzPrivateDnsZone -ResourceGroupName $RGName -Name privatelink.web.core.windows.net -ErrorAction Stop | Out-Null}
@@ -93,9 +102,55 @@ $WebAppName=$SpokeName + $keyUniversal + '-app'
 $PEPName = $RGName.ToLower() + "sa" + $keyUniversal
 $fdName = $SpokeName + $keyUniversal + "-fd"
 
-# 9.2 Create RouteServer
-# 9.3 Create VNet NVA
-# 9.4 Create On-Prem NVA
+# 9.2 Create RouteServer (AsJob)
+# 9.2.1 Create Public IP
+Try {$pipRS = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $HubName'-rs-pip4' -ErrorAction Stop
+     Write-Host "  Public IP exists, skipping"}
+Catch {$pipRS = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $HubName'-rs-pip4' -Location $ShortRegion -AllocationMethod Static -Sku Standard -IpAddressVersion IPv4}
+# 9.2.2 Build Route Server
+$subnetRS = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $hubvnet -Name "RouteServerSubnet"
+$rsConfig = @{
+    RouteServerName =  $HubName + '-rs'
+    ResourceGroupName = $RGName 
+    Location = $ShortRegion
+    HostedSubnet = $subnetRS.Id
+    PublicIP = $pipRS
+}
+try {Get-AzRouteServer -ResourceGroupName $rsConfig.ResourceGroupName -RouteServerName $rsConfig.RouteServerName -ErrorAction Stop
+    Write-Host "  Route Server exists, skipping"}
+catch {New-AzRouteServer @rsConfig -AsJob | Out-Null}
+
+# 9.3 Create Hub NVA (AsJob)
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating Hub Cisco Virtual Appliance" -ForegroundColor Cyan
+# 9.3.1 Create Public IP
+Try {$pipHubNVA = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $HubName'-Router-pip' -ErrorAction Stop
+        Write-Host "  Public IP exists, skipping"}
+Catch {$pipHubNVA = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $HubName'-Router-pip' -Location $ShortRegion -AllocationMethod Dynamic}
+# 9.3.2 Create NIC
+$snTenant =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $hubvnet -Name "Tenant"
+Try {$nic = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $HubName'-Router-nic' -ErrorAction Stop
+        Write-Host "  NIC exists, skipping"}
+Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $HubName'-Router-nic' -Location $ShortRegion `
+                                     -Subnet $snTenant -PublicIpAddress $pipHubNVA -EnableIPForwarding}
+# 9.3.3 Build NVA
+# Get-AzVMImage -Location westus2 -Offer cisco-csr-1000v -PublisherName cisco -Skus csr-azure-byol -Version latest
+Try {Get-AzVM -ResourceGroupName $RGName -Name $HubName'-Router' -ErrorAction Stop | Out-Null
+        Write-Host "  Cisco Router exists, skipping"}
+Catch {$kvs = Get-AzKeyVaultSecret -VaultName $KVName -Name "User01" -ErrorAction Stop
+       $cred = New-Object System.Management.Automation.PSCredential ($kvs.Name, $kvs.SecretValue)
+       $latestsku = Get-AzVMImageSku -Location $ShortRegion -Offer cisco-csr-1000v -PublisherName cisco | Sort-Object Skus | Where-Object {$_.skus -match 'byol'} | Select-Object Skus -First 1 | ForEach-Object {$_.Skus}
+       $VMConfig = New-AzVMConfig -VMName $OPName'-Router01' -VMSize $VMSize
+       Set-AzVMPlan -VM $VMConfig -Publisher "cisco" -Product "cisco-csr-1000v" -Name $latestsku | Out-Null
+       $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $HubName'-Router' -Credential $cred
+       $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $HubName'-Router-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
+       $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "cisco" -Offer "cisco-csr-1000v" -Skus $latestsku -Version latest
+       $VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/User01/.ssh/authorized_keys"
+       $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic
+       $VMConfig = Set-AzVMBootDiagnostic -VM $VMConfig -Disable
+       New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $VMConfig -AsJob | Out-Null
+}
+
 # 9.5 Kick-off config for Azure NVA
 # 9.6 Kick-off config for On-Prem NVA
 # 9.7 Create additional monitoring to Log Analytics

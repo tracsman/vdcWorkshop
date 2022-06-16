@@ -38,7 +38,7 @@ switch ($MenuItem.Character) {
          $FileName += 'WorkshopStep4.ps1'
          $FileName += 'WorkshopStep5.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/master/DIY/Firewall/Scripts/'}
-    "2" {Write-Host "Firewall Lab was selected" -ForegroundColor Cyan
+    "2" {Write-Host "Workshop Maximus was selected" -ForegroundColor Cyan
          $RGName = "MaxLab"
          $FileName = @()
          $FileName += 'Validate-Lab.ps1'
@@ -50,6 +50,7 @@ switch ($MenuItem.Character) {
          $FileName += 'Module06.ps1'
          $FileName += 'Module07.ps1'
          $FileName += 'Module08.ps1'
+         $FileName += 'Module09.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/ModularDIY/DIY/Maximus/Scripts/'}
     "0" {Write-Host "Exiting" -ForegroundColor Cyan
          Write-Host
