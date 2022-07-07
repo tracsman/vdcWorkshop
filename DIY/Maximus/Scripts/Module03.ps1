@@ -101,7 +101,7 @@ Catch {$pipFW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $FWName'-
 Write-Host "  Creating Firewall Policy"
 Try {$fwPolicy = Get-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -ErrorAction Stop
     Write-Host "    Firewall exists, skipping"}
-Catch {$fwPolicy = New-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -Location $ShortRegion}
+Catch {$fwPolicy = New-AzFirewallPolicy -Name $FWName-pol -ResourceGroupName $RGName -Location $ShortRegion -SkuTier Premium}
 
 # 3.2.3 Create Firewall
 Write-Host "  Creating Firewall"

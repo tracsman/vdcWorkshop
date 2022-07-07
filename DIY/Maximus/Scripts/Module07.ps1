@@ -164,12 +164,15 @@ Try {$gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName
      Write-Host "  resource exists, skipping"}
 Catch {
     $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'GatewaySubnet' -VirtualNetwork $vnetHub
-    Try {$pipHub = Get-AzPublicIpAddress -Name $HubName'-gw-pip'  -ResourceGroupName $RGName -ErrorAction Stop}
-    Catch {$pipHub = New-AzPublicIpAddress -Name $HubName'-gw-pip' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Dynamic}
-    $ipconf = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf" -SubnetId $subnet.Id -PublicIpAddressId $pipHub.Id
+    Try {$pip1Hub = Get-AzPublicIpAddress -Name $HubName'-gw-pip1'  -ResourceGroupName $RGName -ErrorAction Stop}
+    Catch {$pip1Hub = New-AzPublicIpAddress -Name $HubName'-gw-pip1' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Dynamic}
+    Try {$pip2Hub = Get-AzPublicIpAddress -Name $HubName'-gw-pip2'  -ResourceGroupName $RGName -ErrorAction Stop}
+    Catch {$pip2Hub = New-AzPublicIpAddress -Name $HubName'-gw-pip2' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Dynamic}
+    $ipconf1 = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf1" -SubnetId $subnet.Id -PublicIpAddressId $pip1Hub.Id
+    $ipconf2 = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf2" -SubnetId $subnet.Id -PublicIpAddressId $pip2Hub.Id
     $gwHub = New-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -Location $ShortRegion `
-                                         -IpConfigurations $ipconf -GatewayType Vpn -VpnType RouteBased -GatewaySku VpnGw1 `
-                                         -VpnClientProtocol "IkeV2" -VpnClientAddressPool $HubP2SPool -AsJob
+                                         -IpConfigurations $ipconf1,$ipconf2 -GatewayType Vpn -VpnType RouteBased -GatewaySku VpnGw1 `
+                                         -EnableActiveActiveFeature -VpnClientProtocol "IkeV2" -VpnClientAddressPool $HubP2SPool -AsJob
     }
 
 # 7.3 Create On-prem and Coffee Shop VNets and Bastions
@@ -250,27 +253,27 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating On-Prem Cisco Virtual Appliance" -ForegroundColor Cyan
 if ($MPTermsAccepted) {
     # 7.5.1 Create Public IP
-    Try {$pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
+    Try {$pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router-pip' -ErrorAction Stop
          Write-Host "  Public IP exists, skipping"}
-    Catch {$pipOPGW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -Location $ShortRegion -AllocationMethod Dynamic}
+    Catch {$pipOPGW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router-pip' -Location $ShortRegion -AllocationMethod Dynamic}
     # 7.5.2 Create NIC
     $vnetOP = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName -ErrorAction Stop
     $snTenant =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnetOP -Name "Tenant"
-    Try {$nic = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $OPName'-Router01-nic' -ErrorAction Stop
+    Try {$nic = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $OPName'-Router-nic' -ErrorAction Stop
          Write-Host "  NIC exists, skipping"}
-    Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $OPName'-Router01-nic' -Location $ShortRegion `
+    Catch {$nic = New-AzNetworkInterface -ResourceGroupName $RGName -Name $OPName'-Router-nic' -Location $ShortRegion `
                                          -Subnet $snTenant -PublicIpAddress $pipOPGW -EnableIPForwarding}
     # 7.5.3 Build VM
     # Get-AzVMImage -Location westus2 -Offer cisco-csr-1000v -PublisherName cisco -Skus csr-azure-byol -Version latest
-    Try {Get-AzVM -ResourceGroupName $RGName -Name $OPName'-Router01' -ErrorAction Stop | Out-Null
+    Try {Get-AzVM -ResourceGroupName $RGName -Name $OPName'-Router' -ErrorAction Stop | Out-Null
          Write-Host "  Cisco Router exists, skipping"}
     Catch {$kvs = Get-AzKeyVaultSecret -VaultName $KVName -Name "User01" -ErrorAction Stop
            $cred = New-Object System.Management.Automation.PSCredential ($kvs.Name, $kvs.SecretValue)
            $latestsku = Get-AzVMImageSku -Location $ShortRegion -Offer cisco-csr-1000v -PublisherName cisco | Sort-Object Skus | Where-Object {$_.skus -match 'byol'} | Select-Object Skus -First 1 | ForEach-Object {$_.Skus}
-           $VMConfig = New-AzVMConfig -VMName $OPName'-Router01' -VMSize $VMSize
+           $VMConfig = New-AzVMConfig -VMName $OPName'-Router' -VMSize $VMSize
            Set-AzVMPlan -VM $VMConfig -Publisher "cisco" -Product "cisco-csr-1000v" -Name $latestsku | Out-Null
-           $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $OPName'-Router01' -Credential $cred
-           $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $OPName'-Router01-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
+           $VMConfig = Set-AzVMOperatingSystem -VM $VMConfig -Linux -ComputerName $OPName'-Router' -Credential $cred
+           $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $OPName'-Router-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
            $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "cisco" -Offer "cisco-csr-1000v" -Skus $latestsku -Version latest
            $VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/User01/.ssh/authorized_keys"
            $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic
@@ -385,7 +388,7 @@ Catch {$rt = New-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt' -loc
        $rt = Get-AzRouteTable -ResourceGroupName $RGName -Name $OPName'-rt'}
 
 # Add routes to the route table
-$NVAPrivateIP = (Get-AzNetworkInterface  -ResourceGroupName $RGName -Name $OPName'-Router01-nic').IpConfigurations[0].PrivateIpAddress
+$NVAPrivateIP = (Get-AzNetworkInterface  -ResourceGroupName $RGName -Name $OPName'-Router-nic').IpConfigurations[0].PrivateIpAddress
 Try {Get-AzRouteConfig -RouteTable $rt -Name "ToHub" -ErrorAction Stop | Out-Null
      Write-Host "  Hub Route exists, skipping"}
 Catch {Add-AzRouteConfig -RouteTable $rt -Name "ToHub" -AddressPrefix $HubAddress -NextHopType VirtualAppliance -NextHopIpAddress $NVAPrivateIP | Out-Null
@@ -429,7 +432,7 @@ else {$peeringS2.UseRemoteGateways = $true
 # 7.11 Create On-Prem Local Gateway
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating On-Prem Local GW in Azure" -ForegroundColor Cyan
-$pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
+$pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router-pip' -ErrorAction Stop
 try {$gwOP = Get-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -ErrorAction Stop
      Write-Host "  resource exists, skipping"}
 catch {$gwOP = New-AzLocalNetworkGateway -Name $OPName'-lgw' -ResourceGroupName $RGName -Location $ShortRegion `
@@ -465,11 +468,13 @@ catch {New-AzStorageContainer -Context $sactx -Name config | Out-Null}
 
 # 7.12.3 Create Router Config
 $gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -ErrorAction Stop
-$pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router01-pip' -ErrorAction Stop
+$pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router-pip' -ErrorAction Stop
 
 # Create Router Config
-$azurePubIP   = $gwHub.BgpSettings.BgpPeeringAddresses.TunnelIpAddresses
-$azureBGPIP   = $gwHub.BgpSettings.BgpPeeringAddress
+$azurePubIP0  = $gwHub.BgpSettings.BgpPeeringAddresses.TunnelIpAddresses[0]
+$azurePubIP1  = $gwHub.BgpSettings.BgpPeeringAddresses.TunnelIpAddresses[1]
+$azureBGPIP0  = $gwHub.BgpSettings.BgpPeeringAddresses.DefaultBgpIpAddresses[0]
+$azureBGPIP1  = $gwHub.BgpSettings.BgpPeeringAddresses.DefaultBgpIpAddresses[1]
 $siteOPBGPIP  = "10.100.1.1"
 $siteOPPrefix = "10.10.1.0"
 $siteOPSubnet = "255.255.255.128"
@@ -487,19 +492,32 @@ crypto ikev2 proposal az-PROPOSAL
   group 2
 crypto ikev2 policy az-POLICY
   proposal az-PROPOSAL
-crypto ikev2 keyring key-peer1
-  peer azvpn1
-   address $azurePubIP
+crypto ikev2 keyring key-peer0
+  peer azvpn0
+   address $azurePubIP0
    pre-shared-key $pskS2S
+crypto ikev2 keyring key-peer1
+   peer azvpn1
+    address $azurePubIP1
+    pre-shared-key $pskS2S
+crypto ikev2 profile az-PROFILE0
+  match address local interface GigabitEthernet1
+  match identity remote address $azurePubIP0 255.255.255.255
+  authentication remote pre-share
+  authentication local pre-share
+  keyring local key-peer0
 crypto ikev2 profile az-PROFILE1
   match address local interface GigabitEthernet1
-  match identity remote address $azurePubIP 255.255.255.255
+  match identity remote address $azurePubIP1 255.255.255.255
   authentication remote pre-share
   authentication local pre-share
   keyring local key-peer1
 # IPsec Config
 crypto ipsec transform-set az-IPSEC-PROPOSAL-SET esp-aes 256 esp-sha256-hmac
   mode tunnel
+crypto ipsec profile az-VTI0
+  set transform-set az-IPSEC-PROPOSAL-SET
+  set ikev2-profile az-PROFILE0
 crypto ipsec profile az-VTI1
   set transform-set az-IPSEC-PROPOSAL-SET
   set ikev2-profile az-PROFILE1
@@ -509,24 +527,37 @@ interface Tunnel0
   ip tcp adjust-mss 1350
   tunnel source GigabitEthernet1
   tunnel mode ipsec ipv4
-  tunnel destination $azurePubIP
+  tunnel destination $azurePubIP0
+  tunnel protection ipsec profile az-VTI0
+interface Tunnel1
+  ip address 169.254.0.2 255.255.255.255
+  ip tcp adjust-mss 1350
+  tunnel source GigabitEthernet1
+  tunnel mode ipsec ipv4
+  tunnel destination $azurePubIP1
   tunnel protection ipsec profile az-VTI1
 interface Loopback0
   ip address $siteOPBGPIP 255.255.255.255
 # BGP Config
 router bgp $OPASN
   bgp log-neighbor-changes
-  neighbor $azureBGPIP remote-as 65515
-  neighbor $azureBGPIP ebgp-multihop 5
-  neighbor $azureBGPIP update-source Loopback0
+  neighbor $azureBGPIP0 remote-as 65515
+  neighbor $azureBGPIP0 ebgp-multihop 5
+  neighbor $azureBGPIP0 update-source Loopback0
+  neighbor $azureBGPIP1 remote-as 65515
+  neighbor $azureBGPIP1 ebgp-multihop 5
+  neighbor $azureBGPIP1 update-source Loopback0
   address-family ipv4
    network $siteOPPrefix mask $siteOPSubnet
-   neighbor $azureBGPIP activate
-   neighbor $azureBGPIP next-hop-self
-   neighbor $azureBGPIP soft-reconfiguration inbound
+   neighbor $azureBGPIP0 activate
+   neighbor $azureBGPIP0 next-hop-self
+   neighbor $azureBGPIP0 soft-reconfiguration inbound
+   neighbor $azureBGPIP1 activate
+   neighbor $azureBGPIP1 next-hop-self
+   neighbor $azureBGPIP1 soft-reconfiguration inbound
 ip route 0.0.0.0 0.0.0.0 $siteOPDfGate
-ip route $azureBGPIP 255.255.255.255 Tunnel 0
-#ip route $azureBGPIP 255.255.255.255 Tunnel0
+ip route $azureBGPIP0 255.255.255.255 Tunnel0
+ip route $azureBGPIP1 255.255.255.255 Tunnel1
 end
 wr
 "@

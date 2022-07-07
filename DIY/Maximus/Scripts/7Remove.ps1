@@ -51,7 +51,7 @@ if ($KillOPVM) {
 $VMNames = @()
 if ($KillCSVM) {$VMNames += $CSVMName}
 if ($KillOPVM) {$VMNames += $OPVMName}
-if ($KillOPNVA) {$VMNames += $OPName + '-Router01'}
+if ($KillOPNVA) {$VMNames += $OPName + '-Router'}
 foreach ($VMName in $VMNames) {
     Write-Host "Killing $VMName"
     try {Get-AzVM -ResourceGroupName $RGName -Name $VMName -ErrorAction Stop | Out-Null
