@@ -162,9 +162,13 @@ If ($KillGateway) {
     Write-Host "Waiting for GW to delete"
     Get-Job -Command "Remove-AzVirtualNetworkGateway" | Wait-Job -Timeout 600 | Out-Null
 
-    Write-Host "Killing GW PIP"
-    try {Get-AzPublicIPAddress -ResourceGroupName $RGName -Name $HubName"-gw-pip" -ErrorAction Stop | Out-Null
-        Remove-AzPublicIPAddress -ResourceGroupName $RGName -Name $HubName"-gw-pip" -Force -AsJob}
+    Write-Host "Killing GW PIP1"
+    try {Get-AzPublicIPAddress -ResourceGroupName $RGName -Name $HubName"-gw-pip1" -ErrorAction Stop | Out-Null
+         Remove-AzPublicIPAddress -ResourceGroupName $RGName -Name $HubName"-gw-pip1" -Force -AsJob}
+    catch {Write-Host "  It's not there"}
+    Write-Host "Killing GW PIP2"
+    try {Get-AzPublicIPAddress -ResourceGroupName $RGName -Name $HubName"-gw-pip2" -ErrorAction Stop | Out-Null
+         Remove-AzPublicIPAddress -ResourceGroupName $RGName -Name $HubName"-gw-pip2" -Force -AsJob}
     catch {Write-Host "  It's not there"}
 }
 
