@@ -396,3 +396,4 @@ Write-Host "  All environment components are built, time to play!" -ForegroundCo
 Write-Host
 Write-Host "  Try going to your AppGW IP again, notice you now have data from the VMSS File Server!"
 Write-Host
+Stop-Transcript

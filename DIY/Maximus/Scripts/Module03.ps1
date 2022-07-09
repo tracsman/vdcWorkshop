@@ -26,6 +26,11 @@
 
 
 # 3.1 Validate and Initialize
+# Setup and Start Logging
+$LogDir = "$env:HOME/Logs"
+If (-Not (Test-Path -Path $LogDir)) {New-Item $LogDir -ItemType Directory | Out-Null}
+Start-Transcript -Path "$LogDir/Module03.log"
+
 # Load Initialization Variables
 $ScriptDir = "$env:HOME/Scripts"
 If (Test-Path -Path $ScriptDir/init.txt) {
@@ -290,3 +295,4 @@ Write-Host
 Write-Host "  For extra credit, try adding Application rules to the firewall to surf to specific web sites from your Azure VMs"
 Write-Host
 Write-Host
+Stop-Transcript

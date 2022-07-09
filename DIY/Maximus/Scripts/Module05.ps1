@@ -21,6 +21,11 @@
 # 5.6 Create VMSS as File Server
 
 # 5.1 Validate and Initialize
+# Setup and Start Logging
+$LogDir = "$env:HOME/Logs"
+If (-Not (Test-Path -Path $LogDir)) {New-Item $LogDir -ItemType Directory | Out-Null}
+Start-Transcript -Path "$LogDir/Module05.log"
+
 # Load Initialization Variables
 $ScriptDir = "$env:HOME/Scripts"
 If (Test-Path -Path $ScriptDir/init.txt) {
@@ -185,3 +190,4 @@ Write-Host "  All environment components are built, time to play!" -ForegroundCo
 Write-Host
 Write-Host "  Try going to your AppGW IP again, notice you now have data from the VMSS File Server!"
 Write-Host
+Stop-Transcript

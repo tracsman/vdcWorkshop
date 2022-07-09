@@ -27,6 +27,11 @@
 #
 
 # 1.1 Validate and Initialize
+# Setup and Start Logging
+$LogDir = "$env:HOME/Logs"
+If (-Not (Test-Path -Path $LogDir)) {New-Item $LogDir -ItemType Directory | Out-Null}
+Start-Transcript -Path "$LogDir/Module01.log"
+
 # Load Initialization Variables
 $ScriptDir = "$env:HOME/Scripts"
 If (Test-Path -Path $ScriptDir/init.txt) {
@@ -252,3 +257,4 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Module 1 deployed successfully" -ForegroundColor Green
 Write-Host "  Explore your new Resource Group, Key Vault, and VM in the Azure Portal."
 Write-Host
+Stop-Transcript

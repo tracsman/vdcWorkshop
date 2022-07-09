@@ -23,6 +23,11 @@
 # 4.8 Configure WAF and AppGW Diagnostics
 
 # 4.1 Validate and Initialize
+# Setup and Start Logging
+$LogDir = "$env:HOME/Logs"
+If (-Not (Test-Path -Path $LogDir)) {New-Item $LogDir -ItemType Directory | Out-Null}
+Start-Transcript -Path "$LogDir/Module04.log"
+
 # Load Initialization Variables
 $ScriptDir = "$env:HOME/Scripts"
 If (Test-Path -Path $ScriptDir/init.txt) {
@@ -276,3 +281,4 @@ Write-Host
 Write-Host "  For fun try https://geopeeker.com/fetch/?url=$($pip.IpAddress)"
 Write-Host "  You should see Australia blocked by the WAF Geo rule." 
 Write-Host
+Stop-Transcript

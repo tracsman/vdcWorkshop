@@ -45,8 +45,12 @@
 #
 
 # 7.1 Validate and Initialize
+# Setup and Start Logging
+$LogDir = "$env:HOME/Logs"
+If (-Not (Test-Path -Path $LogDir)) {New-Item $LogDir -ItemType Directory | Out-Null}
+Start-Transcript -Path "$LogDir/Module07.log"
+
 # Load Initialization Variables
-Start-Transcript -Path "$env:HOME/Scripts/log-Module07.txt"
 $ScriptDir = "$env:HOME/Scripts"
 If (Test-Path -Path $ScriptDir/init.txt) {
         Get-Content $ScriptDir/init.txt | Foreach-Object{

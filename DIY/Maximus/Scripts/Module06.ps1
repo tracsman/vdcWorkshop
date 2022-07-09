@@ -19,6 +19,11 @@
 # 6.4 Create and Assign DNS
 
 # 6.1 Validate and Initialize
+# Setup and Start Logging
+$LogDir = "$env:HOME/Logs"
+If (-Not (Test-Path -Path $LogDir)) {New-Item $LogDir -ItemType Directory | Out-Null}
+Start-Transcript -Path "$LogDir/Module06.log"
+
 # Load Initialization Variables
 $ScriptDir = "$env:HOME/Scripts"
 If (Test-Path -Path $ScriptDir/init.txt) {
@@ -176,3 +181,4 @@ Write-Host "Module 6 completed successfully" -ForegroundColor Green
 Write-Host
 Write-Host "  Try going to your AppGW IP again, notice you now have data from the Storage Account via a Private Endpoint!"
 Write-Host
+Stop-Transcript
