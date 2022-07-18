@@ -232,7 +232,7 @@ Catch {# Create Front End Config
 	   Write-Host "  Preping WAF Rules"
 	   $urlPathRule = New-AzApplicationGatewayPathRuleConfig -Name urlPathRule -Paths "/headers/", "/headers" -BackendAddressPool $backendPoolJacks -BackendHttpSettings $poolSettingsJacks
 	   $urlPathMap = New-AzApplicationGatewayUrlPathMapConfig -Name urlPathMap -PathRules $urlPathRule -DefaultBackendAddressPool $backendPoolDefault -DefaultBackendHttpSettings $poolSettingsDefault
-	   $frontendRule = New-AzApplicationGatewayRequestRoutingRule -Name Rule01 -RuleType PathBasedRouting -UrlPathMap $urlPathMap -HttpListener $defaultlistener
+	   $frontendRule = New-AzApplicationGatewayRequestRoutingRule -Name Rule01 -RuleType PathBasedRouting -UrlPathMap $urlPathMap -HttpListener $defaultlistener -Priority 100
 
 	   # Create WAF config and policy
 	   Write-Host "  Preping WAF Config"
