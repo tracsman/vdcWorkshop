@@ -162,8 +162,8 @@ Catch {$FrontEndIPConfig = New-AzLoadBalancerFrontendIpConfig -Name LB-Frontend 
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating VM Scale Set" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "MaxFSBuild.ps1"
-$ExtensionName = 'MaxBuildFS'
+$ScriptName = "MaxFSBuildS2.ps1"
+$ExtensionName = 'MaxFSBuildS2'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
 $ScriptExe = ".\$ScriptName"
