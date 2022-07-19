@@ -63,10 +63,9 @@ $WebConfig | Out-File -FilePath "C:\inetpub\wwwroot\Web.config" -Encoding ascii
 
 # 4. Test/Create Folders
 Write-Host "Creating required folder"
-$Dir = "C:\WebShare\"
 $Dirs = @()
-$Dirs = "C:\WebShare"
-$Dirs = "C:\inetpub\wwwroot"
+$Dirs += "C:\WebShare"
+$Dirs += "C:\inetpub\wwwroot"
 foreach ($Dir in $Dirs) {
     If (-not (Test-Path -Path $Dir)) {New-Item $Dir -ItemType Directory | Out-Null}
 }
@@ -74,8 +73,8 @@ foreach ($Dir in $Dirs) {
 # 5. Write out Rand.txt
 $FileContent = "Hello, I'm the contents of a remote file on $env:computername."
 $Dirs = @()
-$Dirs = "C:\WebShare"
-$Dirs = "C:\inetpub\wwwroot"
+$Dirs += "C:\WebShare"
+$Dirs += "C:\inetpub\wwwroot"
 foreach ($Dir in $Dirs) {
     $FileContent | Out-File -FilePath "$Dir\Rand.txt" -Encoding ascii
 }
