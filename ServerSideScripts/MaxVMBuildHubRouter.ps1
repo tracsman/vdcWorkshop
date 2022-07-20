@@ -3,7 +3,7 @@
 # Send router config to router
 #
 # 1. Test/Create Folders
-# 2. Install the PowerShell SDK
+# 2. Connect with the VM's managed identity
 # 3. Pull Config File
 # 4. Pull Cert and write to mulitple locations
 # 5. Push Router Config
@@ -21,18 +21,7 @@ foreach ($Dir in $Dirs) {
      If (-not (Test-Path -Path $Dir)) {New-Item $Dir -ItemType Directory | Out-Null}
 }
 
-# 2. Install the PowerShell SDK
-Write-Host "Installing Azure PS SDK"
-try {Get-PackageProvider -Name NuGet -ListAvailable -ErrorAction Stop | Out-Null
-     Write-Host "  NuGet already registered, skipping"}
-catch {Install-PackageProvider -Name NuGet -Scope AllUsers -MinimumVersion 2.8.5.201 -Force | Out-Null
-       Write-Host "  NuGet registered"}
-if ($null -ne (Get-Module Az.Network -ListAvailable)) {
-    Write-Host "  Azure SDK already installed, skipping"}
-else {Install-Module Az -Scope AllUsers -Force | Out-Null
-      Write-Host "  Azure SDK installed"}
-
-# Connect with the VM's managed identity
+# 2. Connect with the VM's managed identity
 Write-Host "Connecting using the VM Managed Identity"
 $i = 0
 Connect-AzAccount -Identity

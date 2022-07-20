@@ -17,13 +17,12 @@
 # 9.1 Validate and Initialize
 # 9.2 Create RouteServer
 # 9.3 Create VNet NVA
-# 9.4 Update Hub VM with Managed Identity
-# 9.5 Wait for jobs to finish
-# 9.6 Deploy config for Hub and On-Prem NVAs
-# 9.6.1 Create router configs
-# 9.6.2 Save router configs to storage account
-# 9.6.3 Call VM Extensions to kick off builds
-# 9.7 Create additional monitoring to Log Analytics
+# 9.4 Wait for jobs to finish
+# 9.5 Deploy config for Hub and On-Prem NVAs
+# 9.5.1 Create router configs
+# 9.5.2 Save router configs to storage account
+# 9.5.3 Call VM Extensions to kick off builds
+# 9.6 Create additional monitoring to Log Analytics
 
 # 9.1 Validate and Initialize
 # Setup and Start Logging
@@ -48,7 +47,6 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 $OPName    = "OnPrem-VNet"
 $OPVMName  = "OnPrem-VM01"
 $HubName   = "Hub-VNet"
-$HubVMName = "Hub-VM01"
 $VMSize    = "Standard_DS2_v2"
 
 # Start nicely
@@ -153,27 +151,7 @@ Catch {$kvs = Get-AzKeyVaultSecret -VaultName $KVName -Name "User01" -ErrorActio
        New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $VMConfig -AsJob | Out-Null
 }
 
-# 9.4 Update Hub VM with Managed Identity
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating Hub VM Managed Identity" -ForegroundColor Cyan
-$vmHub = Get-AzVM -ResourceGroupName $RGName -Name $HubVMName
-If ($vmHub.Identity.Type -ne "SystemAssigned") {
-    Update-AzVM -ResourceGroupName $RGName -VM $vmHub -IdentityType SystemAssigned | Out-Null
-    $vmHub = Get-AzVM -ResourceGroupName $RGName -Name $HubVMName
-} Else {Write-Host "  Managed Identity already assined, skipping"}
-Write-Host "VM Principal ID: $($vmHub.Identity.PrincipalId)"
-
-# Pause for 30 seconds to let the Managed Identity "Soak in"
-Start-Sleep -Seconds 30
-Write-Host "  Assigning Key Vault access policy"
-Set-AzKeyVaultAccessPolicy -ResourceGroupName $RGName -VaultName $kvName -ObjectId "$($vmHub.Identity.PrincipalId)" -PermissionsToSecrets @("Get", "List", "Set", "Delete") -ErrorAction Stop
-
-Write-Host "  Assigning Resource Group Contributor role"
-$role = Get-AzRoleAssignment -ObjectId $vmHub.Identity.PrincipalId -ResourceGroupName $RGName -RoleDefinitionName "Contributor"
-If ($null -ne $role) {Write-Host "    role already assigned, skipping"}
-Else {New-AzRoleAssignment -ObjectId $vmHub.Identity.PrincipalId -RoleDefinitionName "Contributor" -ResourceGroupName $RGName | Out-Null}
-
-# 9.5 Wait for jobs to finish
+# 9.4 Wait for jobs to finish
 If ((Get-Job -State Running).Count -gt 0) {
      Write-Host "  Waiting for the Route Server and NVA to deploy, this script will continue after they are built."
      Get-Job | Wait-Job | Out-Null}
@@ -187,8 +165,8 @@ try {Get-AzRouteServerPeer -ResourceGroupName $RGName -RouteServerName $HubName'
      Write-Host "  Route Server Peer exists, skipping"}
 catch {Add-AzRouteServerPeer -ResourceGroupName $RGName -RouteServerName $HubName'-rs' -PeerName "HubNVA" -PeerIp $HubNVAPrivateIP -PeerAsn 65500 -RouteServerName $rs.Name | Out-Null}
 
-# 9.6 Deploy config for Hub and On-Prem NVAs
-# 9.6.1 Create router configs
+# 9.5 Deploy config for Hub and On-Prem NVAs
+# 9.5.1 Create router configs
 # Build Hub NVA Config Script
 $OPPIP  = (Get-AzPublicIpAddress -ResourceGroupName MaxLab -Name $OPName-Router-pip).IpAddress
 $OPPriv = (Get-AzNetworkInterface -ResourceGroupName MaxLab -Name $OPName-Router-nic).IpConfigurations.PrivateIpAddress
@@ -326,7 +304,7 @@ end
 wr
 "@
 
-# 9.6.2 Save router configs to storage account
+# 9.5.2 Save router configs to storage account
 # Save config file
 # Get file names in the Web Container
 Write-Host "  adding html files to storage"
@@ -348,7 +326,7 @@ if ($null -ne ($saFiles | Where-Object -Property Name -eq "OPDelta.txt")) {
 if (Test-Path -Path "HubRouter.txt") {Remove-Item -Path "HubRouter.txt"}
 if (Test-Path -Path "OPDelta.txt") {Remove-Item -Path "OPDelta.txt"}
 
-# 9.6.3 Call VM Extensions to kick off builds
+# 9.5.3 Call VM Extensions to kick off builds
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Pushing out NVA build scripts" -ForegroundColor Cyan
 
@@ -362,10 +340,10 @@ $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/"
 $ScriptExe = "(.\$ScriptName)"
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 
-Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $HubVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
+Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
      Write-Host "    extension exists, skipping"}
 Catch {Write-Host "    queuing build job."
-       Set-AzVMExtension -ResourceGroupName $RGName -VMName $HubVMName -Location $ShortRegion -Name $ExtensionName `
+       Set-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Location $ShortRegion -Name $ExtensionName `
                          -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
                          -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 
@@ -386,7 +364,7 @@ Catch {Write-Host "    queuing build job."
                          -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
                          -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 
-# 9.7 Create additional monitoring to Log Analytics
+# 9.6 Create additional monitoring to Log Analytics
 
 
 # End Nicely

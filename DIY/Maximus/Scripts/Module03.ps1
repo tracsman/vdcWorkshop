@@ -51,6 +51,8 @@ $TenantSubnets = "10.0.1.0/24", "10.1.1.0/24", "10.2.1.0/24", "10.3.1.0/24"
 $AllNet        = ("10.0.1.0/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/24"), ("10.10.1.0/24"), ("10.10.2.0/24"), ("172.16.0.0/24")
 $SMBDest       = "10.2.1.0/24"
 $VPN           = ("10.10.1.0/25"), ("10.0.1.0/24")
+$SSHSource     = "10.10.1.5"
+$SSHDest       = "10.0.1.5"
 
 # Start nicely
 Write-Host
@@ -195,6 +197,13 @@ $fwNetRuleVPN = New-AzFirewallPolicyNetworkRule -Name "Allow-VPN" -SourceAddress
 if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-VPN") {
     Write-Host "      Firewall VPN Network Rule exists, skipping"}
 else {$UpdateFWPolicyObject = $true}
+Write-Host "    Creating Firewall SSH Network Rule"
+$fwNetRuleSSH = New-AzFirewallPolicyNetworkRule -Name "Allow-SSH" -SourceAddress $SSHSource `
+                    -DestinationAddress $SSHSource -DestinationPort 22 -Protocol TCP `
+                    -Description "Allow SSH access between On-Prem VM and Hub NVA to push config"
+if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-SSH") {
+    Write-Host "      Firewall SSH Network Rule exists, skipping"}
+else {$UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall ICMP Network Rule"
 $fwNetRuleICMP = New-AzFirewallPolicyNetworkRule -Name "Allow-ICMP" -SourceAddress * `
                     -DestinationAddress * -DestinationPort * -Protocol ICMP `
@@ -205,7 +214,7 @@ else {$UpdateFWPolicyObject = $true}
 
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall Net Rule Collection to Firewall Policy object"
-     $fwNetColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNet-coll" -Priority 100 -ActionType "Allow" -Rule $fwNetRuleRDP, $fwNetRuleWeb, $fwNetRuleSMB, $fwNetRuleVPN, $fwNetRuleICMP
+     $fwNetColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNet-coll" -Priority 100 -ActionType "Allow" -Rule $fwNetRuleRDP, $fwNetRuleWeb, $fwNetRuleSMB, $fwNetRuleVPN, $fwNetRuleSSH, $fwNetRuleICMP
      Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNetRCGroup.Name -Priority 200 -RuleCollection $fwNetColl -FirewallPolicyObject $fwPolicy}
 
 # Create NAT Rule collection and Rules
