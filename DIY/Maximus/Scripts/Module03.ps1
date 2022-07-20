@@ -48,7 +48,9 @@ $VNetName      = "Hub-VNet"
 $FWName        = "Hub-FW"
 $VMName        = "Hub-VM01"
 $TenantSubnets = "10.0.1.0/24", "10.1.1.0/24", "10.2.1.0/24", "10.3.1.0/24"
-$RDPRules      = ("10.0.1.0/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/24"), ("10.10.1.0/24"), ("10.10.2.0/24")
+$AllNet        = ("10.0.1.0/24"), ("10.1.1.0/24"), ("10.2.1.0/24"), ("10.3.1.0/24"), ("10.10.1.0/24"), ("10.10.2.0/24"), ("172.16.0.0/24")
+$SMBDest       = "10.2.1.0/24"
+$VPN           = ("10.10.1.0/25"), ("10.0.1.0/24")
 
 # Start nicely
 Write-Host
@@ -166,8 +168,8 @@ if ($fwNetRCGroup.Properties.RuleCollection.Name -contains "HubFWNet-coll") {
      Write-Host "      Firewall Net Rule Collection Filter exists, skipping"} 
 else {$UpdateFWPolicyObject = $true}
 Write-Host "    Creating Firewall RDP Network Rule"
-$fwNetRuleRDP = New-AzFirewallPolicyNetworkRule -Name "Allow-RDP" -SourceAddress $RDPRules `
-                    -DestinationAddress $RDPRules -DestinationPort 3389 -Protocol TCP `
+$fwNetRuleRDP = New-AzFirewallPolicyNetworkRule -Name "Allow-RDP" -SourceAddress $AllNet `
+                    -DestinationAddress $AllNet -DestinationPort 3389 -Protocol TCP `
                     -Description "Allow RDP inside the private network for all Azure VMs"
 if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-RDP") {
      Write-Host "      Firewall RDP Network Rule exists, skipping"}
@@ -179,15 +181,31 @@ $fwNetRuleWeb = New-AzFirewallPolicyNetworkRule -Name "Allow-Web" -SourceAddress
 if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-Web") {
     Write-Host "      Firewall Web Network Rule exists, skipping"}
 else {$UpdateFWPolicyObject = $true}
-$fwNetRuleSMB = New-AzFirewallPolicyNetworkRule -Name "Allow-SMB" -SourceAddress $RDPRules `
-                    -DestinationAddress $RDPRules -DestinationPort 445, 137, 139 -Protocol Any `
+Write-Host "    Creating Firewall SMB Network Rule"
+$fwNetRuleSMB = New-AzFirewallPolicyNetworkRule -Name "Allow-SMB" -SourceAddress $AllNet `
+                    -DestinationAddress $SMBDest -DestinationPort 445, 137, 139 -Protocol Any `
                     -Description "Allow SMB inside the private network for all Azure VMs"
 if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-SMB") {
      Write-Host "      Firewall SMB Network Rule exists, skipping"}
- else {$UpdateFWPolicyObject = $true}
+else {$UpdateFWPolicyObject = $true}
+Write-Host "    Creating Firewall VPN Network Rule"
+$fwNetRuleVPN = New-AzFirewallPolicyNetworkRule -Name "Allow-VPN" -SourceAddress $VPN `
+                    -DestinationAddress $VPN -DestinationPort 500, 4500 -Protocol Any `
+                    -Description "Allow access between NVAs in On-Prem and Hub VNets"
+if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-VPN") {
+    Write-Host "      Firewall VPN Network Rule exists, skipping"}
+else {$UpdateFWPolicyObject = $true}
+Write-Host "    Creating Firewall ICMP Network Rule"
+$fwNetRuleICMP = New-AzFirewallPolicyNetworkRule -Name "Allow-ICMP" -SourceAddress * `
+                    -DestinationAddress * -DestinationPort * -Protocol ICMP `
+                    -Description "Allow all VNet ICMP access"
+if ($fwNetRCGroup.Properties.RuleCollection.Rules.Name -contains "Allow-ICMP") {
+    Write-Host "      Firewall ICMP Network Rule exists, skipping"}
+else {$UpdateFWPolicyObject = $true}
+
 if ($UpdateFWPolicyObject) {
      Write-Host "    Adding Firewall Net Rule Collection to Firewall Policy object"
-     $fwNetColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNet-coll" -Priority 100 -ActionType "Allow" -Rule $fwNetRuleRDP, $fwNetRuleWeb, $fwNetRuleSMB
+     $fwNetColl = New-AzFirewallPolicyFilterRuleCollection -Name "HubFWNet-coll" -Priority 100 -ActionType "Allow" -Rule $fwNetRuleRDP, $fwNetRuleWeb, $fwNetRuleSMB, $fwNetRuleVPN, $fwNetRuleICMP
      Set-AzFirewallPolicyRuleCollectionGroup -Name $fwNetRCGroup.Name -Priority 200 -RuleCollection $fwNetColl -FirewallPolicyObject $fwPolicy}
 
 # Create NAT Rule collection and Rules

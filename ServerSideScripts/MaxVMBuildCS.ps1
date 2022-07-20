@@ -88,7 +88,13 @@ if ($null -eq (Get-ChildItem -Path Cert:\LocalMachine\Root | Where-Object {$_.Su
 Write-Host "Creating P2S VPN"
 $vpnConnection = Get-VpnConnection -Name "AzureHub" -AllUserConnection -ErrorAction SilentlyContinue
 if ($null -eq $vpnConnection) {
-     Try {Add-VpnConnection -Name "AzureHub" -ServerAddress $urlAzGW -AllUserConnection -AuthenticationMethod MachineCertificate -SplitTunneling -TunnelType Ikev2 -ErrorAction Stop}
+     Try {Add-VpnConnection -Name "AzureHub" -ServerAddress $urlAzGW -AllUserConnection -AuthenticationMethod MachineCertificate -SplitTunneling -TunnelType Ikev2 -ErrorAction Stop
+          Add-VpnConnectionRoute -ConnectionName "AzureHub" -DestinationPrefix "10.0.0.0/16"
+          Add-VpnConnectionRoute -ConnectionName "AzureHub" -DestinationPrefix "10.1.0.0/16"
+          Add-VpnConnectionRoute -ConnectionName "AzureHub" -DestinationPrefix "10.2.0.0/16"
+          Add-VpnConnectionRoute -ConnectionName "AzureHub" -DestinationPrefix "10.3.0.0/16"
+          Add-VpnConnectionRoute -ConnectionName "AzureHub" -DestinationPrefix "10.10.2.0/24"
+     }
      Catch {Write-Warning 'A fatal issue occurred adding the VPN Connection'
             Write-Host "From the Azure Portal, on the Coffee Shop VM, go to the ""Extension"" blade"
             Write-Host "and uninstall the 'MaxVMBuildCS' extension, then rerun the Module 7 script"

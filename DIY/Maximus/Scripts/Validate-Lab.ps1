@@ -82,6 +82,10 @@ If ($RGName.Length -le 3) {
     Write-Host "RGName is either too short or doesn't exist" -ForegroundColor Red
     Write-Host "                            Update RGName in the init.txt file"
     }
+ElseIf ($RGName.Length -gt 10) {
+    Write-Host "RGName is too long" -ForegroundColor Red
+    Write-Host "                            Update RGName in the init.txt file to 10 characters or less"
+    }
 ElseIf ($RGName -match " ") {
     Write-Host "RGName can not contain spaces" -ForegroundColor Red
     Write-Host "                            Remove spaces in RGName in the init.txt file"

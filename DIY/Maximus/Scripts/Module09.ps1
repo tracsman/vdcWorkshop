@@ -183,9 +183,9 @@ Write-Host "  Deployments complete"
 $rs = Get-AzRouteServer -ResourceGroupName $RGName -RouteServerName $HubName'-rs'
 $hubnva = Get-AzVM -ResourceGroupName $RGName -Name $HubName'-Router'
 $HubNVAPrivateIP = (Get-AzNetworkInterface -ResourceId $hubnva.NetworkProfile.NetworkInterfaces[0].Id).IpConfigurations[0].PrivateIpAddress
-try {Get-AzRouteServerPeer -ResourceGroupName $RGName -PeerName "HubNVA" -ErrorAction Stop | Out-Null
+try {Get-AzRouteServerPeer -ResourceGroupName $RGName -RouteServerName $HubName'-rs' -PeerName "HubNVA" -ErrorAction Stop | Out-Null
      Write-Host "  Route Server Peer exists, skipping"}
-catch {Add-AzRouteServerPeer -ResourceGroupName $RGName -PeerName "HubNVA" -PeerIp $HubNVAPrivateIP -PeerAsn 65500 -RouteServerName $rs.Name | Out-Null}
+catch {Add-AzRouteServerPeer -ResourceGroupName $RGName -RouteServerName $HubName'-rs' -PeerName "HubNVA" -PeerIp $HubNVAPrivateIP -PeerAsn 65500 -RouteServerName $rs.Name | Out-Null}
 
 # 9.6 Deploy config for Hub and On-Prem NVAs
 # 9.6.1 Create router configs

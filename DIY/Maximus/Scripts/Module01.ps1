@@ -107,6 +107,16 @@ If ($myContext.Account.Id -notmatch $RegEx) {
 }
 Write-Host "  Current User: ",$myContext.Account.Id
 
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "  Validating Resource Group" -ForegroundColor Cyan
+if ($RGName.Length -gt 10) {
+    Write-Host "Fatal Error: The Resource Group name you are attempting to use is longer than 10 characters" -ForegroundColor Red
+    Write-Host "Resrouce Group Name: $RGName is $($RGName.Length) characters long"
+    Write-Host "To correct this, you'll need to reduce the length of the Resrouce Group name in your init.txt file."
+    Write-Host
+    Return
+}
+
 # 1.2 Create resource group
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Resource Group $RGName" -ForegroundColor Cyan

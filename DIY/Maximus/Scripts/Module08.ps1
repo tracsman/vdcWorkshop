@@ -45,8 +45,8 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # Non-configurable Variable Initialization (ie don't modify these)
 
 # Override Init.txt value to push deployment to a different region
-if ($ShortRegion -eq "westeurope") {$ShortRegion = "westus2"}
-else {$ShortRegion = "westeurope"}
+if ($ShortRegion -eq "westus3") {$ShortRegion = "westus2"}
+else {$ShortRegion = "westus3"}
  
 $SpokeName    = "Spoke03"
 $VNetName     = $SpokeName + "-VNet"
@@ -349,6 +349,11 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Module 8 completed successfully" -ForegroundColor Green
 Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
 Write-Host
-Write-Host "  Try going to your AppGW IP again, notice you now have data from the VMSS File Server!"
+Write-Host "  You now have an Azure Front Door and a new application instance in $ShortRegion!"
+Write-Host "  Try the following to check out your new resources:"
+Write-Host "    1. Go to your Front Door at https://$fdName.azurefd.net (notice which spoke is serving the content in your AFD)"
+Write-Host "    2. Check out App Service Public IP at http://$WebAppName.azurewebsites.net"
+Write-Host "    3. The new instance is also available from your Front Door if you are closer to $ShortRegion."
+Write-Host "  (note: if you're further away, you can shut down the closer instance to force traffic to the new location."
 Write-Host
 Stop-Transcript
