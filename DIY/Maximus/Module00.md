@@ -36,7 +36,8 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
    
     [![3]][3]
 8. Navigate to init.txt (red boxed item in file hierarchy in the image above)
-9.  In the right-hand pane, update the Subscription ID to your Subscription ID and optionally the RGName to use the resource group name you wish to use inside your subscription.
+9.  In the right-hand pane, update the Subscription ID to your Subscription ID and optionally the RGName to use the resource group name you wish to use inside your subscription. If you edit the resource group name, note that the maximum length is 10 characters. 
+    
     > **IMPORTANT**
     >
     > All scripts in this workshop pull critical information from the init.txt file, so it’s important to update this file to reflect the resource group name and subscription you’ll be using for this deployment of the firewall workshop.  
