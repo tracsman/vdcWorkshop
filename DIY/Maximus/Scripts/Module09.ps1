@@ -328,34 +328,26 @@ if (Test-Path -Path "OPDelta.txt") {Remove-Item -Path "OPDelta.txt"}
 
 # 9.5.3 Call VM Extensions to kick off builds
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Pushing out NVA build scripts" -ForegroundColor Cyan
+Write-Host "Pushing out NVA build script" -ForegroundColor Cyan
 
-# Configure Hub NVA (via HubVM PS extension)
-Write-Host "  running Hub VM build script" -ForegroundColor Cyan
+# Configure Hub and OnPrem NVA (via OnPrem VM PS extension)
+# Note: the Hub NVA is configured from the OnPrem VM via SSH using
+#       the network path through the existing VPN connection to the
+#       Azure VPN Gateway to the Hub Router, this path is allowed
+#       by the Allow-SSH firewall rule.
+Write-Host "  running OnPrem VM build script" -ForegroundColor Cyan
 $ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "MaxVMBuildHubRouter.ps1"
-$ExtensionName = 'MaxVMBuildHubRouter'
+$ScriptName = "MaxVMBuildMod9VPN.ps1"
+$ExtensionName = 'MaxVMBuildMod9VPN'
 $timestamp = (Get-Date).Ticks
 $ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
 $ScriptExe = "(.\$ScriptName)"
 $PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
 
-Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
-     Write-Host "    extension exists, skipping"}
-Catch {Write-Host "    queuing build job."
-       Set-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Location $ShortRegion -Name $ExtensionName `
-                         -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
-                         -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
-
-# Configure On-Prem NVA (via On-Prem VM PS extension)
-Write-Host "  running On-Prem VM build script" -ForegroundColor Cyan
-$ScriptStorageAccount = "vdcworkshop"
-$ScriptName = "MaxVMBuildOPDelta.ps1"
-$ExtensionName = 'MaxVMBuildOPDelta'
-$timestamp = (Get-Date).Ticks
-$ScriptLocation = "https://$ScriptStorageAccount.blob.core.windows.net/scripts/" + $ScriptName
-$ScriptExe = "(.\$ScriptName)"
-$PublicConfiguration = @{"fileUris" = [Object[]]"$ScriptLocation";"timestamp" = "$timestamp";"commandToExecute" = "powershell.exe -ExecutionPolicy Unrestricted -Command $ScriptExe"}
+Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Name 'MaxVMBuildOP' -ErrorAction Stop | Out-Null
+     Write-Host "    old extension exists, deleting"
+     Remove-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Name 'MaxVMBuildOP' -Force | Out-Null}
+Catch {}
 
 Try {Get-AzVMExtension -ResourceGroupName $RGName -VMName $OPVMName -Name $ExtensionName -ErrorAction Stop | Out-Null
      Write-Host "    extension exists, skipping"}
