@@ -6,6 +6,8 @@
 #
 
 Start-Transcript -Path "C:\Workshop\MaxVMBuildMod9VPN.log"
+$User1 = "User01"
+$HubRouterIP = "10.0.1.5"
 
 # 1. Connect with the VM's managed identity
 Write-Host "Connecting using the VM Managed Identity"
@@ -38,7 +40,6 @@ Catch {$RouterConfigDownloadError = $true
 If (-Not $RouterConfigDownloadError) {
      # 3. Push Router Config to routers
      Write-Host "Sending config to Hub router"
-     $HubRouterIP = "10.0.1.5"
      Get-Content -Path "C:\Workshop\HubRouter.txt" | ssh -o "StrictHostKeyChecking no" $User1@$HubRouterIP -E C:\Workshop\HubRouter.err > C:\Workshop\HubRouter.log
      Write-Host "  Config sent to hub router, hopefully successfully"
 
