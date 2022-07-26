@@ -308,7 +308,7 @@ Write-Host "  Checkout your Firewall and policy in the Azure portal."
 Write-Host "  Be sure to check out the Application rule collection for RDP traffic."
 Write-Host "  Also, checkout the Route Table and it's association to the subnet"
 Write-Host
-Write-Host "  Also, use a browser to see your new Web Site served via the FIrewall IP address."
+Write-Host "  Also, use a browser to see your new Web Site served via the Firewall IP address."
 Write-Host "  The IIS Server (via NAT) is at" -NoNewline
 Write-Host "  HTTP://$($pipFW.IpAddress)" -ForegroundColor Yellow
 Write-Host
