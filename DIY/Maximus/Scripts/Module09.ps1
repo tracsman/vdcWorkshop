@@ -18,11 +18,12 @@
 # 9.2 Create RouteServer
 # 9.3 Create VNet NVA
 # 9.4 Wait for jobs to finish
-# 9.5 Deploy config for Hub and On-Prem NVAs
-# 9.5.1 Create router configs
-# 9.5.2 Save router configs to storage account
-# 9.5.3 Call VM Extensions to kick off builds
-# 9.6 Create additional monitoring to Log Analytics
+# 9.5 Update Route Server, UDRs, and NSGs
+# 9.6 Deploy config for Hub and On-Prem NVAs
+# 9.6.1 Create router configs
+# 9.6.2 Save router configs to storage account
+# 9.6.3 Call VM Extensions to kick off builds
+# 9.7 Create additional monitoring to Log Analytics
 
 # 9.1 Validate and Initialize
 # Setup and Start Logging
@@ -100,6 +101,8 @@ $SAName = $RGName.ToLower() + "sa" + $keyUniversal
 try {$sa = Get-AzStorageAccount -ResourceGroupName $RGName -Name $SAName -ErrorAction Stop}
 catch {Write-Warning "The Storage Account was not found, please run Module 6 to ensure this critical resource is created."; Return}
 $sactx = $sa.Context
+try {$pipOPNVA = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router-pip' -ErrorAction Stop}
+catch {Write-Warning "The OnPrem NVA Public IP was not found, please run Module 7 to ensure this critical resource is created."; Return}
 
 # 9.2 Create RouteServer (AsJob)
 # 9.2.1 Create Public IP
@@ -157,16 +160,51 @@ If ((Get-Job -State Running).Count -gt 0) {
      Get-Job | Wait-Job | Out-Null}
 Write-Host "  Deployments complete"
 
+# 9.5 Update Route Server, UDRs, and NSGs
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Updating Route Server, UDRs, and NSGs" -ForegroundColor Cyan
 # Add remote peer
-$rs = Get-AzRouteServer -ResourceGroupName $RGName -RouteServerName $HubName'-rs'
 $hubnva = Get-AzVM -ResourceGroupName $RGName -Name $HubName'-Router'
 $HubNVAPrivateIP = (Get-AzNetworkInterface -ResourceId $hubnva.NetworkProfile.NetworkInterfaces[0].Id).IpConfigurations[0].PrivateIpAddress
 try {Get-AzRouteServerPeer -ResourceGroupName $RGName -RouteServerName $HubName'-rs' -PeerName "HubNVA" -ErrorAction Stop | Out-Null
      Write-Host "  Route Server Peer exists, skipping"}
-catch {Add-AzRouteServerPeer -ResourceGroupName $RGName -RouteServerName $HubName'-rs' -PeerName "HubNVA" -PeerIp $HubNVAPrivateIP -PeerAsn 65500 -RouteServerName $rs.Name | Out-Null}
+catch {Add-AzRouteServerPeer -ResourceGroupName $RGName -RouteServerName $HubName'-rs' -PeerName "HubNVA" -PeerIp $HubNVAPrivateIP -PeerAsn 65500 | Out-Null}
 
-# 9.5 Deploy config for Hub and On-Prem NVAs
-# 9.5.1 Create router configs
+# Add On-prem NVA public IP for UDR
+# Currently Azure Fiewall doesn't support IPsec passthrough
+# Therefor we need a UDR to leak the On-prem NVA pulic ip
+# to the Interenet to bypass the firewall.
+$fwRouteTable = Get-AzRouteTable -Name $HubName'-rt-fw' -ResourceGroupName $RGName -ErrorAction Stop
+if ($fwRouteTable.Routes.Name -contains "Leak-OnPrem-NVA")
+     {Write-Host "  UDR Route exists, skipping"}
+else {Add-AzRouteConfig -RouteTable $fwRouteTable -Name "Leak-OnPrem-NVA" -AddressPrefix ($($pipOPNVA.IpAddress)+"/32") -NextHopType Internet | Set-AzRouteTable | Out-Null}
+
+# Add NSG rule for VPN to On-prem and hub NSG
+# Update Hub NSG
+$nsgHub = Get-AzNetworkSecurityGroup -Name $HubName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
+if ($nsgHub.SecurityRules.Name -contains "Allow-VPN")
+     {Write-Host "  Hub NSG Rule exists, skipping"}
+else {Add-AzNetworkSecurityRuleConfig -NetworkSecurityGroup $nsgHub -Name "Allow-VPN" -Access Allow `
+                                      -Priority 100 -Direction Inbound `
+                                      -SourceAddressPrefix * -SourcePortRange * `
+                                      -DestinationAddressPrefix $pipOPNVA.IpAddress -DestinationPortRange 500,4500 `
+                                      -Protocol * | Set-AzNetworkSecurityGroup | Out-Null}
+
+# Update OnPrem NSG
+$nsgOP = Get-AzNetworkSecurityGroup -Name $OPName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
+if ($nsgOP.SecurityRules.Name -contains "Allow-VPN")
+     {Write-Host "  OnPrem NSG Rule exists, skipping"}
+else {Add-AzNetworkSecurityRuleConfig -NetworkSecurityGroup $nsgOP -Name "Allow-VPN" -Access Allow `
+                                      -Priority 100 -Direction Inbound `
+                                      -SourceAddressPrefix * -SourcePortRange * `
+                                      -DestinationAddressPrefix $pipHubNVA.IpAddress -DestinationPortRange 500,4500 `
+                                      -Protocol * | Set-AzNetworkSecurityGroup | Out-Null}
+
+
+# 9.6 Deploy config for Hub and On-Prem NVAs
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Create and save router configs" -ForegroundColor Cyan
+# 9.6.1 Create router configs
 # Build Hub NVA Config Script
 $OPPIP  = (Get-AzPublicIpAddress -ResourceGroupName MaxLab -Name $OPName-Router-pip).IpAddress
 $OPPriv = (Get-AzNetworkInterface -ResourceGroupName MaxLab -Name $OPName-Router-nic).IpConfigurations.PrivateIpAddress
@@ -251,6 +289,7 @@ ip route $siteRSPrefix $siteRSSubnet $siteHubDfGate
 end
 wr
 "@
+Write-Host "  Hub NVA config created"
 
 # Build On-Prem NVA Config Script
 $HubPIP  = (Get-AzPublicIpAddress -ResourceGroupName MaxLab -Name $HubName-Router-pip).IpAddress
@@ -303,8 +342,9 @@ ip route $HubPriv 255.255.255.255 Tunnel2
 end
 wr
 "@
+Write-Host "  OnPrem NVA config created"
 
-# 9.5.2 Save router configs to storage account
+# 9.6.2 Save router configs to storage account
 # Save config file
 # Get file names in the Web Container
 Write-Host "  adding html files to storage"
@@ -326,7 +366,7 @@ if ($null -ne ($saFiles | Where-Object -Property Name -eq "OPDelta.txt")) {
 if (Test-Path -Path "HubRouter.txt") {Remove-Item -Path "HubRouter.txt"}
 if (Test-Path -Path "OPDelta.txt") {Remove-Item -Path "OPDelta.txt"}
 
-# 9.5.3 Call VM Extensions to kick off builds
+# 9.6.3 Call VM Extensions to kick off builds
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Pushing out NVA build script" -ForegroundColor Cyan
 
@@ -356,7 +396,7 @@ Catch {Write-Host "    queuing build job."
                          -Publisher 'Microsoft.Compute' -ExtensionType 'CustomScriptExtension' -TypeHandlerVersion '1.9' `
                          -Settings $PublicConfiguration -AsJob -ErrorAction Stop | Out-Null}
 
-# 9.6 Create additional monitoring to Log Analytics
+# 9.7 Create additional monitoring to Log Analytics
 
 
 # End Nicely

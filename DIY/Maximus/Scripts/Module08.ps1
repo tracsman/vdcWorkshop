@@ -17,7 +17,6 @@
 # 8.1 Validate and Initialize
 # 8.2 Create Spoke VNet, NSG, apply UDR, and DNS
 # 8.3 Enable VNet Peering to the hub using remote gateway
-# 8.4 
 # 8.4 Create Web App and compress
 # 8.5 Create App Service
 # 8.6 Tie Web App to the network
@@ -351,9 +350,12 @@ Write-Host "  All environment components are built, time to play!" -ForegroundCo
 Write-Host
 Write-Host "  You now have an Azure Front Door and a new application instance in $ShortRegion!"
 Write-Host "  Try the following to check out your new resources:"
-Write-Host "    1. Go to your Front Door at https://$fdName.azurefd.net (notice which spoke is serving the content in your AFD)"
-Write-Host "    2. Check out App Service Public IP at http://$WebAppName.azurewebsites.net"
-Write-Host "    3. The new instance is also available from your Front Door if you are closer to $ShortRegion."
-Write-Host "  (note: if you're further away, you can shut down the closer instance to force traffic to the new location."
+Write-Host "    1. Check out the new App Service at http://$WebAppName.azurewebsites.net"
+Write-Host "    2. Go to your Front Door at https://$fdName.azurefd.net (it may take a few"
+Write-Host "       minutes for AFD to come up around the world)"
+Write-Host "    3. Also notice which spoke is serving the content in your AFD, the new instance"
+Write-Host "       is also available from your Front Door if you are closer to $ShortRegion."
+Write-Host "       (note: if you're further away, you can shut down the closer instance to"
+Write-Host "              force AFD to the new location.)"
 Write-Host
 Stop-Transcript

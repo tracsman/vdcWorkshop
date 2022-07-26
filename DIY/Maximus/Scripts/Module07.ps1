@@ -169,9 +169,9 @@ Try {$gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName
 Catch {
     $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'GatewaySubnet' -VirtualNetwork $vnetHub
     Try {$pip1Hub = Get-AzPublicIpAddress -Name $HubName'-gw-pip1'  -ResourceGroupName $RGName -ErrorAction Stop}
-    Catch {$pip1Hub = New-AzPublicIpAddress -Name $HubName'-gw-pip1' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Dynamic}
+    Catch {$pip1Hub = New-AzPublicIpAddress -Name $HubName'-gw-pip1' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Static}
     Try {$pip2Hub = Get-AzPublicIpAddress -Name $HubName'-gw-pip2'  -ResourceGroupName $RGName -ErrorAction Stop}
-    Catch {$pip2Hub = New-AzPublicIpAddress -Name $HubName'-gw-pip2' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Dynamic}
+    Catch {$pip2Hub = New-AzPublicIpAddress -Name $HubName'-gw-pip2' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Static}
     $ipconf1 = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf1" -SubnetId $subnet.Id -PublicIpAddressId $pip1Hub.Id
     $ipconf2 = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf2" -SubnetId $subnet.Id -PublicIpAddressId $pip2Hub.Id
     $gwHub = New-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -Location $ShortRegion `
@@ -259,7 +259,7 @@ if ($MPTermsAccepted) {
     # 7.5.1 Create Public IP
     Try {$pipOPGW = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router-pip' -ErrorAction Stop
          Write-Host "  Public IP exists, skipping"}
-    Catch {$pipOPGW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router-pip' -Location $ShortRegion -AllocationMethod Dynamic}
+    Catch {$pipOPGW = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName'-Router-pip' -Location $ShortRegion -AllocationMethod Static -Sku Standard -IpAddressVersion IPv4}
     # 7.5.2 Create NIC
     $vnetOP = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName -ErrorAction Stop
     $snTenant =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnetOP -Name "Tenant"
@@ -452,7 +452,7 @@ If ($vmOP.Identity.Type -ne "SystemAssigned") {
     Update-AzVM -ResourceGroupName $RGName -VM $vmOP -IdentityType SystemAssigned | Out-Null
     $vmOP = Get-AzVM -ResourceGroupName $RGName -Name $OPVMName
 } Else {Write-Host "  Managed Identity already assined, skipping"}
-Write-Host "VM Principal ID: $($vmOP.Identity.PrincipalId)"
+Write-Host "  VM Principal ID: $($vmOP.Identity.PrincipalId)"
 
 # Pause for 30 seconds to let the Managed Identity "Soak in"
 Start-Sleep -Seconds 30
@@ -610,13 +610,15 @@ Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
 Catch {$response = $null}
 $i=0
 if ($response.StatusCode -ne 200) {Write-Host "    waiting for Client cert to be posted to the storage account (max wait 30 minutes)"
+    Write-Host "    " -NoNewline
     Do {Start-Sleep -Seconds 10
         Write-Host "*" -NoNewline
         Try {$response = Invoke-WebRequest -Uri $urlCert -ErrorAction Stop}
         Catch {$response = $null}
         $i++
     }
-     Until ($response.StatusCode -eq 200 -or $i -gt 180) 
+     Until ($response.StatusCode -eq 200 -or $i -gt 180)
+     Write-Host
 }
 if ($response.StatusCode -ne 200) {Write-Host "    Client cert not written after 30 minutes, proceeding without it"}
 
