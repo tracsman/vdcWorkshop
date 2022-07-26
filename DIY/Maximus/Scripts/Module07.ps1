@@ -169,9 +169,9 @@ Try {$gwHub = Get-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName
 Catch {
     $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'GatewaySubnet' -VirtualNetwork $vnetHub
     Try {$pip1Hub = Get-AzPublicIpAddress -Name $HubName'-gw-pip1'  -ResourceGroupName $RGName -ErrorAction Stop}
-    Catch {$pip1Hub = New-AzPublicIpAddress -Name $HubName'-gw-pip1' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Static}
+    Catch {$pip1Hub = New-AzPublicIpAddress -Name $HubName'-gw-pip1' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Dynamic}
     Try {$pip2Hub = Get-AzPublicIpAddress -Name $HubName'-gw-pip2'  -ResourceGroupName $RGName -ErrorAction Stop}
-    Catch {$pip2Hub = New-AzPublicIpAddress -Name $HubName'-gw-pip2' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Static}
+    Catch {$pip2Hub = New-AzPublicIpAddress -Name $HubName'-gw-pip2' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Dynamic}
     $ipconf1 = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf1" -SubnetId $subnet.Id -PublicIpAddressId $pip1Hub.Id
     $ipconf2 = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf2" -SubnetId $subnet.Id -PublicIpAddressId $pip2Hub.Id
     $gwHub = New-AzVirtualNetworkGateway -Name $HubName'-gw' -ResourceGroupName $RGName -Location $ShortRegion `
