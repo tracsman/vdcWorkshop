@@ -705,7 +705,13 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Module 7 completed successfully" -ForegroundColor Green
 Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
 Write-Host
-Write-Host "  S2S should be connected now"
-Write-Host "  You'll need to RDP (via Bastion) to the Coffee Shop VM and manually connect the VPN"
+Write-Host "  S2S should be connected now, to validate check the Connection component for"
+Write-Host "  the $HubName-gw, its $HubName-gw-op-conn in the Portal. If the Status of"
+Write-Host "  that object is ""Connected"" the S2S tunnel is up and healthy."
+Write-Host
+Write-Host "  To validate the P2S connection, you'll need to RDP (via Bastion) to the"
+Write-Host "  Coffee Shop VM and then manually connect the VPN connection named ""AzureHub"""
+Write-Host "  when the ""Connect"" button is clicked the P2S connection will use a local"
+Write-Host "  certificate and the connection should be successful."
 Write-Host
 Stop-Transcript
