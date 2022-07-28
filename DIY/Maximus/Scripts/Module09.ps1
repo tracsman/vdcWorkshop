@@ -206,8 +206,8 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Create and save router configs" -ForegroundColor Cyan
 # 9.6.1 Create router configs
 # Build Hub NVA Config Script
-$OPPIP  = (Get-AzPublicIpAddress -ResourceGroupName MaxLab -Name $OPName-Router-pip).IpAddress
-$OPPriv = (Get-AzNetworkInterface -ResourceGroupName MaxLab -Name $OPName-Router-nic).IpConfigurations.PrivateIpAddress
+$OPPIP  = (Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $OPName-Router-pip).IpAddress
+$OPPriv = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $OPName-Router-nic).IpConfigurations.PrivateIpAddress
 $OPASN  = "65000"
 $HubASN = "65500"
 $rs     = Get-AzRouteServer -ResourceGroupName $RGName -RouteServerName $HubName'-rs' -ErrorAction Stop
@@ -292,8 +292,8 @@ wr
 Write-Host "  Hub NVA config created"
 
 # Build On-Prem NVA Config Script
-$HubPIP  = (Get-AzPublicIpAddress -ResourceGroupName MaxLab -Name $HubName-Router-pip).IpAddress
-$HubPriv = (Get-AzNetworkInterface -ResourceGroupName MaxLab -Name $HubName-Router-nic).IpConfigurations.PrivateIpAddress
+$HubPIP  = (Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $HubName-Router-pip).IpAddress
+$HubPriv = (Get-AzNetworkInterface -ResourceGroupName $RGName -Name $HubName-Router-nic).IpConfigurations.PrivateIpAddress
 $OPOutput = @"
 term width 200
 conf t
