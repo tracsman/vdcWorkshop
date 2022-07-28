@@ -400,10 +400,25 @@ Catch {Write-Host "    queuing build job."
 
 
 # End Nicely
+$opvnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $OPName
+$snTenant =  Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $opvnet -Name "Tenant"
+$TenantPrefix = $snTenant.AddressPrefix
+
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Module 9 completed successfully" -ForegroundColor Green
 Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
 Write-Host
-Write-Host "  Try going to your AppGW IP again, notice you now have data from the VMSS File Server!"
+Write-Host "  You now have an NVA in the Hub VNet connected via IPsec to the On-Prem NVA."
 Write-Host
+Write-Host "  To validate this is working correctly, you can look at the PowerShell output"
+Write-Host "  from the Route Server. In your Cloud Shell, run the below command to see if"
+Write-Host "  the route server is seeing on-prem prefixes from the Hub NVA which indicates"
+Write-Host "  the Hub NVA is recieving routes from the on-prem NVA and all is working."
+Write-Host
+Write-Host "  Get-AzRouteServerPeerLearnedRoute -ResourceGroupName $RGName -RouteServerName $($HubName+'-rs') -PeerName HubNVA" -ForegroundColor DarkYellow
+Write-Host
+Write-Host "  Look for two entries one to each instance of Route Server for the on-prem"
+Write-Host "  prefix (the Network field in the PS output) which is: $TenantPrefix"
+Write-Host
+
 Stop-Transcript

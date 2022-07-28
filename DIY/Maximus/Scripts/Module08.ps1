@@ -101,7 +101,7 @@ finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 $WebAppName=$SpokeName + $keyUniversal + '-app'
 $PEPName = $RGName.ToLower() + "sa" + $keyUniversal
-$fdName = $SpokeName + $keyUniversal + "-fd"
+$fdName = $RGName + $keyUniversal + "-fd"
 
 # 8.2 Create Spoke VNet, NSG, apply UDR, and DNS
 # Create Tenant Subnet NSG
