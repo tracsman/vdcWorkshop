@@ -1,4 +1,5 @@
 # Connect with the VM's managed identity
+Start-Transcript -Path "C:\Workshop\MaxTest.log"
 Write-Host "Starting"
 Write-Host "Connect-AzAccount"
 Connect-AzAccount -Identity
@@ -13,3 +14,4 @@ Get-AzContext
 $ctx = Get-AzContext
 Write-Host "SubID: $($ctx.Subscription.Id)"
 Write-Host "Done"
+Stop-Transcript
