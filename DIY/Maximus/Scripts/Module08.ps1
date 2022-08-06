@@ -101,7 +101,7 @@ finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 $WebAppName=$SpokeName + $keyUniversal + '-app'
 $PEPName = $RGName.ToLower() + "sa" + $keyUniversal
-$fdName = $RGName + $keyUniversal + "-fd"
+$fdName = "aa-" + $RGName + $keyUniversal + "-fd"
 
 # 8.2 Create Spoke VNet, NSG, apply UDR, and DNS
 # Create Tenant Subnet NSG
@@ -308,40 +308,45 @@ else {Write-Host "  App Service already connected to VNet, skipping"}
 # 8.6 Create the Azure Front Door
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Azure Front Door" -ForegroundColor Cyan
-Try {Get-AzFrontDoor -ResourceGroupName $RGname -Name $fdName -ErrorAction Stop | Out-Null
-     Write-Host '  resource exists, skipping'}
-Catch {
-    # Create Front End Endpoint
-    $fdFE = New-AzFrontDoorFrontendEndpointObject -Name $fdName'-fe' -HostName $fdName".azurefd.net"
 
-    # Create Back End
-    # Create Backend Objects
-    $pipSpoke01 = Get-AzPublicIpAddress -Name $S1Name-AppGw-pip -ResourceGroupName $RGname
-    $urlSpoke03 = $webapp.Properties.defaultHostName
-    $fdBES1 = New-AzFrontDoorBackendObject -Address $pipSpoke01.IpAddress
-    $fdBES3 = New-AzFrontDoorBackendObject -Address $urlSpoke03
+Write-Host "  Creating AFD Profile"
+try {Get-AzFrontDoorCdnProfile -ResourceGroupName $RGName -Name $fdName -ErrorAction Stop | Out-Null
+     Write-Host "    AFD Profile exists, skipping"}
+catch {New-AzFrontDoorCdnProfile -ResourceGroupName $RGName -Name $fdName -SkuName Premium_AzureFrontDoor -Location Global | Out-Null}
 
-    # Create Health Probe
-    $fdHP = New-AzFrontDoorHealthProbeSettingObject -Name $fdName"-probe" -Path "/" -Protocol Http
+Write-Host "  Creating AFD Endpoint"
+try {$fdFE = Get-AzFrontDoorCdnEndpoint -ResourceGroupName $RGName -EndpointName $fdName'-fe' -ProfileName $fdName -ErrorAction Stop
+     Write-Host "    AFD Endpoint exists, skipping"}
+catch {$fdFE = New-AzFrontDoorCdnEndpoint -ResourceGroupName $RGName -ProfileName $fdName -EndpointName $fdName'-fe' -Location Global}
 
-    # Create Load Balance Settings
-    $fdLB = New-AzFrontDoorLoadBalancingSettingObject -Name $fdName"-lb" -SampleSize 4 -SuccessfulSamplesRequired 2
+$fdHP = New-AzFrontDoorCdnOriginGroupHealthProbeSettingObject -ProbeIntervalInSecond 60 -ProbePath "/" -ProbeRequestType GET -ProbeProtocol Http
+$fdLB = New-AzFrontDoorCdnOriginGroupLoadBalancingSettingObject -AdditionalLatencyInMillisecond 50 -SampleSize 4 -SuccessfulSamplesRequired 2
 
-    # Create Backend Pool
-    $fdBEPool = New-AzFrontDoorBackendPoolObject -ResourceGroupName $RGName -Name $fdName"-pool" -FrontDoorName $fdName `
-                                                 -Backend $fdBES1, $fdBES3 -HealthProbeSettingsName $fdHP.Name `
-                                                 -LoadBalancingSettingsName $fdLB.Name
+Write-Host "  Creating Orgin Group"
+try {$fdOG = Get-AzFrontDoorCdnOriginGroup -OriginGroupName $fdName'-og' -ProfileName $fdName -ResourceGroupName $RGName -ErrorAction Stop
+     Write-Host "    AFD Origin Group exists, skipping"}
+catch {$fdOG = New-AzFrontDoorCdnOriginGroup -OriginGroupName $fdName'-og' -ProfileName $fdName -ResourceGroupName $RGName -HealthProbeSetting $fdHP -LoadBalancingSetting $fdLB}
 
-    # Create Load Balancing Rule
-    # Set rule to accept both http and https, but forward to the back as http (the IIS server is only serving on port 80)
-    $fdRR = New-AzFrontDoorRoutingRuleObject -ResourceGroupName $RGname -Name $fdName"-rule" -FrontDoorName $fdName `
-                                             -FrontendEndpointName $fdFE.Name -BackendPoolName $fdBEPool.Name `
-                                             -AcceptedProtocol Http, Https -PatternToMatch "/*" -ForwardingProtocol HttpOnly
+$pipSpoke01 = Get-AzPublicIpAddress -Name $S1Name-AppGw-pip -ResourceGroupName $RGname
+$urlSpoke03 = $webapp.Properties.defaultHostName
+Write-Host "  Creating Orgin 1"
+try {Get-AzFrontDoorCdnOrigin -OriginGroupName $fdName'-og' -OriginName $fdName'-og-o1' -ProfileName $fdName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
+     Write-Host "    AFD Origin 1 exists, skipping"}
+catch {New-AzFrontDoorCdnOrigin -OriginGroupName $fdName'-og' -OriginName $fdName'-og-o1' -ProfileName $fdName -ResourceGroupName $RGName `
+                                -HostName $pipSpoke01.IpAddress -HttpPort 80 -Priority 1 -Weight 1000 -EnforceCertificateNameCheck $false | Out-Null}
 
-    # Create Front Door
-    New-AzFrontDoor -ResourceGroupName $RGName -Name $fdName -BackendPool $fdBEPool -FrontendEndpoint $fdFE `
-                    -HealthProbeSetting $fdHP -LoadBalancingSetting $fdLB -RoutingRule $fdRR -DisableCertificateNameCheck | Out-Null
-}
+Write-Host "  Creating Orgin 2"
+try {Get-AzFrontDoorCdnOrigin -OriginGroupName $fdName'-og' -OriginName $fdName'-og-o2' -ProfileName $fdName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
+      Write-Host "    AFD Origin 2 exists, skipping"}
+catch {New-AzFrontDoorCdnOrigin -OriginGroupName $fdName'-og' -OriginName $fdName'-og-o2' -ProfileName $fdName -ResourceGroupName $RGName `
+                                -HostName $urlSpoke03 -OriginHostHeader $urlSpoke03 -EnforceCertificateNameCheck $false -HttpPort 80 -Priority 1 -Weight 1000 | Out-Null}
+
+Write-Host "  Creating AFD Route"
+try {Get-AzFrontDoorCdnRoute -EndpointName $fdFE.Name -Name $fdName'-route' -ProfileName $fdName -ResourceGroupName $RGName -ErrorAction Stop
+     Write-Host "    AFD Route exists, skipping"}
+catch {New-AzFrontDoorCdnRoute -EndpointName $fdFE.Name -Name $fdName'-route' -ProfileName $fdName -ResourceGroupName $RGName `
+                               -ForwardingProtocol 'HttpOnly' -HttpsRedirect Enabled -LinkToDefaultDomain Enabled -OriginGroupId $fdOG.Id -SupportedProtocol Http,Https}
+
 
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline
