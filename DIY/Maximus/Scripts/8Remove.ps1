@@ -18,6 +18,13 @@ if ($KillApp) {
     try {$WepApp = (Get-AzWebApp -ResourceGroupName $RGName -ErrorAction Stop | Select-Object -First 1)
          Remove-AzWebApp -ResourceGroupName $RGName -Name $WepApp.Name -Force -DeleteAppServicePlan -AsJob | Out-Null}
     catch {Write-Host "  It's not there"}
+    Write-Host "Killing App Service Private Endpoint" -ForegroundColor Cyan
+    try {$peWepApp = (Get-AzPrivateEndpoint -ResourceGroupName $RGName -ErrorAction Stop | Where-Object Name -Match "app-pe")
+         Remove-AzPrivateEndpoint -ResourceGroupName $RGName -Name $peWepApp.Name -Force | Out-Null}
+    catch {Write-Host "  It's not there"}
+    Write-Host "Killing App Service DNS Zone" -ForegroundColor Cyan
+    try {Remove-AzPrivateDnsZone -ResourceGroupName $RGName -Name "privatelink.azurewebsites.net" -ErrorAction Stop}
+    catch {Write-Host "  It's not there"}
 }
 
 if ($KillVNet) {
@@ -44,10 +51,12 @@ if ($KillVNet) {
 
 if ($KillAFD) {
     Write-Host "Killing AFD" -ForegroundColor Cyan
-    Try {$fd = Get-AzFrontDoor -ResourceGroupName $RGname -ErrorAction Stop | Select-Object -First 1
-         Remove-AzFrontDoor -ResourceGroupName $RGname -Name $fd.Name | Out-Null}
+    Try {$fd = Get-AzFrontDoorCdnProfile -ResourceGroupName $RGname -ErrorAction Stop | Select-Object -First 1
+         Remove-AzFrontDoorCdnProfile -ResourceGroupName $RGname -Name $fd.Name | Out-Null}
     Catch {Write-Host "  It's not there"}
 }
+
+if ($KillApp) {Remove-AzAppServicePlan -ResourceGroupName MaxLab -Name $($WepApp.Name + '-plan') -Force}
 
 Write-Host "Waiting for All Jobs to complete"
 Get-Job  | Wait-Job -Timeout 600 | Out-Null

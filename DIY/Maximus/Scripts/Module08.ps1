@@ -21,6 +21,7 @@
 # 8.5 Create App Service
 # 8.6 Tie Web App to the network
 # 8.7 Create the Azure Front Door with WAF
+# 8.8 Approve the AFD Private Link Service request to AppSvc
 
 # 8.1 Validate and Initialize
 # Setup and Start Logging
@@ -46,11 +47,12 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # Override Init.txt value to push deployment to a different region
 if ($ShortRegion -eq "westus3") {$ShortRegion = "westus2"}
 else {$ShortRegion = "westus3"}
- 
+
 $SpokeName    = "Spoke03"
 $VNetName     = $SpokeName + "-VNet"
 $AddressSpace = "10.3.0.0/16"
 $TenantSpace  = "10.3.1.0/24"
+$PrivEPSpace  = "10.3.2.0/24"
 $HubName      = "Hub-VNet"
 $FWName       = "Hub-FW"
 $S1Name       = "Spoke01"
@@ -130,6 +132,7 @@ Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -
        Write-Host (Get-Date)' - ' -NoNewline
        Write-Host "Adding subnets" -ForegroundColor Cyan
        Add-AzVirtualNetworkSubnetConfig -Name "Tenant" -VirtualNetwork $vnet -AddressPrefix $TenantSpace -NetworkSecurityGroup $nsg -RouteTable $fwRouteTable | Out-Null
+       Add-AzVirtualNetworkSubnetConfig -Name "LinkSvc" -VirtualNetwork $vnet -AddressPrefix $PrivEPSpace -NetworkSecurityGroup $nsg -PrivateEndpointNetworkPoliciesFlag Disabled | Out-Null
        Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null
        $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
 }
@@ -285,10 +288,10 @@ Write-Host "Creating App Service" -ForegroundColor Cyan
 # Create a web app
 try {Get-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ErrorAction Stop | Out-Null
      Write-Host "  App Service exists, skipping"}
-catch {New-AzWebApp -ResourceGroupName $RGName -Location $ShortRegion -Name $WebAppName -AppServicePlan $WebAppName-plan | Out-Null}
+catch {New-AzWebApp -ResourceGroupName $RGName -Location $ShortRegion -Name $WebAppName -AppServicePlan $WebAppName-plan -ErrorAction Stop | Out-Null}
 
 # Publish the web app
-Publish-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ArchivePath $WebDir/wwwroot.zip -Force | Out-Null
+Publish-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ArchivePath "$WebDir/wwwroot.zip" -Force -ErrorAction Stop | Out-Null
 
 # 8.5 Tie Web App to the network
 Write-Host (Get-Date)' - ' -NoNewline
@@ -305,16 +308,46 @@ if ($null -eq $webApp.Properties.virtualNetworkSubnetId) {
      $webApp | Set-AzResource -Force | Out-Null}
 else {Write-Host "  App Service already connected to VNet, skipping"}
 
+# Create App Service Private Endpoint
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Creating Private Endpoint" -ForegroundColor Cyan
+$peConn = New-AzPrivateLinkServiceConnection -Name $WebAppName"-pe-conn" -PrivateLinkServiceId $webApp.Id -GroupId sites
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
+$snLinkSvc = Get-AzVirtualNetworkSubnetConfig -Name "LinkSvc" -VirtualNetwork $vnet -ErrorAction Stop
+try {$privateEP = Get-AzPrivateEndpoint -ResourceGroupName $RGName -Name $WebAppName"-pe" -ErrorAction Stop
+     Write-Host "  Endpoint already exists, skipping"}
+catch {$privateEP = New-AzPrivateEndpoint -ResourceGroupName $RGName -Location $ShortRegion -Name $WebAppName"-pe" -Subnet $snLinkSvc -PrivateLinkServiceConnection $peConn}
+
+# Configure PE DNS
+$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
+# Get/Create DNS Zone
+Write-Host "  creating DNS Zone"
+try {Get-AzPrivateDnsZone -ResourceGroupName $RGName -Name privatelink.azurewebsites.net -ErrorAction Stop | Out-Null
+     Write-Host "    DNS Zone already exists, skipping"}
+catch {New-AzPrivateDnsZone -ResourceGroupName $RGName -Name privatelink.azurewebsites.net | Out-Null}
+
+# Get/Link Zone to Spoke03 VNet
+Write-Host "  linking zone to spoke03 vnet"
+try {Get-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $RGName -ZoneName privatelink.azurewebsites.net -Name linkAppSvc -ErrorAction Stop | Out-Null
+     Write-Host "    DNS link to Spoke02 already exists, skipping"}
+catch {New-AzPrivateDnsVirtualNetworkLink -ResourceGroupName $RGName -ZoneName privatelink.azurewebsites.net -Name linkAppSvc -VirtualNetworkId $vnet.Id | Out-Null}
+
+# Add the A Record for the Endpoint to the DNS Zone
+Write-Host "  create DNS A Record for the Private Endpoint"
+$peIP = New-AzPrivateDnsRecordConfig  -IPv4Address $privateEP.CustomDnsConfigs[0].IpAddresses[0]
+try {Get-AzPrivateDnsRecordSet -ResourceGroupName $RGName -Name $WebAppName -ZoneName privatelink.azurewebsites.net -RecordType A -ErrorAction Stop | Out-Null
+    Write-Host "    DNS A Record already exists, skipping"}
+catch {New-AzPrivateDnsRecordSet -ResourceGroupName $RGName -Name $WebAppName -ZoneName privatelink.azurewebsites.net -RecordType A -Ttl 3600 -PrivateDnsRecord $peIP | Out-Null}
+
 # 8.6 Create the Azure Front Door
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Azure Front Door" -ForegroundColor Cyan
-
-Write-Host "  Creating AFD Profile"
-try {Get-AzFrontDoorCdnProfile -ResourceGroupName $RGName -Name $fdName -ErrorAction Stop | Out-Null
+Write-Host "  creating AFD Profile"
+try {Get-AzFrontDoorCdnProfile -ResourceGroupName $RGName -ProfileName $fdName -ErrorAction Stop | Out-Null
      Write-Host "    AFD Profile exists, skipping"}
-catch {New-AzFrontDoorCdnProfile -ResourceGroupName $RGName -Name $fdName -SkuName Premium_AzureFrontDoor -Location Global | Out-Null}
+catch {New-AzFrontDoorCdnProfile -ResourceGroupName $RGName -ProfileName $fdName -SkuName Premium_AzureFrontDoor -Location Global -ErrorAction Stop | Out-Null}
 
-Write-Host "  Creating AFD Endpoint"
+Write-Host "  creating AFD Endpoint"
 try {$fdFE = Get-AzFrontDoorCdnEndpoint -ResourceGroupName $RGName -EndpointName $fdName'-fe' -ProfileName $fdName -ErrorAction Stop
      Write-Host "    AFD Endpoint exists, skipping"}
 catch {$fdFE = New-AzFrontDoorCdnEndpoint -ResourceGroupName $RGName -ProfileName $fdName -EndpointName $fdName'-fe' -Location Global}
@@ -322,31 +355,72 @@ catch {$fdFE = New-AzFrontDoorCdnEndpoint -ResourceGroupName $RGName -ProfileNam
 $fdHP = New-AzFrontDoorCdnOriginGroupHealthProbeSettingObject -ProbeIntervalInSecond 60 -ProbePath "/" -ProbeRequestType GET -ProbeProtocol Http
 $fdLB = New-AzFrontDoorCdnOriginGroupLoadBalancingSettingObject -AdditionalLatencyInMillisecond 50 -SampleSize 4 -SuccessfulSamplesRequired 2
 
-Write-Host "  Creating Orgin Group"
+Write-Host "  creating Origin Group"
 try {$fdOG = Get-AzFrontDoorCdnOriginGroup -OriginGroupName $fdName'-og' -ProfileName $fdName -ResourceGroupName $RGName -ErrorAction Stop
      Write-Host "    AFD Origin Group exists, skipping"}
 catch {$fdOG = New-AzFrontDoorCdnOriginGroup -OriginGroupName $fdName'-og' -ProfileName $fdName -ResourceGroupName $RGName -HealthProbeSetting $fdHP -LoadBalancingSetting $fdLB}
 
 $pipSpoke01 = Get-AzPublicIpAddress -Name $S1Name-AppGw-pip -ResourceGroupName $RGname
 $urlSpoke03 = $webapp.Properties.defaultHostName
-Write-Host "  Creating Orgin 1"
+Write-Host "    adding Origin 1"
 try {Get-AzFrontDoorCdnOrigin -OriginGroupName $fdName'-og' -OriginName $fdName'-og-o1' -ProfileName $fdName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
-     Write-Host "    AFD Origin 1 exists, skipping"}
+     Write-Host "      AFD Origin 1 exists, skipping"}
 catch {New-AzFrontDoorCdnOrigin -OriginGroupName $fdName'-og' -OriginName $fdName'-og-o1' -ProfileName $fdName -ResourceGroupName $RGName `
-                                -HostName $pipSpoke01.IpAddress -HttpPort 80 -Priority 1 -Weight 1000 -EnforceCertificateNameCheck $false | Out-Null}
+                                -HostName $pipSpoke01.IpAddress -HttpPort 80 -Priority 1 -Weight 1000 | Out-Null}
 
-Write-Host "  Creating Orgin 2"
+Write-Host "    adding Origin 2"
 try {Get-AzFrontDoorCdnOrigin -OriginGroupName $fdName'-og' -OriginName $fdName'-og-o2' -ProfileName $fdName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
-      Write-Host "    AFD Origin 2 exists, skipping"}
+      Write-Host "      AFD Origin 2 exists, skipping"}
 catch {New-AzFrontDoorCdnOrigin -OriginGroupName $fdName'-og' -OriginName $fdName'-og-o2' -ProfileName $fdName -ResourceGroupName $RGName `
-                                -HostName $urlSpoke03 -OriginHostHeader $urlSpoke03 -EnforceCertificateNameCheck $false -HttpPort 80 -Priority 1 -Weight 1000 | Out-Null}
+                                -HostName $urlSpoke03 -OriginHostHeader $urlSpoke03 -HttpPort 80 -Priority 1 -Weight 1000 `
+                                -PrivateLinkId $webApp.Id  -SharedPrivateLinkResourceGroupId sites `
+                                -SharedPrivateLinkResourcePrivateLinkLocation westus3 `
+                                -SharedPrivateLinkResourceRequestMessage "App Svc Pvt Link" `
+                                | Out-Null}
 
-Write-Host "  Creating AFD Route"
-try {Get-AzFrontDoorCdnRoute -EndpointName $fdFE.Name -Name $fdName'-route' -ProfileName $fdName -ResourceGroupName $RGName -ErrorAction Stop
+Write-Host "  creating AFD Route"
+try {Get-AzFrontDoorCdnRoute -EndpointName $fdFE.Name -Name $fdName'-route' -ProfileName $fdName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
      Write-Host "    AFD Route exists, skipping"}
 catch {New-AzFrontDoorCdnRoute -EndpointName $fdFE.Name -Name $fdName'-route' -ProfileName $fdName -ResourceGroupName $RGName `
-                               -ForwardingProtocol 'HttpOnly' -HttpsRedirect Enabled -LinkToDefaultDomain Enabled -OriginGroupId $fdOG.Id -SupportedProtocol Http,Https}
+                               -ForwardingProtocol 'HttpOnly' -HttpsRedirect Enabled -LinkToDefaultDomain Enabled `
+                               -OriginGroupId $fdOG.Id -SupportedProtocol Http,Https | Out-Null}
 
+# 8.8 Approve the AFD Private Link Service request to AppSvc
+Write-Host (Get-Date)' - ' -NoNewline
+Write-Host "Approving the AFD Private Link request to App Service" -ForegroundColor Cyan
+# Dev's haven't (forgot to?) created a PowerShell command to approve the request, so we need to hit the API directly
+# https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/approve-or-reject-private-endpoint-connection?tabs=HTTP
+$webApp = Get-AzResource -ResourceType Microsoft.Web/sites -ResourceGroupName $RGName -ResourceName $WebAppName
+$token = (Get-AzAccessToken -Resource "https://management.azure.com").Token
+$headers = @{ Authorization = "Bearer $token" }
+$body = '{"properties":{"privateLinkServiceConnectionState": {"status": "Approved","description": "Approved by ' + (Get-AzContext).Account.Id + '.","actionsRequired": "}}}'
+$uri = "https://management.azure.com/subscriptions/$SubID/resourceGroups/$RGName/providers/Microsoft.Web/sites/$WebAppName/privateEndpointConnections/$($webApp.Properties.privateEndpointConnections[1].name)?api-version=2022-03-01"
+$SetFailed = $false
+try {Invoke-WebRequest -Method Put -ContentType "application/json" -Uri $uri -Headers $headers -Body $body -ErrorAction Stop | Out-Null}
+catch {$SetFailed = $true}
+
+$i = 0
+if (-Not $SetFailed) {
+  Do {
+    $webApp = Get-AzResource -ResourceType Microsoft.Web/sites -ResourceGroupName $RGName -ResourceName $WebAppName
+    $PLSRequestStatus = $webApp.Properties.privateEndpointConnections[1].properties.privateLinkServiceConnectionState.status
+    if ($PLSRequestStatus -ne "Approved" ) {
+      if ($i -eq 0) {Write-Host "  Waiting for the approval to be set: " -NoNewline}
+      $i++
+      Start-Sleep 5
+      Write-Host "*" -NoNewline
+    }      
+  } while ($PLSRequestStatus -ne "Approved" -and $i -lt 20)
+  if ($PLSRequestStatus -ne "Approved") {$SetFailed = $true}
+} 
+
+if ($SetFailed) {
+  Write-Warning "The Private Link Service request was not approved in the App Service Web app."
+  Write-Host
+  Write-Host "You will need to manualy approve this, instructions can be found here:"
+  Write-Host "https://docs.microsoft.com/en-us/azure/frontdoor/standard-premium/how-to-enable-private-link-web-app#approve-azure-front-door-premium-private-endpoint-connection-from-app-service"
+  Write-Host ""
+}
 
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline
@@ -356,11 +430,13 @@ Write-Host
 Write-Host "  You now have an Azure Front Door and a new application instance in $ShortRegion!"
 Write-Host "  Try the following to check out your new resources:"
 Write-Host "    1. Check out the new App Service at http://$WebAppName.azurewebsites.net"
-Write-Host "    2. Go to your Front Door at https://$fdName.azurefd.net (it may take a few"
-Write-Host "       minutes for AFD to come up around the world)"
-Write-Host "    3. Also notice which spoke is serving the content in your AFD, the new instance"
+Write-Host "       Because this App Service is behind a private link service you should get"
+Write-Host "       a 403 - Forbidden error message when accessing via the internet."
+Write-Host "    2. Go to your Front Door at https://$($fdFE.Hostname)"
+Write-Host "       (it may take up to 10 minutes for AFD to deploy around the world)"
+Write-Host "    3. Notice which spoke is serving the content in your AFD, the new instance"
 Write-Host "       is also available from your Front Door if you are closer to $ShortRegion."
-Write-Host "       (note: if you're further away, you can shut down the closer instance to"
-Write-Host "              force AFD to the new location.)"
+Write-Host "       (note: if you're further away, you can disable the closer origin in the"
+Write-Host "              Front Door origin group to force AFD to the new location.)"
 Write-Host
 Stop-Transcript
