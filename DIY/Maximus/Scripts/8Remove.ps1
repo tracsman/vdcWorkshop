@@ -1,6 +1,6 @@
-$KillApp  = $false  # Remove things related to the App Service
+$KillApp  = $true  # Remove things related to the App Service
 $KillVNet = $false   # Remove things related to the VNet
-$KillAFD  = $true   # Remove things related to the Front Door
+$KillAFD  = $false   # Remove things related to the Front Door
 $KillAll  = $true  # Remove all of the above
 
 if ($KillAll) {
