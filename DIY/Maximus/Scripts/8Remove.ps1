@@ -22,9 +22,6 @@ if ($KillApp) {
     try {$peWepApp = (Get-AzPrivateEndpoint -ResourceGroupName $RGName -ErrorAction Stop | Where-Object Name -Match "app-pe")
          Remove-AzPrivateEndpoint -ResourceGroupName $RGName -Name $peWepApp.Name -Force | Out-Null}
     catch {Write-Host "  It's not there"}
-    Write-Host "Killing App Service DNS Zone" -ForegroundColor Cyan
-    try {Remove-AzPrivateDnsZone -ResourceGroupName $RGName -Name "privatelink.azurewebsites.net" -ErrorAction Stop}
-    catch {Write-Host "  It's not there"}
 }
 
 if ($KillVNet) {
@@ -32,6 +29,9 @@ if ($KillVNet) {
     Try {Get-AzVirtualNetworkPeering -Name HubToSpoke03 -VirtualNetworkName $HubName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
          Remove-AzVirtualNetworkPeering -Name HubToSpoke03 -VirtualNetworkName $HubName -ResourceGroupName $RGName -Force -ErrorAction Stop | Out-Null}
     Catch {Write-Host "  It's not there"}
+    
+    Write-Host "Waiting for All Jobs to complete"
+    Get-Job  | Wait-Job -Timeout 600 | Out-Null
 
     Write-Host "Removing Spoke03 VNet" -ForegroundColor Cyan
     Try {Get-AzVirtualNetwork -Name $SpokeName -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
@@ -56,7 +56,13 @@ if ($KillAFD) {
     Catch {Write-Host "  It's not there"}
 }
 
-if ($KillApp) {Remove-AzAppServicePlan -ResourceGroupName MaxLab -Name $($WepApp.Name + '-plan') -Force}
+if ($KillApp) {
+     Write-Host "Killing App Service Plan" -ForegroundColor Cyan
+     Remove-AzAppServicePlan -ResourceGroupName MaxLab -Name $($WepApp.Name + '-plan') -Force
+     Write-Host "Killing App Service DNS Zone" -ForegroundColor Cyan
+     try {Remove-AzPrivateDnsZone -ResourceGroupName $RGName -Name "privatelink.azurewebsites.net" -ErrorAction Stop}
+     catch {Write-Host "  It's not there"}
+}
 
 Write-Host "Waiting for All Jobs to complete"
 Get-Job  | Wait-Job -Timeout 600 | Out-Null

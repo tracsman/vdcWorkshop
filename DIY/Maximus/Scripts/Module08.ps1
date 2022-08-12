@@ -413,6 +413,7 @@ if (-Not $SetFailed) {
     }      
   } while ($PLSRequestStatus -ne "Approved" -and $i -lt 20)
   if ($PLSRequestStatus -ne "Approved") {$SetFailed = $true}
+  if ($i -gt 0) {Write-Host}
 } 
 
 if ($SetFailed) {
