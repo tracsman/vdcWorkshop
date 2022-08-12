@@ -419,6 +419,7 @@ Write-Host "  Get-AzRouteServerPeerLearnedRoute -ResourceGroupName $RGName -Rout
 Write-Host
 Write-Host "  Look for two entries one to each instance of Route Server for the on-prem"
 Write-Host "  prefix (the Network field in the PS output) which is: $TenantPrefix"
+Write-Host "  Note: it may take up to 5 minutues before the routes appear on the route server."
 Write-Host
 
 Stop-Transcript
