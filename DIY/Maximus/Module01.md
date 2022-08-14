@@ -22,11 +22,11 @@ Once you're done with this step, you will see a Resource Group in Azure to which
     ```
 ## Validation
 1. Browse to your Resource Group in the Portal
-2. You should see a Key Vault resource
+2. You should see a Key Vault, a VNet, and a VM (along with the associated NIC and Disk)
 3. Explore the Key Vault, and the secrets therein
 4. Navigate to the VNet within the Resource Group
 5. Review the 5 subnets in the VNet
-6. Review the VM and the NIC within the Resource Group
+6. Review the VM and the NIC within the Tenant subnet
 
 ## Application Diagram After this Step is Complete
 [![1]][1]
