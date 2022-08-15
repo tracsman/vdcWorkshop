@@ -33,11 +33,16 @@ The workshop can be completed at your own pace depending on your previous experi
 Activity | Duration
 -------- | ---------
 [Cloud Shell Initialization and Updates][Module0] | 15 minutes
-[Step 1: Create resource group, key vault, and secret][Module1] | 2 minutes
-[Step 2: Create Virtual Network][Module2] | 2 minutes
-[Step 3: Create an internet facing VM][Module3] | 10 minutes
-[Step 4: Create and configure the Azure Firewall][Module4] | 15 minutes
-[Step 5: Create Spoke VNet with IIS Server and firewall rules to allow traffic][Module5] | 25 minutes
+[Step 1: Create resource group, key vault with secrets, Hub VNet, and VM][Module1] | 5 minutes
+[Step 2: Create NSG, NAT Gateway, and Basion Host in Hub VNet][Module2] | 8 minutes
+[Step 3: Create Firewall, Policy Rules, UDR, and Log Analytics Workspace][Module3] | 20 minutes
+[Step 4: Create first Spoke VNet with App Gateway and Web Farm][Module4] | 12 minutes
+[Step 5: Create second Spoke VNet with VM Scale Set behind Load Balancer][Module5] | 8 minutes
+[Step 6: xxx][Module6] | xx minutes
+[Step 7: xxx][Module7] | xx minutes
+[Step 8: xxx][Module8] | xx minutes
+[Step 9: xxx][Module9] | xx minutes
+
 
 [![1]][1]
 
@@ -73,5 +78,5 @@ To get started, proceed to the Initialization step where you initialize your Clo
 
 
 <!--Image References-->
-[1]: ./Media/Step5.svg "Workshop final as-built diagram" 
+[1]: ./Media/Step9.svg "Workshop final as-built diagram" 
 
