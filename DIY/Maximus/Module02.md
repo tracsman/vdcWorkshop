@@ -19,7 +19,7 @@ Once you're done with this step, you will know how to deploy a Bastion host and 
 
 ## Validation
 1. Navigate to your Resource Group in the Portal. You should now see addional resources - an NSG, a Bastion Host, and a NAT Gateway - in the Hub VNet. You should also see a public IP resource for the Bastion Host and an IP Prefix resource for NAT. 
-2. Check the security rules in the NSG. confirm that these are the default security rules.
+2. Check the security rules in the NSG. Confirm that these are the default security rules.
 3. Review the NAT Gateway, its IP Prefix and the subnet it is associated with.
 4. Review the settings of the Bastion host.
 5. Connect to the VM via Bastion using the credentials in the Key Vault. Note any active sessions on the Bastion once connect to your VM.
