@@ -2,7 +2,7 @@
 
 ## Abstract
 
-This is a Firewall focused lab. It starts with a hub VNet with an internet connected VM. We then add an Azure firewall, and then a spoke VNet running a web site. Policies are added to advertise the web site to the Internet via the firewall and all internal traffic to route through the firewall for allow/deny policies. The workshop is deployed using pre-written PowerShell scripts that are commented for your exploration. Each step builds on the prior script. After each script runs you should explore the resources and available attributes in the Azure Portal to gain further insights into each component and how they work as a part of the larger design.
+[To be updated] This is a Firewall focused lab. It starts with a hub VNet with an internet connected VM. We then add an Azure firewall, and then a spoke VNet running a web site. Policies are added to advertise the web site to the Internet via the firewall and all internal traffic to route through the firewall for allow/deny policies. The workshop is deployed using pre-written PowerShell scripts that are commented for your exploration. Each step builds on the prior script. After each script runs you should explore the resources and available attributes in the Azure Portal to gain further insights into each component and how they work as a part of the larger design.
 
 ## Workshop Prerequisites
 The following prerequisites must be completed before you start this workshop:
@@ -26,7 +26,7 @@ The workshop can be completed at your own pace depending on your previous experi
 - Adding and removing firewall policy and how that affects traffic
 - Exploring the metrics and log output available for Azure Firewall in Log Analytics
 
-#### Slides: [DIY Firewall Deck][FWDeck]
+#### Slides: [DIY Firewall Deck][FWDeck] [To be updated]
 
 > **NOTE**: The deck contains all the steps below, plus an overview of many other Azure network features that you can review while waiting for the scripts to complete. Using the deck is the recommended way to deploy this workshop for richer learning about Azure Network features and services. However, using the individual step pages below will be the fastest way to completely deploy the workshop resources. Choose your own adventure!
 
@@ -53,7 +53,7 @@ Activity | Duration
 
 ## Lab Guide
 
-Through a series of 5 scripts you will progressively implement a hub and spoke network design running an IIS based web site protected by an Azure Firewall. 
+Through a series of 9 scripts you will progressively implement a hub and spoke network design running an IIS based web site protected by an Azure Firewall. 
 
 All building scripts will be run in a Cloud Shell PowerShell session, this way all SDK and PowerShell settings are done for you, making getting started much faster and focusing on the build out of the workshop resources not getting started with PowerShell.
 
