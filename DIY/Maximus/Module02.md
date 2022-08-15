@@ -26,7 +26,7 @@ Once you're done with this step, you will know how to deploy a Bastion host and 
 6. Launch a browser on the VM and connect to the web service on the local IIS server - http to the VM's private IP (e.g. http://10.0.1.4) to see the local web site.
 
 
-
+ 
 ## Application Diagram After this Step is Complete
 [![1]][1]
 
