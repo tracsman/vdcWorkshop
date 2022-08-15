@@ -3,7 +3,7 @@
 # DIY Workshop Maximus - Module 3
 
 ## Abstract
-In this step we'll create and configure the Azure Firewall in the hub VNet. We will define a firewall policy with DNAT, Network, and Application rules. We will also add a User Defined Route (UDR) to force traffic to flow via the Firewall. We will also create a log analytics workspace to capture the firewall logs.
+In this step we'll create and configure the Azure Firewall in the hub VNet. We will define a firewall policy with DNAT, Network, and Application rules. We will also add a User Defined Route (UDR) to force traffic to flow via the Firewall. Finally, we will create a log analytics workspace to capture and query the firewall logs.
 
 ## Observations
 Once you're done with this step, you will have protected your resources from the Internet by directing traffic via the Firewall.
