@@ -3,7 +3,7 @@
 # DIY Workshop Maximus - Step 5
 
 ## Abstract
-In this step, a new spoke VNet (Spoke02-VNet) is created and peered with the hub. A VM Scale Set comprising of 2 VM instances is deployed behind a network load balancer in the spoke VNet.
+In this step, a second spoke VNet (Spoke02) is created and peered with the hub. A VM Scale Set comprising of 2 VM instances is deployed behind a network load balancer in the spoke VNet.
 
 ## Observations
 Once you're done with this step, you would have learned how to serve web contents from VMs in a VM Scale Set configured behind a load balancer.
