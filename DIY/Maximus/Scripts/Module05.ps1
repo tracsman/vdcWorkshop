@@ -20,7 +20,7 @@
 # 5.5 Create load balancer
 # 5.6 Create VMSS as File Server
 
-# 5.1 Validate and Initialize
+# 5.1 Validate and Initialize 
 # Setup and Start Logging
 $LogDir = "$env:HOME/Logs"
 If (-Not (Test-Path -Path $LogDir)) {New-Item $LogDir -ItemType Directory | Out-Null}

@@ -13,7 +13,7 @@
 #
 
 # Module 7 - VPN - Create On-prem and Coffee Shop, VPN Gateway, NVA and VMs 
-# 7.1 Validate and Initialize
+# 7.1 Validate and Initialize 
 # 7.2 Create VPN Gateway (AsJob)
 # 7.3 Create On-prem and Coffee Shop VNets and Bastions
 # 7.4 Create Public and Private RSA keys

@@ -19,7 +19,7 @@ Once you're done with this step, you would have learnt to deploy Site-to-Site an
 
 ## Validation
 1. Go to your resource group in the Azure Portal and check the newly added resources.
-2. You should see a VPN gateway in the hub along with other associated resources. You should also see several on-prem and coffee shop resources.
+2. You should see a VPN gateway in the hub VNet along with other associated resources. You should also see several on-prem and coffee shop resources.
 3. Go to the hub VPN gateway and check out its settings. Notice the status of the Site-to-Site connection (it should show 'Connected').
 4. Go to the on-prem local network gateway and check out its settings. The on-prem local network gateway represents the on-prem VPN router. Notice the same Site-to-Site connection and its status (it should show 'Connected').
 5. Connect to the on-prem VM via Bastion.

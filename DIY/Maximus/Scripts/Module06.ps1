@@ -24,7 +24,7 @@ $LogDir = "$env:HOME/Logs"
 If (-Not (Test-Path -Path $LogDir)) {New-Item $LogDir -ItemType Directory | Out-Null}
 Start-Transcript -Path "$LogDir/Module06.log"
 
-# Load Initialization Variables
+# Load Initialization Variables 
 $ScriptDir = "$env:HOME/Scripts"
 If (Test-Path -Path $ScriptDir/init.txt) {
         Get-Content $ScriptDir/init.txt | Foreach-Object{
