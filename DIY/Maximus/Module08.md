@@ -26,7 +26,7 @@ Once you're done with this step, you would have learnt to deploy Site-to-Site an
 ## Application Diagram After this Step is Complete
 [![1]][1]
 
-<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 7&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 8&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
 
 <!--Link References-->
 [Prev]: ./Module07.md

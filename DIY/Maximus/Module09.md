@@ -1,4 +1,4 @@
-<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 9&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 9
 
 # DIY Workshop Maximus - Module 9
 
@@ -26,7 +26,7 @@ Once you're done with this step, you would have learnt to ...
 ## Application Diagram After this Step is Complete
 [![1]][1]
 
-<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 7&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 9 
 
 <!--Link References-->
 [Prev]: ./Module08.md
