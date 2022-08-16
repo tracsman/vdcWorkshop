@@ -1,9 +1,9 @@
-<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 7&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 8&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
 
 # DIY Workshop Maximus - Module 8
 
 ## Abstract
-In this module, .... 
+In this module, .... [WIP]
 
 ## Observations
 Once you're done with this step, you would have learnt to deploy Site-to-Site and Point-to-Site VPN connectivity.
@@ -19,7 +19,7 @@ Once you're done with this step, you would have learnt to deploy Site-to-Site an
 
 ## Validation
 1. Go to your resource group in the Azure Portal and check the newly added resources.
-2. 
+2. ...[WIP]
 
 
 
