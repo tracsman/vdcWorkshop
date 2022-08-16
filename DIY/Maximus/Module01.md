@@ -27,6 +27,7 @@ Once you're done with this step, you will see a Resource Group in Azure to which
 4. Navigate to the VNet within the Resource Group
 5. Review the 5 subnets in the VNet
 6. Review the VM and the NIC within the Tenant subnet
+7. Check the VM Extensions. You will notice that IIS was installed on the VM as a post-deploy job.
 
 ## Application Diagram After this Step is Complete
 [![1]][1]

@@ -37,4 +37,4 @@ Once you're done with this step, you would have learnt to deploy Site-to-Site an
 [Next]: ./Module08.md
 
 <!--Image References-->
-[1]: ./Media/Step7.svg "As built diagram for step 6" 
+[1]: ./Media/Step7.svg "As built diagram for step 7" 
