@@ -32,7 +32,7 @@ foreach ($User in $userList.Keys) {
 }
 
 # Install IIS and NPS
-Write-Host "Installing IIS and NPS" -ForegroundColor Cyan
+Write-Host "Installing IIS" -ForegroundColor Cyan
 Install-WindowsFeature Web-Server,Web-Asp-Net45
 
 # Create Web App PagesWeb
