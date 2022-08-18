@@ -3,10 +3,10 @@
 # DIY Workshop Maximus - Module 6
 
 ## Abstract
-This module extends user connectivity via the App Gateway to a storage acount over Private Link. To accomplish this, you will set up a private endpoint in Spoke02 along with a Private DNS zone and associate a storage account with the private endpoint.
+This module extends user connectivity from the App Gateway to a storage acount (PaaS). To accomplish this, you will set up a private endpoint in Spoke02 along with a Private DNS zone and associate the storage account with the private endpoint.
 
 ## Observations
-Once you're done with this step, you will know how to retrieve contents from a storage account over Private Link.
+Once you're done with this step, you will know how to retrieve contents from a storage account via a private endpoint.
 
 ## Deployment
 1. While in the Scripts folder run
