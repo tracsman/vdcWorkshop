@@ -392,7 +392,6 @@ catch {New-AzFrontDoorCdnRoute -EndpointName $fdFE.Name -Name $fdName'-route' -P
 # 8.8 Approve the AFD Private Link Service request to AppSvc
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Approving the AFD Private Link request to App Service" -ForegroundColor Cyan
-# Dev's haven't (forgot to?) created a PowerShell command to approve the request, so we need to hit the API directly
 # https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/approve-or-reject-private-endpoint-connection?tabs=HTTP
 $webApp = Get-AzResource -ResourceType Microsoft.Web/sites -ResourceGroupName $RGName -ResourceName $WebAppName
 $webAppPeConn = (Get-AzPrivateEndpointConnection -privatelinkresourceid $webApp.id | `
