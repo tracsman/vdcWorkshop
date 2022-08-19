@@ -9,7 +9,7 @@ if ($KillAll) {
     $KillAFD  = $true
 }
 
-$RGName    = "MaxLab"
+$RGName    = "MaxLab01"
 $SpokeName = "Spoke03-VNet"
 $HubName   = "Hub-VNet"
 
@@ -58,7 +58,7 @@ if ($KillAFD) {
 
 if ($KillApp) {
      Write-Host "Killing App Service Plan" -ForegroundColor Cyan
-     Remove-AzAppServicePlan -ResourceGroupName MaxLab -Name $($WepApp.Name + '-plan') -Force
+     Remove-AzAppServicePlan -ResourceGroupName $RGName -Name $($WepApp.Name + '-plan') -Force
      Write-Host "Killing App Service DNS Zone" -ForegroundColor Cyan
      try {Remove-AzPrivateDnsZone -ResourceGroupName $RGName -Name "privatelink.azurewebsites.net" -ErrorAction Stop}
      catch {Write-Host "  It's not there"}

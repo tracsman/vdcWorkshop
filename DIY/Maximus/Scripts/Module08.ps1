@@ -103,7 +103,7 @@ finally {[System.Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ssPtr)}
 $fwIP = $firewall.IpConfigurations[0].PrivateIPAddress
 $WebAppName=$SpokeName + $keyUniversal + '-app'
 $PEPName = $RGName.ToLower() + "sa" + $keyUniversal
-$fdName = "aa-" + $RGName + $keyUniversal + "-fd"
+$fdName = $RGName + $keyUniversal + "-fd"
 
 # 8.2 Create Spoke VNet, NSG, apply UDR, and DNS
 # Create Tenant Subnet NSG
@@ -291,8 +291,11 @@ try {Get-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ErrorAction Stop
 catch {New-AzWebApp -ResourceGroupName $RGName -Location $ShortRegion -Name $WebAppName -AppServicePlan $WebAppName-plan -ErrorAction Stop | Out-Null}
 
 # Publish the web app
+# I don't know why I get error occationaly when I re-publish the WebApp so just ignoring the two I usually get
 try {Publish-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ArchivePath "$WebDir/wwwroot.zip" -Force -ErrorAction Stop | Out-Null}
-catch {if ($error[0] -notmatch "Forbidden") {$error[0];Return}}
+catch {if ($error[0] -notmatch "Forbidden" -and $error[0] -notmatch "no data")
+         {$error[0];Return}
+       else {Write-Host "  Skipping Web App publish"}
 
 # 8.5 Tie Web App to the network
 Write-Host (Get-Date)' - ' -NoNewline
@@ -392,13 +395,10 @@ Write-Host "Approving the AFD Private Link request to App Service" -ForegroundCo
 # Dev's haven't (forgot to?) created a PowerShell command to approve the request, so we need to hit the API directly
 # https://docs.microsoft.com/en-us/rest/api/appservice/web-apps/approve-or-reject-private-endpoint-connection?tabs=HTTP
 $webApp = Get-AzResource -ResourceType Microsoft.Web/sites -ResourceGroupName $RGName -ResourceName $WebAppName
-$token = (Get-AzAccessToken -Resource "https://management.azure.com").Token
-$headers = @{ Authorization = "Bearer $token" }
-$body = '{"properties":{"privateLinkServiceConnectionState": {"status": "Approved","description": "Approved by ' + (Get-AzContext).Account.Id + '.","actionsRequired": "}}}'
-$uri = "https://management.azure.com/subscriptions/$SubID/resourceGroups/$RGName/providers/Microsoft.Web/sites/$WebAppName/privateEndpointConnections/$($webApp.Properties.privateEndpointConnections[1].name)?api-version=2022-03-01"
-$SetFailed = $false
-try {Invoke-WebRequest -Method Put -ContentType "application/json" -Uri $uri -Headers $headers -Body $body -ErrorAction Stop | Out-Null}
-catch {$SetFailed = $true}
+$webAppPeConn = (Get-AzPrivateEndpointConnection -privatelinkresourceid $webApp.id | `
+                 Select-Object Id,PrivateLinkServiceConnectionState -Expand PrivateLinkServiceConnectionState | `
+                 Where-Object -Property Description -eq "App Svc Pvt Link").Id
+Approve-AzPrivateEndpointConnection -ResourceId $webAppPeConn | Out-Null
 
 $i = 0
 if (-Not $SetFailed) {
@@ -421,12 +421,13 @@ if ($SetFailed) {
   Write-Host
   Write-Host "You will need to manualy approve this, instructions can be found here:"
   Write-Host "https://docs.microsoft.com/en-us/azure/frontdoor/standard-premium/how-to-enable-private-link-web-app#approve-azure-front-door-premium-private-endpoint-connection-from-app-service"
-  Write-Host ""
+  Write-Host
 }
 
 # End Nicely
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Module 8 completed successfully" -ForegroundColor Green
+Write-Host
 Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
 Write-Host
 Write-Host "  You now have an Azure Front Door and a new application instance in $ShortRegion!"
