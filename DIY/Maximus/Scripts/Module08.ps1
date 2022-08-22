@@ -295,7 +295,7 @@ catch {New-AzWebApp -ResourceGroupName $RGName -Location $ShortRegion -Name $Web
 try {Publish-AzWebApp -ResourceGroupName $RGName -Name $WebAppName -ArchivePath "$WebDir/wwwroot.zip" -Force -ErrorAction Stop | Out-Null}
 catch {if ($error[0] -notmatch "Forbidden" -and $error[0] -notmatch "no data")
          {$error[0];Return}
-       else {Write-Host "  Skipping Web App publish"}
+       else {Write-Host "  Skipping Web App publish"}}
 
 # 8.5 Tie Web App to the network
 Write-Host (Get-Date)' - ' -NoNewline
