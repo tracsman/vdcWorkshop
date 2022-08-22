@@ -17,7 +17,7 @@ Once you're done with this step, you will have protected your resources from the
 
 ## Validation
 1. In the portal, pull up the Firewall and review the configuration including its SKU, public and private IP.
-2. Review the firewall policy rules (DNAT, Network, and Application rules).
+2. Review the firewall policy rules (DNAT, Network, and Application rules). The relevance of some of these rules will be clear in subsequent modules.
 3. From a browser on an external machine, go to the public IP of the firewall and confirm that you are able to view the web site. Note that the firewall's DNAT rule is translating http traffic destined to the firewall's public IP to your VM's private IP. 
 4. Note the UDR in the VM subnet with the default route pointing to the Firewall as the next hop.
 4. Check the effective routes on the VM NIC. 
