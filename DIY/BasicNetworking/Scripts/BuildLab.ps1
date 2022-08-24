@@ -55,7 +55,7 @@ $clearPassword = $null
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting Module 9, estimated total time 25 minutes" -ForegroundColor Cyan
+Write-Host "Starting deplyment, estimated total time 10get-jo    minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
@@ -154,7 +154,7 @@ Try {$nsg = Get-AzNetworkSecurityGroup -Name $VNetName'-nsg' -ResourceGroupName 
      Write-Host '    NSG exists, skipping'}
 Catch {$nsgRule1 = New-AzNetworkSecurityRuleConfig -Name AllowSSH -Protocol Tcp -Direction Inbound -Priority 1000 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow
        $nsgRule2 = New-AzNetworkSecurityRuleConfig -Name DenyAll -Protocol * -Direction Inbound -Priority 1001 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange * -Access Deny
-       $nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $Region -Name $VNetName'-nsg' -SecurityRules $nsgRule1, $nsgRule2}
+       $nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VNetName'-nsg' -SecurityRules $nsgRule1, $nsgRule2}
         
 Try {$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
      Write-Host "  VNet exists, skipping"}
@@ -166,9 +166,9 @@ Catch {$vnet = New-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -
        Add-AzVirtualNetworkSubnetConfig -Name $sn3Name -VirtualNetwork $vnet -AddressPrefix $sn3Space -NetworkSecurityGroup $nsg | Out-Null
        Set-AzVirtualNetwork -VirtualNetwork $vnet | Out-Null}
 $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
-$sn1 = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $hubvnet -Name "Network01"
-$sn2 = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $hubvnet -Name "Network02"
-$sn3 = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $hubvnet -Name "Network03"
+$sn1 = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Network01"
+$sn2 = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Network02"
+$sn3 = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Network03"
 
 # 5. Create VNet NVAs
 # Accept Marketplace Terms for the NVA
@@ -214,7 +214,8 @@ For ($i=1; $i -le 2; $i++) {
            $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $VMName'-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
            $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "cisco" -Offer "cisco-csr-1000v" -Skus $latestsku -Version latest
            #$VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/User01/.ssh/authorized_keys"
-           $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic1, $nic2
+           $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic1 -Primary
+           $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic2
            $VMConfig = Set-AzVMBootDiagnostic -VM $VMConfig -Disable
            New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $VMConfig -AsJob | Out-Null
     }
