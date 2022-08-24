@@ -93,7 +93,7 @@ Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Downloading PowerShell Scripts" -ForegroundColor Cyan
 ForEach ($File in $Files) {
-    Invoke-WebRequest -Uri "$uri$File" -OutFile "$ScriptPath\$File" | Out-Null
+    Invoke-WebRequest -Uri "$uri$File" -OutFile "$ScriptPath\$File" -Headers @{"Cache-Control"="no-cache"} | Out-Null
 }
 
 # End nicely
