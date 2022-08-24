@@ -43,7 +43,7 @@ $sn2Space  = "10.10.2.0/24"
 $sn3Name   = "Network03"
 $sn3Space  = "10.10.3.0/24"
 $VMPrefix  = "Router"
-$VMSize    = "Standard_B1s"
+$VMSize    = "Standard_B2s"
 $UserName  = "LabUser"
 # RegEx for a valid password pattern
 $RegEx='^(?=\P{Ll}*\p{Ll})(?=\P{Lu}*\p{Lu})(?=\P{N}*\p{N})(?=[\p{L}\p{N}]*[^\p{L}\p{N}])[\s\S]{12,}$'
@@ -101,7 +101,7 @@ $kvName = (Get-AzKeyVault -ResourceGroupName $RGName | Select-Object -First 1).V
 if ($null -ne $kvName) {$kv = Get-AzKeyVault -VaultName $kvName -Location $ShortRegion -InRemovedState}
 If ($null -eq $kvName -or $null -ne $kv) {
    Do {$kvRandom = Get-Random
-       $kvName = $RGName + '-kv' + "-$kvRandom"
+       $kvName = 'KeyVault-' + $kvRandom
        $kv = Get-AzKeyVault -VaultName $kvName -Location $ShortRegion -InRemovedState}
    While ($null -ne $kv)
 }
@@ -142,7 +142,7 @@ If ($null -eq $kvs) {Try {$kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name $
                     Catch {Write-host "Vault not found, waiting 10 seconds and trying again."
                             Start-Sleep -Seconds 10
                             $kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name $UserName -SecretValue $secPassword -ErrorAction Stop}}
-Else {Write-Host "  $User01Name exists, skipping"}
+Else {Write-Host "  $UserName exists, skipping"}
 
 # 4. Create VNet and subnets
 Write-Host (Get-Date)' - ' -NoNewline
