@@ -214,8 +214,8 @@ For ($i=1; $i -le 2; $i++) {
            $VMConfig = Set-AzVMOSDisk -VM $VMConfig -CreateOption FromImage -Name $VMName'-disk-os' -Linux -StorageAccountType Premium_LRS -DiskSizeInGB 30
            $VMConfig = Set-AzVMSourceImage -VM $VMConfig -PublisherName "cisco" -Offer "cisco-csr-1000v" -Skus $latestsku -Version latest
            #$VMConfig = Add-AzVMSshPublicKey -VM $VMConfig -KeyData $PublicKey -Path "/home/User01/.ssh/authorized_keys"
-           $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic1 -Primary
-           $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -NetworkInterface $nic2
+           $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -Id $nic1.Id -Primary
+           $VMConfig = Add-AzVMNetworkInterface -VM $VMConfig -id $nic2.Id
            $VMConfig = Set-AzVMBootDiagnostic -VM $VMConfig -Disable
            New-AzVM -ResourceGroupName $RGName -Location $ShortRegion -VM $VMConfig -AsJob | Out-Null
     }
