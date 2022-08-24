@@ -20,7 +20,7 @@ Once you're done with this step, you will know how to retrieve contents from a s
 ## Validation
 1. Navigate to your Resource Group in the Portal. You should now see storage account, a private endpoint with an associated NIC and a private DNS zone. 
 2. Check the settings of the Private Endoint.
-6. Navigate to the App Gateway IP again from the browser and notice that the web page now displays contents from the storage account via the Private Endpoint.
+3. Navigate to the App Gateway IP again from the browser and notice that the web page now displays contents from the storage account via the Private Endpoint.
 
 
 
