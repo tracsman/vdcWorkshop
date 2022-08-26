@@ -23,7 +23,7 @@ Once you're done with this step, you would have learnt to deploy Site-to-Site an
 3. Go to the hub VPN gateway and check out its settings. Notice the status of the Site-to-Site connection (it should show 'Connected').
 4. Go to the on-prem local network gateway and check out its settings. The on-prem local network gateway represents the on-prem VPN router. Notice the same Site-to-Site connection and its status (it should show 'Connected').
 5. Connect to the on-prem VM via Bastion.
-6. Verify that you have reachability (over VPN) to the hub. You can run a ping to the Firewall IP (10.0.3.4) in the hub.
+6. Verify that you have reachability (over S2S VPN) to the hub. You can run a ping to the Test VM (10.0.1.4) or to the Firewall (10.0.3.4) in the hub.
 
 
 
