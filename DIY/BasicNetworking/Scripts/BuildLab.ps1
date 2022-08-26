@@ -55,7 +55,7 @@ $clearPassword = $null
 # Start nicely
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Starting deplyment, estimated total time 10get-jo    minutes" -ForegroundColor Cyan
+Write-Host "Starting deplyment, estimated total time 10 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
 Write-Host (Get-Date)' - ' -NoNewline
@@ -191,7 +191,8 @@ For ($i=1; $i -le 2; $i++) {
     # 5.1 Create Public IP
     Try {$pipNVA = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -ErrorAction Stop
             Write-Host "  Public IP exists, skipping"}
-    Catch {$pipNVA = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -Location $ShortRegion -AllocationMethod Static -Sku Basic -IpAddressVersion IPv4}
+    Catch {$pipNVA = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -Location $ShortRegion `
+                                           -AllocationMethod Static -Sku Standard -Zone {} -IpAddressVersion IPv4}
     # 5.2 Create NICs
     Try {$nic1 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic1' -ErrorAction Stop
             Write-Host "  NIC1 exists, skipping"}
