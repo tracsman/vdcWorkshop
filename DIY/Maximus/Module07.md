@@ -25,12 +25,9 @@ Once you're done with this step, you would have learnt to deploy Site-to-Site an
 5. Connect to the on-prem VM via Bastion. 
    1. Verify that you have reachability (over S2S VPN) from the on-prem VM to the hub. You can run a ping to the Test VM (10.0.1.4) or to the Firewall (10.0.3.4) in the hub.
    2. Also navigate to the App Gateway IP again from the browser to access the web page. Make sure it displays contents from the IIS server in Spoke01, VMSS file server in Spoke02, and PaaS storage account via the Private Endpoint.
-6. To validate the P2S connection, you'll need to RDP (via Bastion) to the          Coffee Shop VM and then manually connect the VPN connection named "AzureHub". When uou hit the "Connect" button, the P2S connection will use a local certificate and the connection should be successful.
-   1.  1. Verify that you have reachability (over P2S VPN) from the coffee shop VM to the hub. You can run a ping to the Test VM (10.0.1.4) or to the Firewall (10.0.3.4) in the hub.
-   2. Also navigate to the App Gateway IP again from the browser to access the web page. Make sure it displays contents from the IIS server in Spoke01, VMSS file server in Spoke02, and PaaS storage account via the Private Endpoint.                                              
-  certificate and the connection should be successful.    
-
-
+6. To validate the P2S connection, you'll need to RDP (via Bastion) to the          Coffee Shop VM and then manually connect the VPN connection named "AzureHub". When you hit the "Connect" button, the P2S connection will use a local certificate and the connection should be successful.
+   1.  Verify that you have reachability (over P2S VPN) from the coffee shop VM to the hub. You can run a ping to the Test VM (10.0.1.4) or to the Firewall (10.0.3.4) in the hub.
+   2. Also navigate to the App Gateway IP again from the browser to access the web page. Make sure it displays contents from the IIS server in Spoke01, VMSS file server in Spoke02, and PaaS storage account via the Private Endpoint.    
 
 
 ## Application Diagram After this Step is Complete
