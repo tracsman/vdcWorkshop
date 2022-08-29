@@ -21,7 +21,7 @@ Once you're done with this step, you would have learned how to setup VNet peerin
 3. Check the App Gateway settings for your new web farm in the default backend pool. 
 4. Note the public IP of the App Gateway (AppGatewayPIP) and  navigate to it from an external browser. Note the web page contents across different sections including the VM instance that is serving the contents. Contents that are unreachable will surface in subsequent modules.  
 5. Also note the App Gateway settings for another backend pool on a remote site.
-6. Navigate to http://(AppGatewayPIP)/headers to have the App Gateway redirect to this backend pool on the remote site.
+6. Navigate to http://\<AppGatewayPIP>/headers to have the App Gateway redirect to this backend pool on the remote site.
 7. Note the UDR in the Spoke1-Tenant subnet with the default route pointing to the Firewall as the next hop. 
 8. Check out the WAF Policy on the App Gateway. Note the Managed Rules for threat protection. Also note the Custom Rule that blocks traffic originating from Australia region. You can try https://geopeeker.com/fetch/?url=(AppGatewayPIP) to see the effect of this rule. 
 
