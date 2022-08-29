@@ -3,7 +3,7 @@
 # DIY Workshop Maximus - Module 8
 
 ## Abstract
-In this module, we will add Azure Front Door (AFD) service and deploy App Service to create another instance of our web server in a different region USWest3). You will configure AFD to ensure web contents can be retrieved from the nearest web server in one of the two regions (USWest2 or USWest3). You will also deploy another private endpoint in a new spoke VNet, Spoke03 in the new region. You will enable private link service for a private connection between AFD and the App service instance.
+In this module, you will add Azure Front Door (AFD) service and deploy App Service to create another instance of our web server in a different region (USWest3). You will configure AFD to ensure web contents can be retrieved from the nearest web server in one of the two regions (USWest2 or USWest3). You will also deploy another private endpoint in a new spoke VNet, Spoke03 in the new region. You will enable private link service for a private connection between AFD and the App service instance.
 
 ## Observations
 Once you're done with this step, you would have learnt how to use AFD to route global web requests to web servers in different regions. You would have also learnt to use App Service to serve web contents via AFD over private link.
