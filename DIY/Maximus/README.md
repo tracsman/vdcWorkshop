@@ -49,7 +49,7 @@ Activity | Duration
 **Here is the final diagram of the environment you will progressively build over the 9 steps:**
 [![1]][1]
 
-**Diagram for IP addressing assignment:**
+**IP address assignment**
 [![2]][2]
 
 > **IMPORTANT** 
