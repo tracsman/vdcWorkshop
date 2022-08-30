@@ -47,6 +47,7 @@ Activity | Duration
 
 
 [![1]][1]
+[![2]][2]
 
 > **IMPORTANT** 
 > * The reference architecture proposed in this workshop aims to explain just enough of the role of each of the components. This workshop does not replace the need of in-depth training on each Azure service covered.
@@ -84,4 +85,5 @@ To get started, proceed to the Initialization step where you initialize your Clo
 
 <!--Image References-->
 [1]: ./Media/Step9.svg "Workshop final as-built diagram" 
+[2]: ./Media/IPassignments.svg "IP addressing assignment"
 
