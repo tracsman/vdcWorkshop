@@ -45,9 +45,11 @@ Activity | Duration
 [Step 8: Deploy third spoke, set up Azure Front Door, and create App Service with Private Link Service][Module8] | 25 minutes
 [Step 9: Deploy Route Server in hub and VPN NVAs in hub and on-prem VNets][Module9] | 25 minutes
 
-Here is the final diagram of the environment you will progressively build over 9 steps:
+
+**Here is the final diagram of the environment you will progressively build over the 9 steps:**
 [![1]][1]
-Diagram for IP addressing assignment: 
+
+**Diagram for IP addressing assignment:**
 [![2]][2]
 
 > **IMPORTANT** 
