@@ -3,7 +3,7 @@
 # DIY Workshop Maximus - Module 9
 
 ## Abstract
-In this final module, we will deploy a Route Server and an NVA (Network Virtual Appliance) in the Hub VNet to enable dynamic exchange of routes between them. The Hub NVA will be a Cisco VPN router that will establish a S2S VPN connection with the existing on-prem NVA (also a Cisco VPN router). 
+In this final module, we will deploy a Route Server and an NVA (Network Virtual Appliance) in the Hub VNet to enable them to dynamically exchange routes. The Hub NVA will be a Cisco VPN router that will establish a S2S VPN connection with the existing on-prem NVA (also a Cisco VPN router). 
 
 ## Observations
 Once you're done with this step, you would have learnt how to use a Route Server to enable network virtual appliances to exchange routes dynamically with virtual networks in Azure. 
@@ -20,11 +20,11 @@ Once you're done with this step, you would have learnt how to use a Route Server
 ## Validation
 1. Go to your resource group in the Azure Portal and check the newly added resources. You should see the Route Server and the VPN NVA along with associated resources in the Hub VNet.
 2. Check out the Route Server settings. Make sure you see the Hub VPN NVA as a peer (the Provisioning State should show Succeeded).
-3. Verify that the Route Server can see the on-prem routes via the VPN NVA. You can do this by looking at the PowerShell output from the Route Server. In your Cloud Shell, run the below command to confirm the route server is seeing on-prem prefixes from the Hub NVA. This indicates the Hub NVA is recieving routes from the on-prem NVA and all is working. 
+3. Verify that the Route Server can see the on-prem routes via the VPN NVA. You can do this by looking at the PowerShell output from the Route Server. In your Cloud Shell, run the below command to confirm the route server is seeing on-prem prefixes from the Hub NVA. This indicates the Hub NVA is receiving routes from the on-prem NVA and all is working. 
   
     **Get-AzRouteServerPeerLearnedRoute -ResourceGroupName MaxLab02 -RouteServerName Hub-VNet-rs -PeerName HubNVA**
   
-Look for two entries one to each instance of Route Server for the on-prem prefix (the Network field in the PS output) which is: 10.10.1.0/25
+   Look for two entries one to each instance of Route Server for the on-prem prefix (the Network field in the PS output) which is: 10.10.1.0/25
 
 
 
