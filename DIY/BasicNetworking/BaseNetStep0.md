@@ -54,7 +54,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 
 <!--Link References-->
 [Prev]: ./README.md
-[Next]: ./WorkshopStep1.md
+[Next]: ./BaseNetStep1.md.md
 [CloudShell]: https://docs.microsoft.com/azure/cloud-shell/overview
 
 <!--Image References-->
