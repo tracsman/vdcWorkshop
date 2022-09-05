@@ -40,7 +40,7 @@ Activity | Duration
 
 ## Lab Guide
 
-Via a PowerShell scripts you will implement a VNet with two Cisco routers. Then at your own pace explore and configure these routers to communicate.
+Via a PowerShell script you will implement a VNet with two Cisco routers. Then at your own pace explore and configure these routers to communicate.
 
 All building scripts will be run in a Cloud Shell PowerShell session, this way all SDK and PowerShell settings are done for you, making getting started much faster and focusing on the build out of the resources not getting started with PowerShell.
 
@@ -55,4 +55,4 @@ To get started, proceed to the Initialization step where you initialize your Clo
 [Step2]: ./BaseNetStep2.md
 
 <!--Image References-->
-[1]: ../Media/Step1.svg "Workshop final as-built diagram"
+[1]: ./Media/Step1.svg "Workshop final as-built diagram"

@@ -58,6 +58,6 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 [CloudShell]: https://docs.microsoft.com/azure/cloud-shell/overview
 
 <!--Image References-->
-[1]: ../Media/CloudShellLaunch.svg "Launch Cloud Shell Icon" 
-[2]: ../Media/CloudShellPowerShell.svg "Set Cloud Shell to PowerShell" 
-[3]: ../Media/CloudShellEditor.svg "Open Cloud Shell file editor" 
+[1]: ./Media/CloudShellLaunch.svg "Launch Cloud Shell Icon" 
+[2]: ./Media/CloudShellPowerShell.svg "Set Cloud Shell to PowerShell" 
+[3]: ./Media/CloudShellEditor.svg "Open Cloud Shell file editor" 
