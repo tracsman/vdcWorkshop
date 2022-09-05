@@ -1,8 +1,7 @@
 #
-# DIY Workshop Maximus
+# DIY Basic Network Environment
 #
-#
-# Module 9 - Route Server and Logging
+# Azure Environment Deployment
 # 1. Validate and Initialize
 # 2. Create Resource Group
 # 3. Create Key Vault and Secret
@@ -13,8 +12,7 @@
 #     5.3 Build VM
 #
 
-
-# 1 Validate and Initialize
+# 1. Validate and Initialize
 # Setup and Start Logging
 $LogDir = "$env:HOME/Scripts/Logs"
 If (-Not (Test-Path -Path $LogDir)) {New-Item $LogDir -ItemType Directory | Out-Null}
@@ -36,17 +34,19 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # Non-configurable Variable Initialization (ie don't modify these)
 $VNetName = "VNet"
 $VNetSpace = "10.10.0.0/16"
-$sn1Name   = "Network01"
-$sn1Space  = "10.10.1.0/24"
-$sn2Name   = "Network02"
-$sn2Space  = "10.10.2.0/24"
-$sn3Name   = "Network03"
-$sn3Space  = "10.10.3.0/24"
+  $sn1Name   = "Network01"
+  $sn2Name   = "Network02"
+  $sn3Name   = "Network03"
+  $sn1Space  = "10.10.1.0/24"
+  $sn2Space  = "10.10.2.0/24"
+  $sn3Space  = "10.10.3.0/24"
+
 $VMPrefix  = "Router"
 $VMSize    = "Standard_B2s"
 $UserName  = "LabUser"
 # RegEx for a valid password pattern
 $RegEx='^(?=\P{Ll}*\p{Ll})(?=\P{Lu}*\p{Lu})(?=\P{N}*\p{N})(?=[\p{L}\p{N}]*[^\p{L}\p{N}])[\s\S]{12,}$'
+# Loop until a good (pattern match) password is found
 Do {$clearPassword = ([char[]](Get-Random -Input $(40..44 + 46..59 + 63..91 + 97..122) -Count 20)) -join ""}
 While ($clearPassword -cnotmatch $RegEx)
 $secPassword = ConvertTo-SecureString $clearPassword -AsPlainText -Force
@@ -65,19 +65,19 @@ Catch {Write-Warning "Permission check failed, ensure Sub ID is set correctly!"
        Return}
 Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscription.Id,")"
 
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "  Checking Login" -ForegroundColor Cyan
-$RegEx = '^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$'
-If ($myContext.Account.Id -notmatch $RegEx) {
-    Write-Host "Fatal Error: You are logged in with a Managed Service bearer token" -ForegroundColor Red
-    Write-Host "To correct this, you'll need to login using your Azure credentials."
-    Write-Host "To do this, at the command prompt, enter: " -NoNewline
-    Write-Host "Connect-AzAccount -UseDeviceAuthentication" -ForegroundColor Yellow
-    Write-Host "This command will show a URL and Code. Open a new browser tab and navigate to that URL, enter the code, and login with your Azure credentials"
-    Write-Host
-    Write-Host "Script Ending, Module 9, Failure Code 1"
-    Exit 1
-}
+# Write-Host (Get-Date)' - ' -NoNewline
+# Write-Host "  Checking Login" -ForegroundColor Cyan
+# $RegEx = '^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$'
+# If ($myContext.Account.Id -notmatch $RegEx) {
+#     Write-Host "Fatal Error: You are logged in with a Managed Service bearer token" -ForegroundColor Red
+#     Write-Host "To correct this, you'll need to login using your Azure credentials."
+#     Write-Host "To do this, at the command prompt, enter: " -NoNewline
+#     Write-Host "Connect-AzAccount -UseDeviceAuthentication" -ForegroundColor Yellow
+#     Write-Host "This command will show a URL and Code. Open a new browser tab and navigate to that URL, enter the code, and login with your Azure credentials"
+#     Write-Host
+#     Write-Host "Script Ending, Module 9, Failure Code 1"
+#     Exit 1
+# }
 Write-Host "  Current User: ",$myContext.Account.Id
 
 # 2. Create Resource Group
@@ -126,15 +126,15 @@ If ($null -eq $kv) {$kv = New-AzKeyVault -VaultName $kvName -ResourceGroupName $
                     Start-Sleep -Seconds 10}
 Else {Write-Host "  Key Vault exists, skipping"}
 
-# Set Key Vault Access Policy
-Write-Host "  Setting Key Vault Access Policy"
-$UserID = (Get-AzAdUser -UserPrincipalName $myContext.Account.Id).Id
-If ($kv.AccessPolicies.ObjectId -contains $UserID) {
-    Write-Host "    Policy exists, skipping"
-} Else {
-    Set-AzKeyVaultAccessPolicy -VaultName $kvName -ResourceGroupName $RGName -ObjectId $UserID -PermissionsToSecrets get,list,set,delete 
-    Write-Host "    Policy added"
-}
+# # Set Key Vault Access Policy
+# Write-Host "  Setting Key Vault Access Policy"
+# $UserID = (Get-AzAdUser -UserPrincipalName $myContext.Account.Id).Id
+# If ($kv.AccessPolicies.ObjectId -contains $UserID) {
+#     Write-Host "    Policy exists, skipping"
+# } Else {
+#     Set-AzKeyVaultAccessPolicy -VaultName $kvName -ResourceGroupName $RGName -ObjectId $UserID -PermissionsToSecrets get,list,set,delete 
+#     Write-Host "    Policy added"
+# }
 
 # Create Secret
 $kvs = Get-AzKeyVaultSecret -VaultName $kvName -Name $UserName -ErrorAction Stop 
