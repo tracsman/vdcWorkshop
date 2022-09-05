@@ -1,4 +1,4 @@
-<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 2&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Main Page] 
 
 # Basic Routing Environment - Step 2
 
@@ -159,11 +159,11 @@ Using the following PowerShell snippet to route traffic to those public IPs via 
 7. When complete, return to the connect button on the Router and select Bastion again. You should now be able to SSH (in your browser) to the router.
 8. You can do the same to Router02 (once the Bastion is created it will work for all VMs and NVAs in your VNet) which will open in a new tab.
 
-<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Main Page] 
 
 <!--Link References-->
 [Prev]: ./BaseNetStep1.md
-[Next]: ./BaseNetStep0.md
+[Next]: ./README.md
 
 <!--Image References-->
 [1]: ./Media/BaseNetStep1.svg "As built diagram for step 1" 
