@@ -54,19 +54,19 @@ $clearPassword = $null
 
 # Start nicely
 Write-Host
-Write-Host (Get-Date)' - ' -NoNewline
+Write-Host (Get-Date)'- ' -NoNewline
 Write-Host "Starting deplyment, estimated total time 10 minutes" -ForegroundColor Cyan
 
 # Set Subscription and Login
-Write-Host (Get-Date)' - ' -NoNewline
+Write-Host (Get-Date)'- ' -NoNewline
 Write-Host "Setting Subscription Context" -ForegroundColor Cyan
 Try {$myContext = Set-AzContext -Subscription $SubID -ErrorAction Stop}
 Catch {Write-Warning "Permission check failed, ensure Sub ID is set correctly!"
        Return}
 Write-Host "  Current Sub:",$myContext.Subscription.Name,"(",$myContext.Subscription.Id,")"
 
-Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "  Checking Login" -ForegroundColor Cyan
+Write-Host (Get-Date)'- ' -NoNewline
+Write-Host "Checking Login" -ForegroundColor Cyan
 $RegEx = '^([\w-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([\w-]+\.)+))([a-zA-Z]{2,5}|[0-9]{1,3})(\]?)$'
 If ($myContext.Account.Id -notmatch $RegEx) {
     Write-Host "Fatal Error: You are logged in with a Managed Service bearer token" -ForegroundColor Red
@@ -81,14 +81,14 @@ If ($myContext.Account.Id -notmatch $RegEx) {
 Write-Host "  Current User: ",$myContext.Account.Id
 
 # 2. Create Resource Group
-Write-Host (Get-Date)' - ' -NoNewline
+Write-Host (Get-Date)'- ' -NoNewline
 Write-Host "Creating Resource Group $RGName" -ForegroundColor Cyan
 Try {Get-AzResourceGroup -Name $RGName -ErrorAction Stop | Out-Null
         Write-Host "  Resource group exists, skipping"}
 Catch {New-AzResourceGroup -Name $RGName -Location $ShortRegion | Out-Null}
 
 # 3. Create Key Vault and Secret
-Write-Host (Get-Date)' - ' -NoNewline
+Write-Host (Get-Date)'- ' -NoNewline
 Write-Host "Creating Key Vault and Secret" -ForegroundColor Cyan
 
 # Get/Create key vault name
@@ -145,7 +145,7 @@ If ($null -eq $kvs) {Try {$kvs = Set-AzKeyVaultSecret -VaultName $kvName -Name $
 Else {Write-Host "  $UserName exists, skipping"}
 
 # 4. Create VNet and subnets
-Write-Host (Get-Date)' - ' -NoNewline
+Write-Host (Get-Date)'- ' -NoNewline
 Write-Host "Creating Virtual Network" -ForegroundColor Cyan
 
 # Create an inbound network security group rule for the admin port
@@ -153,8 +153,7 @@ Write-Host '  creating NSG and Admin rule'
 Try {$nsg = Get-AzNetworkSecurityGroup -Name $VNetName'-nsg' -ResourceGroupName $RGName -ErrorAction Stop
      Write-Host '    NSG exists, skipping'}
 Catch {$nsgRule1 = New-AzNetworkSecurityRuleConfig -Name AllowSSH -Protocol Tcp -Direction Inbound -Priority 1000 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange 22 -Access Allow
-       $nsgRule2 = New-AzNetworkSecurityRuleConfig -Name DenyAll -Protocol * -Direction Inbound -Priority 1001 -SourceAddressPrefix * -SourcePortRange * -DestinationAddressPrefix * -DestinationPortRange * -Access Deny
-       $nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VNetName'-nsg' -SecurityRules $nsgRule1, $nsgRule2}
+       $nsg = New-AzNetworkSecurityGroup -ResourceGroupName $RGName -Location $ShortRegion -Name $VNetName'-nsg' -SecurityRules $nsgRule1}
         
 Try {$vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName -ErrorAction Stop
      Write-Host "  VNet exists, skipping"}
@@ -222,10 +221,15 @@ For ($i=1; $i -le 2; $i++) {
     }
 }
 
-# End Nicely
-
+# Wait for the jobs to complete
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Module 9 completed successfully" -ForegroundColor Green
+Write-Host "Waiting for the NVAs to deploy, this script will continue after 10 minutes or when the VMs are built, whichever comes first." -ForegroundColor Cyan
+Get-Job -Command "New-AzVM" | wait-job -Timeout 600 | Out-Null
+
+# End Nicely
+Write-Host (Get-Date)'- ' -NoNewline
+Write-Host "Deployment completed successfully" -ForegroundColor Green
+Write-Host
 Write-Host "  All environment components are built, time to play!" -ForegroundColor Green
 Write-Host
 Write-Host

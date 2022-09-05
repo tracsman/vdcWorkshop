@@ -44,4 +44,4 @@ Once you're done with this step, you will see a Resource Group in Azure with two
 [Next]: ./BaseNetStep2.md
 
 <!--Image References-->
-[1]: ./Media/BaseNetStep1.svg "As built diagram for step 1" 
+[1]: ./Media/BaseNet.svg "As built diagram of the environment" 
