@@ -89,7 +89,6 @@ router bgp 65001
    network 10.10.1.0 mask 255.255.255.0
    neighbor 10.10.2.5 remote-as 65002
    neighbor 10.10.2.5 activate
-   neighbor 10.10.2.5 next-hop-self
 end
 wr
 ```
@@ -102,7 +101,6 @@ router bgp 65002
    network 10.10.3.0 mask 255.255.255.0
    neighbor 10.10.2.4 remote-as 65001
    neighbor 10.10.2.4 activate
-   neighbor 10.10.2.4 next-hop-self
 end
 wr
 ```
