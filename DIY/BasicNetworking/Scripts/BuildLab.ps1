@@ -75,7 +75,7 @@ If ($myContext.Account.Id -notmatch $RegEx) {
     Write-Host "Connect-AzAccount -UseDeviceAuthentication" -ForegroundColor Yellow
     Write-Host "This command will show a URL and Code. Open a new browser tab and navigate to that URL, enter the code, and login with your Azure credentials"
     Write-Host
-    Write-Host "Script Ending, Module 9, Failure Code 1"
+    Write-Host "Script Ending, BuildLab.ps1, Failure Code 1"
     Exit 1
 }
 Write-Host "  Current User: ",$myContext.Account.Id
@@ -192,7 +192,7 @@ For ($i=1; $i -le 2; $i++) {
     Try {$pipNVA = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -ErrorAction Stop
             Write-Host "  Public IP exists, skipping"}
     Catch {$pipNVA = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -Location $ShortRegion `
-                                           -AllocationMethod Static -Sku Standard -Zone {} -IpAddressVersion IPv4}
+                                           -AllocationMethod Static -Sku Standard -IpAddressVersion IPv4}
     # 5.2 Create NICs
     Try {$nic1 = Get-AzNetworkInterface -ResourceGroupName $RGName -Name $VMName'-nic1' -ErrorAction Stop
             Write-Host "  NIC1 exists, skipping"}
