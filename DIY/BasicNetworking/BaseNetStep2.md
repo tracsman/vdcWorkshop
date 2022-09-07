@@ -8,7 +8,7 @@ In this step you will configure the two routers to enable connectivity and enabl
 
 ## Observations
 
-Once you're done with this step, you know the basic steps to configure a Cisco router and how to enable BGP.
+Once you're done with this step, you'll know the basic steps to configure a Cisco router and how to enable BGP.
 
 ## Connecting to the Routers
 
