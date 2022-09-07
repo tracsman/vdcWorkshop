@@ -37,13 +37,13 @@ switch ($MenuItem.Character) {
          $Files += 'WorkshopStep3.ps1'
          $Files += 'WorkshopStep4.ps1'
          $Files += 'WorkshopStep5.ps1'
-         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/master/DIY/Firewall/Scripts/'}
+         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/main/DIY/Firewall/Scripts/'}
     "3" {Write-Host "Basic Network Training Lab was selected" -ForegroundColor Cyan
          $RGName = "NetTrain"
          $Files = @()
          $Files += 'Validate-Lab.ps1'
          $Files += 'BuildLab.ps1'
-         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/NetTraining/DIY/BasicNetworking/Scripts/'}
+         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/main/DIY/BasicNetworking/Scripts/'}
     "0" {Write-Host "Exiting" -ForegroundColor Cyan
          Write-Host
          Return}
