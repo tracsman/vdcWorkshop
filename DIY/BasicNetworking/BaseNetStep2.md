@@ -12,8 +12,7 @@ Once you're done with this step, you'll know the basic steps to configure a Cisc
 
 ## Connecting to the Routers
 
->[!CAUTION]
->If your subscription has access restrictions that prevent SSH connections from internet based resources see the special instructions towards the end of this document.
+>CAUTION: If your subscription has access restrictions that prevent SSH connections from internet based resources see the special instructions towards the end of this document.
 
 >NOTE: The user name used is **LabUser**, this is case sensitive, please ensure you use proper case!!
 
