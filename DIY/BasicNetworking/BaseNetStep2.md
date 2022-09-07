@@ -65,7 +65,6 @@ Also the question mark is a very handy helper on the Cisco CLI. Try typing ```s`
 | Exit configuration mode | ```end``` | |
 | Write unsaved changes to memory | ```copy running-config startup-config``` | ```wr``` |
 | Exit the router session, i.e. log off the router | ```exit``` | |
-||
 
 ## Configuring the Routers
 
@@ -77,7 +76,6 @@ Find the private IP addresses (e.g. 10.x.x.x) for NIC1 and NIC2 of both routers 
 |:--|:--:|:--:|
 | ```Router01```| 10.10.1.4 | 10.10.2.4 |
 | ```Router02```| 10.10.3.4 | 10.10.2.5 |
-||
 
 The interfaces currently have the IPs assigned from DHCP, so refer to the above table to keep them straight.
 
