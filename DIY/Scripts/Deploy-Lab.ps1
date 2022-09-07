@@ -20,11 +20,10 @@ If (-not ([environment]::GetEnvironmentVariable("AZUREPS_HOST_ENVIRONMENT") -mat
 Write-Host "Please select the lab you wish to deploy to your cloud shell:"
 Write-Host
 Write-Host "   1. Firewall"
-Write-Host "   2. Workshop Maximus"
 Write-Host "   3. Basic Network Training"
 Write-Host "   0. Exit"
 Write-Host
-Write-Host "  Waiting for your selection [0-3]: " -NoNewline
+Write-Host "  Waiting for your selection [0,1,3]: " -NoNewline
 $MenuItem = $Host.UI.RawUI.ReadKey()
 Write-Host
 Write-Host
@@ -39,20 +38,6 @@ switch ($MenuItem.Character) {
          $Files += 'WorkshopStep4.ps1'
          $Files += 'WorkshopStep5.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/master/DIY/Firewall/Scripts/'}
-    "2" {Write-Host "Workshop Maximus was selected" -ForegroundColor Cyan
-         $RGName = "MaxLab"
-         $Files = @()
-         $Files += 'Validate-Lab.ps1'
-         $Files += 'Module01.ps1'
-         $Files += 'Module02.ps1'
-         $Files += 'Module03.ps1'
-         $Files += 'Module04.ps1'
-         $Files += 'Module05.ps1'
-         $Files += 'Module06.ps1'
-         $Files += 'Module07.ps1'
-         $Files += 'Module08.ps1'
-         $Files += 'Module09.ps1'
-         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/ModularDIY/DIY/Maximus/Scripts/'}
     "3" {Write-Host "Basic Network Training Lab was selected" -ForegroundColor Cyan
          $RGName = "NetTrain"
          $Files = @()

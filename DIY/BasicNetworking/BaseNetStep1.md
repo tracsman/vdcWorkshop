@@ -1,4 +1,4 @@
-<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >>
 
 # Basic Routing Environment - Step 1
 
@@ -37,11 +37,11 @@ Once you're done with this step, you will see a Resource Group in Azure with two
 
 [![1]][1]
 
-<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >> 
+<< [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >>
 
 <!--Link References-->
 [Prev]: ./BaseNetStep0.md
 [Next]: ./BaseNetStep2.md
 
 <!--Image References-->
-[1]: ./Media/BaseNet.svg "As built diagram of the environment" 
+[1]: ./Media/BaseNet.svg "As built diagram of the environment"

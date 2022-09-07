@@ -35,8 +35,8 @@ Activity | Duration
 
 [![1]][1]
 
-> **IMPORTANT** 
-> * Some concepts presented in this course can be quite complex and you may need to seek more information from different sources to compliment your understanding of the areas covered.
+> **IMPORTANT**
+> Some concepts presented in this course can be quite complex and you may need to seek more information from different sources to compliment your understanding of the areas covered.
 
 ## Lab Guide
 
@@ -55,4 +55,4 @@ To get started, proceed to the Initialization step where you initialize your Clo
 [Step2]: ./BaseNetStep2.md
 
 <!--Image References-->
-[1]: ./Media/Step1.svg "Workshop final as-built diagram"
+[1]: ./Media/BaseNet.svg "Workshop final as-built diagram"
