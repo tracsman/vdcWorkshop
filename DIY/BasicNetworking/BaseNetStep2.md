@@ -47,7 +47,7 @@ To access the routers, we'll use the built-in SSH client in Windows, MAC, or Lin
 
 ### A word about Cisco commands
 
-You only need to enter enough characters for the command to be unique to be successful. For instance if you to see the running configuration on the current router would you enter ```show running-config``` but you can also enter the much shorter ```sho run``` to get the same result. You can also use tab to complete the command. So you could enter ```show run``` then press tab to fill out the rest of the command to ```show running-config```.
+You only need to enter enough characters for the command to be unique to be successful. For instance if you want to see the running configuration on the current router would you enter ```show running-config``` but you can also enter the much shorter ```sho run``` to get the same result. You can also use tab to complete the command. So you could enter ```show run``` then press tab to fill out the rest of the command to ```show running-config```.
 
 Also the question mark is a very handy helper on the Cisco CLI. Try typing ```s``` then press ? and you'll instantly see commands that start with "s", you can also find additional commands as you type words, try this by typing "```show ```" (note the space after show) then press ?. You'll see all the things you can "show" in the Cisco IOS (the operating system), this technique is especially helpful as you type longer and longer commands some with as many as eight or nine keywords and IP addresses.
 
