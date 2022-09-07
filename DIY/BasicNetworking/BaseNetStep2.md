@@ -57,9 +57,9 @@ Also the question mark is a very handy helper on the Cisco CLI. Try typing ```s`
 |----------|--------------|------------|
 | Show the running configuration | ```show running-config``` | ```sh run``` |
 | Ping | ```ping x.x.x.x``` | |
-| Show Interface Summary | ```show interfaces summary``` | ```sh int sum``` |
-| Show Route Table | ```show ip route``` | ```sh ip route``` |
-| Show BGP Summary | ```show ip bgp summary``` | ```sh ip bgp sum``` |
+| Show the Interface Summary | ```show interfaces summary``` | ```sh int sum``` |
+| Show the routers Route Table | ```show ip route``` | ```sh ip route``` |
+| Show the summary of BGP conenctions | ```show ip bgp summary``` | ```sh ip bgp sum``` |
 | Enter config edit mode | ```configure terminal``` | ```conf t``` |
 | Undo a statement (must be in edit mode) | add ```no``` as a prefix to the config you wish to remove |
 | Exit configuration mode | ```end``` | |
