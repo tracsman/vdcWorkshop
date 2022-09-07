@@ -79,7 +79,7 @@ Find the private IP addresses (e.g. 10.x.x.x) for NIC1 and NIC2 of both routers 
 
 The interfaces currently have the IPs assigned from DHCP, so refer to the above table to keep them straight.
 
-To make configuration easier, you can copy the config and right-click in the command window to paste the config in your clipboard.
+To make configuration easier, you can copy the below config snippets and right-click in the SSH window to paste the config from your clipboard.
 
 In the config below:
 
