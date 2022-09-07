@@ -21,9 +21,10 @@ Write-Host "Please select the lab you wish to deploy to your cloud shell:"
 Write-Host
 Write-Host "   1. Firewall"
 Write-Host "   2. Workshop Maximus"
+Write-Host "   3. Basic Network Training"
 Write-Host "   0. Exit"
 Write-Host
-Write-Host "  Waiting for your selection [0-2]: " -NoNewline
+Write-Host "  Waiting for your selection [0-3]: " -NoNewline
 $MenuItem = $Host.UI.RawUI.ReadKey()
 Write-Host
 Write-Host
@@ -52,6 +53,12 @@ switch ($MenuItem.Character) {
          $Files += 'Module08.ps1'
          $Files += 'Module09.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/ModularDIY/DIY/Maximus/Scripts/'}
+    "3" {Write-Host "Basic Network Training Lab was selected" -ForegroundColor Cyan
+         $RGName = "NetTrain"
+         $Files = @()
+         $Files += 'Validate-Lab.ps1'
+         $Files += 'BuildLab.ps1'
+         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/master/DIY/BasicNetworking/Scripts/'}
     "0" {Write-Host "Exiting" -ForegroundColor Cyan
          Write-Host
          Return}
@@ -86,7 +93,7 @@ Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Downloading PowerShell Scripts" -ForegroundColor Cyan
 ForEach ($File in $Files) {
-    Invoke-WebRequest -Uri "$uri$File" -OutFile "$ScriptPath\$File" | Out-Null
+    Invoke-WebRequest -Uri "$uri$File" -OutFile "$ScriptPath\$File" -Headers @{"Cache-Control"="no-cache"} | Out-Null
 }
 
 # End nicely
