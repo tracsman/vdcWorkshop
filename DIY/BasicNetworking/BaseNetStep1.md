@@ -24,7 +24,7 @@ Once you're done with this step, you will see a Resource Group in Azure with two
 3. Run workshop script 1 with the following:
 
     ```powershell
-    ./BaseNetworkStep1.ps1
+    ./BuildLab.ps1
     ```
 
 ## Validation
