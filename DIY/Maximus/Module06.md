@@ -21,6 +21,7 @@ Once you're done with this step, you will know how to retrieve contents from a s
 1. Navigate to your Resource Group in the Portal. You should now see storage account, a private endpoint with an associated NIC and a private DNS zone. 
 2. Check the settings of the Private Endoint.
 3. Navigate to the App Gateway IP again from the browser and notice that the web page now displays contents from the storage account via the Private Endpoint.
+4. (Optional) Pull up the FQDNs of the private and public endpoints from the Portal. Use a browser to directly access each of the endpoints from a) the Internet and b) from CorpNet (if remote, connect with Corp VPN). You will notice that you can access the Storage Account with both FQDNs from the Internet but not from CorpNet. This is because access from the Internet uses the public DNS server managed by Azure. Access from CorpNet uses the CorpNet DNS server managed by Corp IT. If you want to access from CorpNet, you will need to setup a DNS record in the Corp DNS server via the Self-Service DNS interface (https://namesweb/dnsselfservice/). For details, refer to http://aka.ms/privatelinkforinternaluse. 
 
 
 
