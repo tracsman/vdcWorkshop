@@ -8,7 +8,7 @@
 This initialization step (step 0) of the workshop has you start the Cloud Shell, ensure you're using the PowerShell experience, download the Workshop files, and log in using your Azure credentials.
 
 ## Observations
-Once you're done with this step, you'll know more about the Azure Cloud Shell and how to get started with it.
+Once you're done with this step, you'll know more about the Azure Cloud Shell and how to get started with it. 
 
 ## Deployment
 1. Connect to the internet
