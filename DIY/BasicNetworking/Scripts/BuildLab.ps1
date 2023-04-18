@@ -175,9 +175,9 @@ $sn3 = Get-AzVirtualNetworkSubnetConfig -VirtualNetwork $vnet -Name "Network03"
 ##  vendor product type in the target Azure subscription and persists thereafter.
 ##  Note: Using marketplace images isn't an option for certain subscription. If this is the case, this
 ##        lab can not be performed.
-$MPTermsAccepted = (Get-AzMarketplaceTerms -Publisher "cisco" -Product "cisco-csr-1000v" -Name "csr-azure-byol").Accepted
-if (-Not $MPTermsAccepted) {Get-AzMarketplaceTerms -Publisher "cisco" -Product "cisco-csr-1000v" -Name "csr-azure-byol" | Set-AzMarketplaceTerms -Accept}
-$MPTermsAccepted = (Get-AzMarketplaceTerms -Publisher "cisco" -Product "cisco-csr-1000v" -Name "csr-azure-byol").Accepted
+$MPTermsAccepted = (Get-AzMarketplaceTerms -Publisher "cisco" -Product "cisco-csr-1000v" -Name "csr-azure-byol" -OfferType 'virtualmachine').Accepted
+if (-Not $MPTermsAccepted) {Get-AzMarketplaceTerms -Publisher "cisco" -Product "cisco-csr-1000v" -Name "csr-azure-byol" -OfferType 'virtualmachine'| Set-AzMarketplaceTerms -Accept}
+$MPTermsAccepted = (Get-AzMarketplaceTerms -Publisher "cisco" -Product "cisco-csr-1000v" -Name "csr-azure-byol" -OfferType 'virtualmachine').Accepted
 if (-Not $MPTermsAccepted) {Write-Host "MarketPlace terms for the required image could not be accepted. This is required for this working." -ForegroundColor Red;Return}
 
 # Loop through NVA Creation
