@@ -82,7 +82,7 @@ Catch {
     $vnet = Get-AzVirtualNetwork -ResourceGroupName $RGName -Name $VNetName
     $subnet = Get-AzVirtualNetworkSubnetConfig -Name 'GatewaySubnet' -VirtualNetwork $vnet
     Try {$pip = Get-AzPublicIpAddress -Name $VNetName'-gw-pip'  -ResourceGroupName $RGName -ErrorAction Stop}
-    Catch {$pip = New-AzPublicIpAddress -Name $VNetName'-gw-pip' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Dynamic}
+    Catch {$pip = New-AzPublicIpAddress -Name $VNetName'-gw-pip' -ResourceGroupName $RGName -Location $ShortRegion -AllocationMethod Static}
     $ipconf = New-AzVirtualNetworkGatewayIpConfig -Name "gwipconf" -Subnet $subnet -PublicIpAddress $pip
     New-AzVirtualNetworkGateway -Name $VNetName'-gw' -ResourceGroupName $RGName -Location $ShortRegion -IpConfigurations $ipconf -GatewayType Expressroute -GatewaySku Standard -AsJob | Out-Null
     }
