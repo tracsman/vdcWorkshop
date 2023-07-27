@@ -95,7 +95,7 @@ try {
 Write-Host "  Creating Public IP"
 Try {$pip = Get-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -ErrorAction Stop
      Write-Host "    Public IP exists, skipping"}
-Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -Location $ShortRegion -AllocationMethod Dynamic}
+Catch {$pip = New-AzPublicIpAddress -ResourceGroupName $RGName -Name $VMName'-pip' -Location $ShortRegion -AllocationMethod Static}
 
 # 2.2.2 Create NSG
 Write-Host "  Creating NSG"
