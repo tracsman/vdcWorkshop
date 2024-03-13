@@ -59,7 +59,7 @@ $MainPage = '<%@ Page Language="vb" AutoEventWireup="false" %>
       <div style="border: 2px solid #8AC007; border-radius: 25px; padding: 20px; margin: 10px; width: 650px;">
         <b>Image File Linked from the Internet</b>:<br />
         <br />
-        <img src="http://sd.keepcalm-o-matic.co.uk/i/keep-calm-you-made-it-7.png" alt="You made it!" width="150" length="175"/></div>
+        <img src="https://3.bp.blogspot.com/-eZsaDgbzJuE/VXM0BE4m4RI/AAAAAAAAC-E/rHAKa41QBZo/s1600/keep-calm-and-carry-on-vector-logo.png" alt="You made it!" width="150" length="175"/></div>
     </div>
   </form>
 </body>
