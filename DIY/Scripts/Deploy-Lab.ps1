@@ -21,6 +21,8 @@ Write-Host "Please select the lab you wish to deploy to your cloud shell:"
 Write-Host
 Write-Host "   1. Firewall"
 Write-Host "   3. Basic Network Training"
+Write-Host "   4. ExpressRoute Resiliency Part 1"
+Write-Host "   5. ExpressRoute Resiliency Part 2"
 Write-Host "   0. Exit"
 Write-Host
 Write-Host "  Waiting for your selection [0,1,3]: " -NoNewline
@@ -44,6 +46,12 @@ switch ($MenuItem.Character) {
          $Files += 'Validate-Lab.ps1'
          $Files += 'BuildLab.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/main/DIY/BasicNetworking/Scripts/'}
+    "4" {Write-Host "ExpressRoute Resiliency Part 1 Lab was selected" -ForegroundColor Cyan
+         $RGName = "Company"
+         $Files = @()
+         $Files += 'Validate-Lab1.ps1'
+         $Files += 'ER1WorkshopStep1'
+         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/main/ERResilience//Scripts/'}         
     "0" {Write-Host "Exiting" -ForegroundColor Cyan
          Write-Host
          Return}

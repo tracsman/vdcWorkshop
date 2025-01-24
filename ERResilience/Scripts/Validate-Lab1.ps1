@@ -1,11 +1,10 @@
-# Validate Environment - For Workshop Maximus
+# Validate Environment - For Workshop ExpressRoute Resiliency Part 1
 
 $FileName = @()
-$FileName += 'BuildLab.ps1'
+$FileName += 'ER1WorkshopStep1.ps1'
 $ErrorBit=$False
 $ScriptPath = "$env:HOME/Scripts"
 $SubID = $null
-$ShortRegion = $null
 $RGName = $null
 
 Write-Host
@@ -17,7 +16,7 @@ Write-Host "  Checking Script Files....." -NoNewline
 ForEach ($File in $FileName) {
     If (-Not (Test-Path $ScriptPath/$File)) {
         Write-Host "One or more script files Not Found" -ForegroundColor Red
-        Write-Host "                            Rerun the intial script"
+        Write-Host "                            Rerun the initial script"
         $ErrorBit=$true
         break
     }
@@ -29,7 +28,7 @@ $ErrorBit=$False
 Write-Host "  Checking Init File........" -NoNewline
 If (-Not (Test-Path $ScriptPath/init.txt)){
     Write-Host "File Not Found" -ForegroundColor Red
-    Write-Host "                            Rerun the intial script"
+    Write-Host "                            Rerun the initial script"
     Return
 } Else {
     Write-Host "Good" -ForegroundColor Green
@@ -57,17 +56,6 @@ If (-Not $ErrorBit) {
     Write-Host "$($Sub.Name)" -ForegroundColor Cyan
 }
 $ErrorBit=$False
-
-# Valid Short Region value
-Write-Host "    Checking Region........." -NoNewline
-If ($null -eq (Get-AzLocation | Where-Object Location -eq $ShortRegion)) {
-    Write-Host "ShortRegion not valid or unauthorized" -ForegroundColor Red
-    Write-Host "                            Update ShortRegion in the init.txt file"
-} Else {
-    Write-Host "Valid" -ForegroundColor Green -NoNewline
-    Write-Host ", Region : " -NoNewline
-    Write-Host (Get-AzLocation | Where-Object Location -eq $ShortRegion).DisplayName -ForegroundColor Cyan
-}
 
 # Validate Resource Group Name
 Write-Host "    Checking RG Name........" -NoNewline
