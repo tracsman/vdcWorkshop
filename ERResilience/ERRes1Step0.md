@@ -53,6 +53,12 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
     ./Scripts/Validate-Lab.ps1
     ```
 
+12. In the portal above the CloudShell window, navigate to your Company## (## should be suplied by your intstructor). You'll see the initial resources configured before hand for your lab.
+
+## Application Diagram After this Step is Complete
+
+[![4]][4]
+
 [Main Page][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 0&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >>
 
 <!--Link References-->
@@ -64,3 +70,4 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 [1]: ./Media/CloudShellLaunch.svg "Launch Cloud Shell Icon"
 [2]: ./Media/CloudShellPowerShell.svg "Set Cloud Shell to PowerShell"
 [3]: ./Media/CloudShellEditor.svg "Open Cloud Shell file editor"
+[4]: ./Media/ERRes1Step0.svg "The initial As built resource group, two hub/spoke in two regions with local ER Circuits"
