@@ -1,6 +1,6 @@
 << [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 2&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Main Page][Next]
 
-# Basic Routing Environment - Step 2
+# ExpressRoute Resiliency Workshop Part 1 - Cloud Shell Initialization (Step 2)
 
 ## Abstract
 

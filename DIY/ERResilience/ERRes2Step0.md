@@ -1,6 +1,6 @@
 [Main Page][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 0&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >>
 
-# Basic Routing Environment - Cloud Shell Initialization (Step 0)
+# ExpressRoute Resiliency Workshop Part 2 - Cloud Shell Initialization (Step 0)
 
 ## Abstract
 
@@ -42,7 +42,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 
     [![3]][3]
 8. Navigate to init.txt (red boxed item in file hierarchy in the image above)
-9. In the right-hand pane, update the Subscription ID to your Subscription ID and optionally the RGName to use the resource group name you wish to use inside your subscription.
+9. In the right-hand pane, verify the Subscription ID matches the one provided by your instructor and update the RGName to use the resource group name provided by your instructor. It should be something like Company10, where 10 is your assigned number.
     > **IMPORTANT**
     >
     > The script in this workshop pulls critical information from the init.txt file, so it’s important to update this file to reflect the resource group name and subscription you’ll be using for this deployment of the workshop.  
@@ -56,8 +56,8 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 [Main Page][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 0&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >>
 
 <!--Link References-->
-[Prev]: ./README.md
-[Next]: ./BaseNetStep1.md
+[Prev]: ./README2.md
+[Next]: ./ERRes2Step1.md
 [CloudShell]: https://docs.microsoft.com/azure/cloud-shell/overview
 
 <!--Image References-->
