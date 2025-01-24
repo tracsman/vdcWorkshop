@@ -28,7 +28,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
    Connect-AzAccount -UseDeviceAuthentication
    ```
 
-   and follow the instructions. Login using your Azure Portal credentials
+   and follow the instructions. Login using your Azure Portal credentials. If prompted to select a subscription look for the "Virtual Data Center Workshop" subscription and enter the number for that entry.
 6. In Cloud Shell run the following to download the workshop files
 
     ```powershell

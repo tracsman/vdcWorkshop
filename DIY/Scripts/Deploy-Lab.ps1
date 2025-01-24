@@ -51,7 +51,7 @@ switch ($MenuItem.Character) {
          $Files = @()
          $Files += 'Validate-Lab1.ps1'
          $Files += 'ER1WorkshopStep1'
-         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/main/ERResilience//Scripts/'}         
+         $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/main/ERResilience/Scripts/'}         
     "0" {Write-Host "Exiting" -ForegroundColor Cyan
          Write-Host
          Return}
