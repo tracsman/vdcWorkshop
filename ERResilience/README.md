@@ -19,13 +19,12 @@ The following prerequisites must be completed before you start this workshop:
 * [Part 1][Part1] - Focuses on ExpressRoute Maximum Resiliency and fail over testing
 * [Part 2][Part2] - Focuses on the new metro peering location architecture and migrating from a standard circuit.
 
-The individual steps for this lab are located on GitHub, follow this link to access them: https://github.com/tracsman/vdcWorkshop/tree/main/DIY/ERResilience
+The individual steps for this lab are located on GitHub, follow this link to access them: https://github.com/tracsman/vdcWorkshop/blob/main/ERResilience
 
 > **IMPORTANT**
 > Some concepts presented in this course can be quite complex and you may need to seek more information from different sources to compliment your understanding of the areas covered.
 
 To get started, proceed to the README file for the lab you wish to participate in.
 <!--Link References-->
-[PayGo]: https://azure.microsoft.com/pricing/purchase-options/pay-as-you-go/
 [Part1]: ./README1.md
 [Part2]: ./README2.md

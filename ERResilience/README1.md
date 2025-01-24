@@ -21,7 +21,7 @@ The following prerequisites must be completed before you start this workshop:
 * Add connections to your deployment to reach "Max" Resiliency on ExpressRoute
 * Use a new feature to "fail" your ExpressRoute in Seattle, and watch the traffic failover to DC and maintain connectivity.
 
-The individual steps for this lab are located on GitHub, follow this link to access them: https://github.com/tracsman/vdcWorkshop/tree/main/DIY/ERResilience
+The individual steps for this lab are located on GitHub, follow this link to access them: https://github.com/tracsman/vdcWorkshop/blob/main/ERResilience/README1.md
 
 Activity | Duration
 -------- | ---------
@@ -35,10 +35,9 @@ Activity | Duration
 To get started, proceed to the Initialization step (Step 0) where you initialize your Cloud Shell, download the workshop files to your Cloud Shell and configure the workshop for your subscription. These instructions can be found here: [Cloud Shell Initialization and Updates][Step0]
 
 <!--Link References-->
-[PayGo]: https://azure.microsoft.com/pricing/purchase-options/pay-as-you-go/
-[Step0]: ./BaseNetStep0.md
-[Step1]: ./BaseNetStep1.md
-[Step2]: ./BaseNetStep2.md
+[Step0]: ./ERRes1Step0.md
+[Step1]: ./ERRes1Step1.md
+[Step2]: ./ERRes1Step2.md
 
 <!--Image References-->
-[1]: ./Media/BaseNet.svg "Workshop final as-built diagram"
+[1]: ./Media/ERRes1Step2.svg "Workshop final as-built diagram"
