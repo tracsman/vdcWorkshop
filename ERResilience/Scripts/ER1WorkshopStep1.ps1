@@ -5,6 +5,7 @@
 #
 #
 # Step 1  Create the connection between the ER Gateway and the ER Circuit
+# Step 2  Fail Seattle and validate traffic flows through Ashburn (no script)
 # 
 
 # Step 1 Create the connection between the ER Gateway and the ER Circuit

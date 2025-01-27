@@ -7,7 +7,7 @@
 # Step 1 Create an ExpressRoute circuit and ER Gateway
 # Step 2 Bring up ExpressRoute Private Peering
 # Step 3 Create the connection between the ER Gateway and the ER Circuit
-# Step 4 Delete old peering and connection
+# Step 4 Delete old peering and connection (no script)
 # 
 
 # Step 3 Create the connection between the ER Gateway and the ER Circuit
