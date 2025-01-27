@@ -36,8 +36,8 @@ $ShortRegionWest = "westus2"
 $ShortRegionEast = "eastus"
 $VNetNameWest = "C" + $CompanyID + "w-VNetHub"
 $VNetNameEast = "C" + $CompanyID + "e-VNetHub"
-$CircuitNameSEA = $RGName + "-er"
-$CircuitNameASH = $RGName + "-er"
+$CircuitNameSEA = $RGName + "w-er"
+$CircuitNameASH = $RGName + "e-er"
 
 # Start nicely
 Write-Host

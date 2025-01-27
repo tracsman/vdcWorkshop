@@ -25,7 +25,7 @@ Write-Host "   4. ExpressRoute Resiliency Part 1"
 Write-Host "   5. ExpressRoute Resiliency Part 2"
 Write-Host "   0. Exit"
 Write-Host
-Write-Host "  Waiting for your selection [0,1,3]: " -NoNewline
+Write-Host "  Waiting for your selection [0,1,3,4,5]: " -NoNewline
 $MenuItem = $Host.UI.RawUI.ReadKey()
 Write-Host
 Write-Host
