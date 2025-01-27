@@ -14,6 +14,19 @@ Once you're done with this step, you'll know the basic steps to configure a Cisc
 
 ## Deployment
 
+1. Change to the Scripts folder
+
+    ```powershell
+    cd Scripts
+    ```
+
+2. (Optional) in the editor pane you can select and view the script before running
+3. Run workshop script 1 with the following:
+
+    ```powershell
+    ./ER1WorkshopStep1.ps1
+    ```
+
 ## Validation
 
 ## Application Diagram After this Step is Complete

@@ -1,6 +1,6 @@
 << [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >>
 
-# ExpressRoute Resiliency Workshop Part 1 - Cloud Shell Initialization (Step 1)
+# ExpressRoute Resiliency Workshop Part 1 - Create Meshed ER Connections (Step 1)
 
 ## Abstract
 

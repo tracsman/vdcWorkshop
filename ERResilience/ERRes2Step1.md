@@ -1,18 +1,31 @@
 << [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 1&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >>
 
-# ExpressRoute Resiliency Workshop Part 2 - Cloud Shell Initialization (Step 1)
+# ExpressRoute Resiliency Workshop Part 2 - Create a metro peered ExpressRoute circuit (Step 1)
 
 ## Abstract
 
-Fail Seattle ER circuit and validate traffic flows through Ashburn
+In this step we change to the Scripts directory and execute the Step 1 PowerShell Script.
+
+The Step 1 Script will create an ExpressRoute circuit with a metro peering location.
 
 ## Observations
 
-Once you're done with this step, you'll know the basic steps to configure a Cisco router and how to enable BGP.
-
-## Observations
+Once you're done with this step,
 
 ## Deployment
+
+1. Change to the Scripts folder
+
+    ```powershell
+    cd Scripts
+    ```
+
+2. (Optional) in the editor pane you can select and view the script before running
+3. Run workshop script 1 with the following:
+
+    ```powershell
+    ./ER2WorkshopStep1.ps1
+    ```
 
 ## Validation
 

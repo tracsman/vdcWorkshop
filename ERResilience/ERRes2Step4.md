@@ -1,18 +1,20 @@
 << [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 4&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Main Page][Next]
 
-# ExpressRoute Resiliency Workshop Part 2 - Cloud Shell Initialization (Step 4)
+# ExpressRoute Resiliency Workshop Part 2 - Delete Standard ER Connection (Step 4)
 
 ## Abstract
 
-Fail Seattle ER circuit and validate traffic flows through Ashburn
+Delete old peering and connection (no script)
 
 ## Observations
 
-Once you're done with this step, you'll know the basic steps to configure a Cisco router and how to enable BGP.
+Once you're done with this step,
 
 ## Observations
 
 ## Deployment
+
+1. In the portal, <delete instructions>
 
 ## Validation
 

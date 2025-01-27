@@ -4,7 +4,7 @@
 # Use your corporate credentials to login (your @microsoft.com account) to Azure
 #
 #
-# Step 1 Create an ExpressRoute circuit and ER Gateway
+# Step 1 Create a metro peered ExpressRoute circuit
 # Step 2 Bring up ExpressRoute Private Peering
 # Step 3 Create the connection between the ER Gateway and the ER Circuit
 # Step 4 Delete old peering and connection (no script)

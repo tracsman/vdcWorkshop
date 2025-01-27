@@ -4,7 +4,7 @@
 # Use your corporate credentials to login (your @microsoft.com account) to Azure
 #
 #
-# Step 1 Create an ExpressRoute circuit and ER Gateway
+# Step 1 Create a metro peered ExpressRoute circuit
 # Step 2 Bring up ExpressRoute Private Peering
 # Step 3 Create the connection between the ER Gateway and the ER Circuit
 # Step 4 Delete old peering and connection (no script)
@@ -67,7 +67,7 @@ Try {$ckt = Get-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitN
 Catch {Write-Warning "The circuit wasn't found, please ensure step three is successful before running this script."
        Return}
 
-#  1.2 Bring up ExpressRoute Private Peering
+#  2.2 Bring up ExpressRoute Private Peering
 If ($ckt.ServiceProviderProvisioningState -eq "Provisioned") {
        Write-Host (Get-Date)' - ' -NoNewline
        Write-Host 'Bringing up Private Peering' -ForegroundColor Cyan

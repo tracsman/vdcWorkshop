@@ -1,18 +1,32 @@
 << [Previous Step][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 3&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >>
 
-# ExpressRoute Resiliency Workshop Part 2 - Cloud Shell Initialization (Step 3)
+# ExpressRoute Resiliency Workshop Part 2 - Create ExpressRoute Connection (Step 3)
 
 ## Abstract
 
-Fail Seattle ER circuit and validate traffic flows through Ashburn
+Create the connection between the ER Gateway and the ER Circuit
 
 ## Observations
 
-Once you're done with this step, you'll know the basic steps to configure a Cisco router and how to enable BGP.
+Once you're done with this step, 
 
 ## Observations
 
 ## Deployment
+
+1. Change to the Scripts folder
+
+    ```powershell
+    cd Scripts
+    ```
+
+2. (Optional) in the editor pane you can select and view the script before running
+3. Run workshop script 3 with the following:
+
+    ```powershell
+    ./ER2WorkshopStep3.ps1
+    ```
+
 
 ## Validation
 
