@@ -53,6 +53,10 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
     ./Scripts/Validate-Lab.ps1
     ```
 
+## Application Diagram After this Step is Complete
+
+[![4]][4]
+
 [Main Page][Prev]&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;Step 0&nbsp;&nbsp;&nbsp;|&nbsp;&nbsp;&nbsp;[Next Step][Next] >>
 
 <!--Link References-->
@@ -64,3 +68,4 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 [1]: ./Media/CloudShellLaunch.svg "Launch Cloud Shell Icon"
 [2]: ./Media/CloudShellPowerShell.svg "Set Cloud Shell to PowerShell"
 [3]: ./Media/CloudShellEditor.svg "Open Cloud Shell file editor"
+[4]: ./Media/ERRes2Step0.svg "The initial as built resource group, VNet with standard ER Circuit"

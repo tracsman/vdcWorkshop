@@ -29,6 +29,8 @@ Activity | Duration
 [Step 1: Create bowtie East-West ER connections][Step1] | 15 minutes
 [Step 2: Discussion configuration and Fail Seattle ER][Step2] | 60 minutes
 
+[![1]][1]
+
 > **IMPORTANT**
 > Some concepts presented in this course can be quite complex and you may need to seek more information from different sources to compliment your understanding of the areas covered.
 

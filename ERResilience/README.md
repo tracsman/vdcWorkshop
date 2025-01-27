@@ -25,6 +25,7 @@ The individual steps for this lab are located on GitHub, follow this link to acc
 > Some concepts presented in this course can be quite complex and you may need to seek more information from different sources to compliment your understanding of the areas covered.
 
 To get started, proceed to the README file for the lab you wish to participate in.
+
 <!--Link References-->
 [Part1]: ./README1.md
 [Part2]: ./README2.md
