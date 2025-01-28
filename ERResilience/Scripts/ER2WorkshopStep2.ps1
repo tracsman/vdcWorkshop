@@ -34,7 +34,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 
 # Non-configurable Variable Initialization (ie don't modify these)
 $RGName = "Company" + $CompanyID
-$CircuitNameAsia = $RGName + "z-er-m"
+$CircuitNameAsia = "C" + $CompanyID + "z-ER-m"
 $PrimaryPrefix = "192.168." + $CompanyID + ".232/30"
 $SecondaryPrefix = "192.168." + $CompanyID + ".236/30"
 $ASN = "65020"

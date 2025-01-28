@@ -36,7 +36,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 $ShortRegionAsia = "southeastasia"
 $RGName = "Company" + $CompanyID
 $VNetNameAsia = "C" + $CompanyID + "z-VNet"
-$CircuitNameAsia = $RGName + "z-er-m"
+$CircuitNameAsia = "C" + $CompanyID + "z-ER-m"
 $CircuitLocationAsia = 'Singapore Metro'
 
 # Start nicely

@@ -36,7 +36,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 $ShortRegion = "westus2"
 $RGName = "Company" + $CompanyID
 $VNetName = "C" + $CompanyID + "-VNet"
-$CircuitName = $RGName + "-er"
+$CircuitName = "C" + $CompanyID + "z-ER-m"
 $AzureVMIP = "10.17." + $CompanyID + ".4"
 $OnPremVMIP = "10.3." + $CompanyID + ".10"
 
