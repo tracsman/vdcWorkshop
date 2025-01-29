@@ -34,6 +34,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegionEU = "westeurope"
+$CompanyID = $RGName.Substring($RGName.Length - 2)
 $VNetNameEU = "C" + $CompanyID + "z-VNet"
 $CircuitNameEU = "C" + $CompanyID + "z-ER-m"
 $CircuitLocationEU = 'Amsterdam Metro'
