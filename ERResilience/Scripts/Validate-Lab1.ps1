@@ -48,7 +48,7 @@ If (Test-Path -Path $ScriptPath/init.txt) {
 
 # Validate SubID Guid
 Write-Host "    Checking SubID.........." -NoNewline
-Try {$Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop).Subscription}
+Try {$Sub = (Set-AzContext -Subscription $SubID -ErrorAction Stop -WarningAction SilentlyContinue).Subscription}
 Catch {
     Write-Host "SubID not valid or unauthorized" -ForegroundColor Red
     Write-Host "                            Update SubID in the init.txt file"
