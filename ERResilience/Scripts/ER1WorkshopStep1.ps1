@@ -31,14 +31,13 @@ If (Test-Path -Path $ScriptDir/init.txt) {
         Catch {Set-Variable -Name $var[0].Trim() -Value $var[1].Trim()}}}
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
-
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegionWest = "westus2"
 $ShortRegionEast = "eastus"
 $VNetNameWest = "C" + $CompanyID + "w-VNetHub"
 $VNetNameEast = "C" + $CompanyID + "e-VNetHub"
-$CircuitNameSEA = $RGName + "w-er"
-$CircuitNameASH = $RGName + "e-er"
+$CircuitNameSEA = "C" + $CompanyID + "w-er"
+$CircuitNameASH = "C" + $CompanyID + "e-er"
 
 # Start nicely
 Write-Host
