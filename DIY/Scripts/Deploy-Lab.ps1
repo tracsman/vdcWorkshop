@@ -20,12 +20,12 @@ If (-not ([environment]::GetEnvironmentVariable("AZUREPS_HOST_ENVIRONMENT") -mat
 Write-Host "Please select the lab you wish to deploy to your cloud shell:"
 Write-Host
 Write-Host "   1. Firewall"
+Write-Host "   2. TBD"
 Write-Host "   3. Basic Network Training"
-Write-Host "   4. ExpressRoute Resiliency Part 1"
-Write-Host "   5. ExpressRoute Resiliency Part 2"
+Write-Host "   4. ExpressRoute Resiliency"
 Write-Host "   0. Exit"
 Write-Host
-Write-Host "  Waiting for your selection [0,1,3,4,5]: " -NoNewline
+Write-Host "  Waiting for your selection [0-4]: " -NoNewline
 $MenuItem = $Host.UI.RawUI.ReadKey()
 Write-Host
 Write-Host
@@ -51,6 +51,9 @@ switch ($MenuItem.Character) {
          $Files = @()
          $Files += 'Validate-Lab1.ps1'
          $Files += 'ER1WorkshopStep1.ps1'
+         $Files += 'ER2WorkshopStep1.ps1'
+         $Files += 'ER2WorkshopStep2.ps1'
+         $Files += 'ER2WorkshopStep3.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/main/ERResilience/Scripts/'}         
     "0" {Write-Host "Exiting" -ForegroundColor Cyan
          Write-Host

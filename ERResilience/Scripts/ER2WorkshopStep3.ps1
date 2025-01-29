@@ -33,7 +33,7 @@ If (Test-Path -Path $ScriptDir\init.txt) {
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
 # Non-configurable Variable Initialization (ie don't modify these)
-$ShortRegion = "westus2"
+$ShortRegionEU = "westeurope"
 $RGName = "Company" + $CompanyID
 $VNetName = "C" + $CompanyID + "-VNet"
 $CircuitName = "C" + $CompanyID + "z-ER-m"
@@ -93,7 +93,7 @@ Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetName"-gw" -ResourceGroupName
            If ($NeedSpace) {Write-Host}
            Write-Host '  Gateway is provisioned'
            Write-Host '  Connecting to ExpressRoute'
-           New-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-conn" -ResourceGroupName $RGName -Location $ShortRegion `
+           New-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-conn" -ResourceGroupName $RGName -Location $ShortRegionEU `
                                                  -VirtualNetworkGateway1 $gw -PeerId $ckt.Id -ConnectionType ExpressRoute | Out-Null}
        Else {Write-Warning 'An issue occured with ER gateway provisioning.'
              Write-Host 'Current Gateway Provisioning State' -NoNewLine
@@ -103,7 +103,7 @@ Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetName"-gw" -ResourceGroupName
 
 # End nicely
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Step 5 completed successfully" -ForegroundColor Green
+Write-Host "Step 3 completed successfully" -ForegroundColor Green
 Write-Host "  Review your route table on the Private Peering again."
 Write-Host "  You should now see your VNet routes from Azure."
 Write-Host "  Now try pinging the Azure VM ($AzureVMIP) from the on-prem VM ($OnPremVMIP)"

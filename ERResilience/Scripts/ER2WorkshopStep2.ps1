@@ -34,7 +34,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 
 # Non-configurable Variable Initialization (ie don't modify these)
 $RGName = "Company" + $CompanyID
-$CircuitNameAsia = "C" + $CompanyID + "z-ER-m"
+$CircuitNameEU = "C" + $CompanyID + "z-ER-m"
 $PrimaryPrefix = "192.168." + $CompanyID + ".232/30"
 $SecondaryPrefix = "192.168." + $CompanyID + ".236/30"
 $ASN = "65020"
@@ -63,7 +63,7 @@ Catch {# Login and set subscription for ARM
 # Get Circuit Info
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host 'Pulling circuit information' -ForegroundColor Cyan
-Try {$ckt = Get-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitNameAsia -ErrorAction Stop}
+Try {$ckt = Get-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitNameEU -ErrorAction Stop}
 Catch {Write-Warning "The circuit wasn't found, please ensure step three is successful before running this script."
        Return}
 

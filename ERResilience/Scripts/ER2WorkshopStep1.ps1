@@ -33,11 +33,11 @@ If (Test-Path -Path $ScriptDir\init.txt) {
 Else {Write-Warning "init.txt file not found, please change to the directory where these scripts reside ($ScriptDir) and ensure this file is present.";Return}
 
 # Non-configurable Variable Initialization (ie don't modify these)
-$ShortRegionAsia = "southeastasia"
+$ShortRegionEU = "westeurope"
 $RGName = "Company" + $CompanyID
-$VNetNameAsia = "C" + $CompanyID + "z-VNet"
-$CircuitNameAsia = "C" + $CompanyID + "z-ER-m"
-$CircuitLocationAsia = 'Singapore Metro'
+$VNetNameEU = "C" + $CompanyID + "z-VNet"
+$CircuitNameEU = "C" + $CompanyID + "z-ER-m"
+$CircuitLocationEU = 'Amsterdam Metro'
 
 # Start nicely
 Write-Host
@@ -61,11 +61,11 @@ Catch {# Login and set subscription for ARM
 
 #  1.2 Create ExpressRoute Circuit
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Creating ExpressRoute Circuit in $CircuitLocationAsia" -ForegroundColor Cyan
-Try {Get-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitNameAsia -ErrorAction Stop | Out-Null
+Write-Host "Creating ExpressRoute Circuit in $CircuitLocationEU" -ForegroundColor Cyan
+Try {Get-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitNameEU -ErrorAction Stop | Out-Null
         Write-Host '  resource exists, skipping'}
-Catch {New-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitNameAsia -Location $ShortRegionAsia `
-                                      -ServiceProviderName Equinix -PeeringLocation $CircuitLocationAsia `
+Catch {New-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitNameEU -Location $ShortRegionEU `
+                                      -ServiceProviderName Equinix -PeeringLocation $CircuitLocationEU `
                                       -BandwidthInMbps 50 -SkuFamily MeteredData -SkuTier Standard | Out-Null
 }
 
