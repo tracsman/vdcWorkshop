@@ -24,9 +24,9 @@ If ($Null -eq $ModCheck) {
     }
 
 # Load Initialization Variables
-$ScriptDir = Split-Path $script:MyInvocation.MyCommand.Path
-If (Test-Path -Path $ScriptDir\init.txt) {
-        Get-Content $ScriptDir\init.txt | Foreach-Object{
+$ScriptDir = "$env:HOME/Scripts"
+If (Test-Path -Path $ScriptDir/init.txt) {
+        Get-Content $ScriptDir/init.txt | Foreach-Object{
         $var = $_.Split('=')
         Try {New-Variable -Name $var[0].Trim() -Value $var[1].Trim() -ErrorAction Stop}
         Catch {Set-Variable -Name $var[0].Trim() -Value $var[1].Trim()}}}
