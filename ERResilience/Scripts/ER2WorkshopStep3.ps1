@@ -34,7 +34,6 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegionEU = "westeurope"
-$RGName = "Company" + $CompanyID
 $VNetName = "C" + $CompanyID + "-VNet"
 $CircuitName = "C" + $CompanyID + "z-ER-m"
 $AzureVMIP = "10.17." + $CompanyID + ".4"

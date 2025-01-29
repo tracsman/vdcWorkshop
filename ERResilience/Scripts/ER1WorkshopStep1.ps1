@@ -33,7 +33,6 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 
 
 # Non-configurable Variable Initialization (ie don't modify these)
-$RGName = "Company" + $CompanyID
 $ShortRegionWest = "westus2"
 $ShortRegionEast = "eastus"
 $VNetNameWest = "C" + $CompanyID + "w-VNetHub"
