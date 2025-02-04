@@ -50,7 +50,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 11. Rerun the validation script, ensuring no errors and that the File Variables displayed are as intended.
 
     ```powershell
-    ./Scripts/Validate-Lab.ps1
+    ./Scripts/Validate-Lab1.ps1
     ```
 
 12. In the portal above the CloudShell window, navigate to your Company## (## should be suplied by your intstructor). You'll see the initial resources configured before hand for your lab.
