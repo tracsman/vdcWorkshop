@@ -80,7 +80,7 @@ Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Init File" -ForegroundColor Cyan
 If (-Not (Test-Path $ScriptPath\init.txt)){
-     if ($MenuItem -eq 4) {
+     if ($MenuItem.Character -eq 4) {
           $FileContent = "SubID=e4a176ec-f695-407c-8eeb-185fb94076b8" + "`nRGName=" + $RGName
      } else {
           $FileContent = "SubID=00000000-0000-0000-0000-000000000000" + "`nShortRegion=westus2" + "`nRGName=" + $RGName
