@@ -34,6 +34,16 @@ Once you're done with this step, you will see your Resource Group with an east a
 2. You should see two new connection objects (C10e-VNetHub-gw-er-conn-SEA and C10w-VNetHub-gw-er-conn-DC) 
 3. Explore the route table of each ExpressRoute circuit, ensure you have the address prefixes for both Azure Region VNets in both ER Circuits. You can also use the resource visualizer to see the new connections "meshing" the Gateways and Circuits together.
 
+    ###   West Circuit Route Table
+    | VNet       | IP Address Range |
+    |------------|------------------|
+    | West Hub   | 10.17.xx.0/24    |
+    | West Spoke | 10.18.xx.0/24    |
+    | East Hub   | 10.10.xx.0/24    |
+    | East Spoke | 10.11.xx.0/24    |
+
+    This shows that we now have reachability across country if either edge site fails. A similar route table can be seen on the East Circuit Route Table.
+
 ## Application Diagram After this Step is Complete
 
 [![1]][1]
