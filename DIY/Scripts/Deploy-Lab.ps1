@@ -86,7 +86,7 @@ If (-Not (Test-Path $ScriptPath\init.txt)){
           while ($CompanyID -lt 10 -or $CompanyID -gt 99) {
                Write-Host
                Write-Host "Please enter a Company ID between 10 and 99: " -NoNewline
-               $CompanyID = Read-Host
+               [int]$CompanyID = Read-Host
           }
           $RGName = "Company$CompanyID"
           
