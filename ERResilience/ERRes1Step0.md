@@ -46,8 +46,9 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
     > **IMPORTANT**
     >
     > The script in this workshop pulls critical information from the init.txt file, so it’s important to update this file to reflect the resource group name and subscription you’ll be using for this deployment of the workshop.
+
     [![3]][3]
-10. Once updated, press CTRL+X, then Y to save the updated init.txt file.
+10. Once updated, press CTRL+X, then Y. then the \<ENTER> key to save the updated init.txt file.
 11. Rerun the validation script, ensuring no errors and that the File Variables displayed are as intended.
 
     ```powershell
@@ -70,5 +71,5 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 <!--Image References-->
 [1]: ./Media/CloudShellLaunch.svg "Launch Cloud Shell Icon"
 [2]: ./Media/CloudShellPowerShell.svg "Set Cloud Shell to PowerShell"
-[3]: ./Media/CloudShellEditor.svg "Open Cloud Shell file editor"
+[3]: ./Media/CloudShellNano.png "Cloud Shell Nano file editor"
 [4]: ./Media/ERRes1Step0.svg "The initial As built resource group, two hub/spoke in two regions with local ER Circuits"

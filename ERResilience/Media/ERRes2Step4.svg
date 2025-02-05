@@ -23,7 +23,7 @@
 		.st13 {fill:#0078d7;stroke:none;stroke-linecap:butt;stroke-width:0.5}
 		.st14 {fill:#0078d7;font-family:Calibri;font-size:0.75em}
 		.st15 {fill:none;stroke:#ff0000;stroke-dasharray:7.5,4.5;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.5}
-		.st16 {fill:#ffffff;stroke:none;stroke-linecap:butt}
+		.st16 {fill:#ffffff;stroke:none;stroke-linecap:butt;stroke-width:7.2}
 		.st17 {fill:#4271c6;font-family:Calibri;font-size:0.75em}
 		.st18 {stroke:#ff0000;stroke-linecap:round;stroke-linejoin:round;stroke-width:0.5}
 		.st19 {fill:none;fill-rule:evenodd;font-size:12px;overflow:visible;stroke-linecap:square;stroke-miterlimit:3}
@@ -79,7 +79,7 @@
 				<v:ud v:nameU="visLegendShape" v:prompt="" v:val="VT0(2):26"/>
 			</v:userDefs>
 			<title>Cloud</title>
-			<desc>Equinix SIN</desc>
+			<desc>Equinix AMS</desc>
 			<g id="shape1547-8" v:mID="1547" v:groupContext="shape" transform="translate(0,-15.3606)">
 				<title>Sheet.1547</title>
 				<path d="M62.12 178.23 C61.73 174.83 58.64 172.17 54.84 172.17 C53.76 172.17 52.74 172.4 51.82 172.78 C50.03 169.43
@@ -94,7 +94,7 @@
 				<v:textBlock v:margins="rect(4,4,4,4)"/>
 				<v:textRect cx="36" cy="201.187" width="39.84" height="32.0037"/>
 				<text x="21.22" y="198.19" class="st2" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>Equinix<v:newlineChar/><tspan
-							x="29.22" dy="1.2em" class="st3">SIN</tspan></text>			</g>
+							x="26.53" dy="1.2em" class="st3">AMS</tspan></text>			</g>
 		</g>
 		<g id="group1551-13" transform="translate(81.6359,-45.6323)" v:mID="1551" v:groupContext="group">
 			<title>Smart Virtual Network Box.4</title>
@@ -143,18 +143,18 @@
 		</g>
 		<g id="shape1562-33" v:mID="1562" v:groupContext="shape" transform="translate(29.2609,-0.632306)">
 			<title>Sheet.1562</title>
-			<desc>Azure West US 2</desc>
+			<desc>Azure West Europe</desc>
 			<v:textBlock v:margins="rect(4,4,4,4)"/>
 			<v:textRect cx="76" cy="198.265" width="152.01" height="20"/>
 			<rect x="0" y="188.265" width="152" height="20" class="st8"/>
-			<text x="4" y="201.87" class="st9" v:langID="1033"><v:paragraph/><v:tabList/>Azure West US 2</text>		</g>
+			<text x="4" y="201.87" class="st9" v:langID="1033"><v:paragraph/><v:tabList/>Azure West Europe</text>		</g>
 		<g id="shape1564-36" v:mID="1564" v:groupContext="shape" transform="translate(673.526,11.5444) rotate(90)">
 			<title>Sheet.1564</title>
 			<path d="M0 208.26 L196.47 208.26" class="st12"/>
 		</g>
 		<g id="shape1565-39" v:mID="1565" v:groupContext="shape" transform="translate(336.261,-96.9316)">
 			<title>ExpressRoute</title>
-			<desc>ExpressRoute Equinix Singapore Metro</desc>
+			<desc>ExpressRoute Equinix Amsterdam Metro</desc>
 			<v:textBlock v:margins="rect(0,0,0,0)" v:verticalAlign="0"/>
 			<v:textRect cx="19.0984" cy="225.695" width="72" height="31.5"/>
 			<path d="M33.92 199.66 C33.27 199.66 32.66 199.81 32.11 200.06 L23 190.95 C23.25 190.4 23.4 189.79 23.4 189.14 C23.4
@@ -170,7 +170,7 @@
 						 205.34 32.51 204.71 32.51 203.94 C32.51 203.17 33.14 202.54 33.92 202.54 C34.69 202.54 35.32 203.17 35.32
 						 203.94 C35.32 204.71 34.69 205.34 33.92 205.34 Z" class="st13"/>
 			<text x="-5.67" y="218.04" class="st14" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>ExpressRoute<v:newlineChar/><tspan
-						x="5.79" dy="1.2em" class="st3">Equinix<v:newlineChar/></tspan><tspan x="-11.74" dy="1.2em" class="st3">Singapore Metro</tspan></text>		</g>
+						x="5.79" dy="1.2em" class="st3">Equinix<v:newlineChar/></tspan><tspan x="-14.84" dy="1.2em" class="st3">Amsterdam Metro</tspan></text>		</g>
 		<g id="group1566-44" transform="translate(177.646,-85.4208)" v:mID="1566" v:groupContext="group">
 			<title>Azure VPN Gateway</title>
 			<desc>ER Gateway</desc>
@@ -352,7 +352,7 @@
 				<v:ud v:nameU="visLegendShape" v:prompt="" v:val="VT0(2):26"/>
 			</v:userDefs>
 			<title>Cloud.1803</title>
-			<desc>Equinix SIN2</desc>
+			<desc>Equinix AMS2</desc>
 			<g id="shape1804-116" v:mID="1804" v:groupContext="shape" transform="translate(0,-15.3606)">
 				<title>Sheet.1804</title>
 				<path d="M62.12 178.23 C61.73 174.83 58.64 172.17 54.84 172.17 C53.76 172.17 52.74 172.4 51.82 172.78 C50.03 169.43
@@ -367,7 +367,7 @@
 				<v:textBlock v:margins="rect(4,4,4,4)"/>
 				<v:textRect cx="36" cy="201.187" width="39.84" height="32.0037"/>
 				<text x="21.22" y="198.19" class="st2" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>Equinix<v:newlineChar/><tspan
-							x="26.68" dy="1.2em" class="st3">SIN2</tspan></text>			</g>
+							x="24" dy="1.2em" class="st3">AMS2</tspan></text>			</g>
 		</g>
 		<g id="shape1806-121" v:mID="1806" v:groupContext="shape" v:layerMember="0" transform="translate(366.609,-108.632)">
 			<title>Dynamic connector.1806</title>
@@ -420,7 +420,7 @@
 		</g>
 		<g id="shape1817-142" v:mID="1817" v:groupContext="shape" transform="translate(336.261,-155.319)">
 			<title>ExpressRoute.1817</title>
-			<desc>ExpressRoute Equinix Singapore</desc>
+			<desc>ExpressRoute Equinix Amsterdam</desc>
 			<v:textBlock v:margins="rect(0,0,0,0)" v:verticalAlign="0"/>
 			<v:textRect cx="19.0984" cy="225.695" width="72" height="31.5"/>
 			<path d="M33.92 199.66 C33.27 199.66 32.66 199.81 32.11 200.06 L23 190.95 C23.25 190.4 23.4 189.79 23.4 189.14 C23.4
@@ -436,7 +436,7 @@
 						 205.34 32.51 204.71 32.51 203.94 C32.51 203.17 33.14 202.54 33.92 202.54 C34.69 202.54 35.32 203.17 35.32
 						 203.94 C35.32 204.71 34.69 205.34 33.92 205.34 Z" class="st10"/>
 			<text x="-5.67" y="218.04" class="st14" v:langID="1033"><v:paragraph v:horizAlign="1"/><v:tabList/>ExpressRoute<v:newlineChar/><tspan
-						x="-13.51" dy="1.2em" class="st3">Equinix Singapore</tspan></text>		</g>
+						x="-16.61" dy="1.2em" class="st3">Equinix Amsterdam</tspan></text>		</g>
 		<g id="shape1820-146" v:mID="1820" v:groupContext="shape" v:layerMember="0" transform="translate(427.011,-149.132)">
 			<title>Dynamic connector.1820</title>
 			<path d="M0 208.26 L70.03 245.97" class="st18"/>

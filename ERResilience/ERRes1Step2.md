@@ -8,26 +8,28 @@ Fail Seattle ER circuit and validate traffic flows through Ashburn
 
 ## Observations
 
-Once you're done with this step, you'll know the basic steps to configure a Cisco router and how to enable BGP.
-
-## Observations
+You'll see latency around 6ms, after failing the circuit you see traffic switch to the DC circuit, this will be indicated by the increased latency.
 
 ## Deployment
 
-1. Change to the Scripts folder
-
-    ```powershell
-    cd Scripts
+1. Open two browser tabs, both pointing to your Company Resource Group
+1. In the first tab, navigate to the User01 password in the secrets store in your company Key Vault.
+1. In the second tab, navigate to your West Spoke VM, named Cxxw-VNetSpoke1-VM01, where xx = your company number.
+1. In the left nav for the VM, select Help, then Serial Console
+1. Use the username "User01" and the password from the Key Vault to log in
+1. Once at the Linux command line ping your Seattle On-Prem VM (replace the "x" with your Company number)
+    ```bash
+    ping 10.3.x.10
     ```
-
-2. (Optional) in the editor pane you can select and view the script before running
-3. Run workshop script 1 with the following:
-
-    ```powershell
-    ./ER1WorkshopStep1.ps1
-    ```
+1. This will run a constant ping, make note of the latency as this will change when we fail the Seattle Circuit
+1. In the other Azure Portal Tab, navigate to the Seattle ER Circuit (cXXw-ER)
+1. Click into Private Peering
+1. Uncheck the "Enable IPv4 Peering" check box, and click the "Save" button.
+1. Shortly both legs of the Seattle circuit will not longer have BGP running, this simulates a total outage of the Seattle edge site. Back at the Linux VM you should now see the ping successful but with a much larger latency as traffic is now going from West US 2 to Washington DC and then back to Seattle on-prem (via the CompanyXX WAN outside of Azure)
 
 ## Validation
+
+Once the peerings are disabled in Seattle, latency should increase significantly as the traffic is now going cross country and back to get to the on-prem in Seattle.
 
 ## Application Diagram After this Step is Complete
 

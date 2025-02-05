@@ -49,7 +49,7 @@ switch ($MenuItem.Character) {
     "4" {Write-Host "ExpressRoute Resiliency Part 1 Lab was selected" -ForegroundColor Cyan
          $RGName = "Company"
          $Files = @()
-         $Files += 'Validate-Lab1.ps1'
+         $Files += 'Validate-Lab.ps1'
          $Files += 'ER1WorkshopStep1.ps1'
          $Files += 'ER2WorkshopStep1.ps1'
          $Files += 'ER2WorkshopStep2.ps1'
@@ -80,15 +80,16 @@ Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Init File" -ForegroundColor Cyan
 If (-Not (Test-Path $ScriptPath\init.txt)){
-     if ($MenuItem.Character -eq 4) {
+     if ($MenuItem.Character -eq "4") {
           # Prompt user for CompanyID and ensure it's a number between 10 and 99
           $CompanyID = 0
           while ($CompanyID -lt 10 -or $CompanyID -gt 99) {
-              Write-Host
-              Write-Host "Please enter a Company ID between 10 and 99: " -NoNewline
-              $CompanyID = Read-Host
+               Write-Host
+               Write-Host "Please enter a Company ID between 10 and 99: " -NoNewline
+               $CompanyID = Read-Host
           }
           $RGName = "Company$CompanyID"
+          
           $FileContent = "SubID=e4a176ec-f695-407c-8eeb-185fb94076b8" + "`nRGName=" + $RGName
      } else {
           $FileContent = "SubID=00000000-0000-0000-0000-000000000000" + "`nShortRegion=westus2" + "`nRGName=" + $RGName

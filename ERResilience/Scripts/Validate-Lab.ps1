@@ -1,7 +1,7 @@
 # Validate Environment - For Workshop ExpressRoute Resiliency Part 1
 
 $FileName = @()
-$FileName += 'Validate-Lab1.ps1'
+$FileName += 'Validate-Lab.ps1'
 $FileName += 'ER1WorkshopStep1.ps1'
 $FileName += 'ER2WorkshopStep1.ps1'
 $FileName += 'ER2WorkshopStep2.ps1'

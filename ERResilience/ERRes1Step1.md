@@ -14,24 +14,25 @@ Once you're done with this step, you will see your Resource Group with an east a
 
 ## Deployment
 
-1. Change to the Scripts folder
+1. In your CloudShell PowerShell prompt, change to the Scripts folder
 
     ```powershell
     cd Scripts
     ```
 
-2. (Optional) in the editor pane you can select and view the script before running
+2. (Optional) on the GitHub web site you can review the [Step 1][Step1] script before running
 3. Run workshop script 1 with the following:
 
     ```powershell
     ./ER1WorkshopStep1.ps1
     ```
+4. You may now close the CloudShell if you wish, the remainder of this lab will be completed in the Azure Portal section.
 
 ## Validation
 
 1. Browse to your Resource Group in the Portal
-2. You should see two new connection objects
-3. Explore the route table of each ExpressRoute circuit, ensure you have the address prefixes for both Azure Region VNets in both ER Circuits.
+2. You should see two new connection objects (C10e-VNetHub-gw-er-conn-SEA and C10w-VNetHub-gw-er-conn-DC) 
+3. Explore the route table of each ExpressRoute circuit, ensure you have the address prefixes for both Azure Region VNets in both ER Circuits. You can also use the resource visualizer to see the new connections "meshing" the Gateways and Circuits together.
 
 ## Application Diagram After this Step is Complete
 
@@ -42,6 +43,7 @@ Once you're done with this step, you will see your Resource Group with an east a
 <!--Link References-->
 [Prev]: ./ERRes1Step0.md
 [Next]: ./ERRes1Step2.md
+[Step1]: https://github.com/tracsman/vdcWorkshop/blob/main/ERResilience/Scripts/ER1WorkshopStep1.ps1
 
 <!--Image References-->
 [1]: ./Media/ERRes1Step1.svg "As built diagram of the environment after step 1"

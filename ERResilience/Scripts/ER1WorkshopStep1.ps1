@@ -5,7 +5,7 @@
 #
 #
 # Step 1  Create the connection between the ER Gateway and the ER Circuit
-# Step 2  Fail Seattle and validate traffic flows through Ashburn (no script)
+# Step 2  Fail Seattle and validate traffic flows through Washington DC (no script)
 # 
 
 # Step 1 Create the connection between the ER Gateway and the ER Circuit
@@ -68,7 +68,7 @@ Catch {Write-Warning "The circuit wasn't found, please ensure step three is succ
        Return}
 
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host 'Pulling Ashburn circuit information' -ForegroundColor Cyan
+Write-Host 'Pulling DC circuit information' -ForegroundColor Cyan
 Try {$cktASH = Get-AzExpressRouteCircuit -ResourceGroupName $RGName -Name $CircuitNameASH -ErrorAction Stop}
 Catch {Write-Warning "The circuit wasn't found, please ensure step three is successful before running this script."
        Return}
@@ -79,7 +79,7 @@ Catch {Write-Warning "Private Peering isn't enabled on the Seattle ExpressRoute 
        Return}
 
 Try {Get-AzExpressRouteCircuitPeeringConfig -ExpressRouteCircuit $cktASH -Name AzurePrivatePeering -ErrorAction Stop | Out-Null}
-Catch {Write-Warning "Private Peering isn't enabled on the Ashburn ExpressRoute circuit. Please ensure private peering is enable successfully."
+Catch {Write-Warning "Private Peering isn't enabled on the DC ExpressRoute circuit. Please ensure private peering is enable successfully."
        Return}
 
 #  1.2 Create the connection between the ER East Gateway and the Seattle ER Circuit
@@ -101,14 +101,14 @@ Catch {$gwEast = Get-AzVirtualNetworkGateway -Name $VNetNameEast"-gw-er" -Resour
 
 #  1.3 Create the connection between the ER West US 2 Gateway and the DC ER Circuit
 Write-Host (Get-Date)' - ' -NoNewline
-Write-Host "Connecting West Gateway to Ashburn ExpressRoute in $($cktASH.ServiceProviderProperties.PeeringLocation)" -ForegroundColor Cyan
-Try {Get-AzVirtualNetworkGatewayConnection -Name $VNetNameWest"-gw-er-conn-ASH" -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
+Write-Host "Connecting West Gateway to DC ExpressRoute in $($cktASH.ServiceProviderProperties.PeeringLocation)" -ForegroundColor Cyan
+Try {Get-AzVirtualNetworkGatewayConnection -Name $VNetNameWest"-gw-er-conn-DC" -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
     Write-Host '  connection exists, skipping'}
 Catch {$gwWest = Get-AzVirtualNetworkGateway -Name $VNetNameWest"-gw-er" -ResourceGroupName $RGName
        If ($gwWest.ProvisioningState -eq 'Succeeded') {
            Write-Host '  West Gateway is provisioned'
-           Write-Host '  Connecting to ExpressRoute in Ashburn'
-           New-AzVirtualNetworkGatewayConnection -Name $VNetNameWest"-gw-er-conn-ASH" -ResourceGroupName $RGName -Location $ShortRegionEast `
+           Write-Host '  Connecting to ExpressRoute in DC'
+           New-AzVirtualNetworkGatewayConnection -Name $VNetNameWest"-gw-er-conn-DC" -ResourceGroupName $RGName -Location $ShortRegionWest `
                                                  -VirtualNetworkGateway1 $gwWest -PeerId $cktASH.Id -ConnectionType ExpressRoute | Out-Null}
        Else {Write-Warning 'An issue occurred with West ER gateway provisioning.'
              Write-Host 'Current Gateway Provisioning State' -NoNewLine
