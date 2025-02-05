@@ -17,7 +17,7 @@ Once you're done with this step, you will see your Resource Group with an east a
 1. In your CloudShell PowerShell prompt, change to the Scripts folder
 
     ```powershell
-    cd Scripts
+    cd ./Scripts/
     ```
 
 2. (Optional) on the GitHub web site you can review the [Step 1][Step1] script before running
