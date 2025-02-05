@@ -22,14 +22,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 4. Ensure Cloud Shell is set to PowerShell
 
     [![2]][2]
-5. In the cloud shell run
-
-   ```powershell
-   Connect-AzAccount -UseDeviceAuthentication
-   ```
-
-   and follow the instructions. Login using your Azure Portal credentials. If prompted to select a subscription look for the "Virtual Data Center Workshop" subscription and enter the number for that entry.
-6. In Cloud Shell run the following to download the workshop files
+5. In Cloud Shell run the following to download the workshop files
 
     ```powershell
     (IWR aka.ms/1).Content | IEX
@@ -38,14 +31,14 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
     > **NOTE**
     > A warning about the subscription ID will be shown, we’ll fix this next
 
-7. You will be prompted for a two digit "Company Number", this will be provided by your instructor.
-8. Now you can run the validation script, ensuring no errors and that the initialization variables are set as intended.
+6. You will be prompted for a two digit "Company Number", this will be provided by your instructor.
+7. Now you can run the validation script, ensuring no errors and that the initialization variables are set as intended.
 
     ```powershell
     ./Scripts/Validate-Lab.ps1
     ```
 
-12. In the portal above the CloudShell window, navigate to your Company## (## was be suplied by your intstructor). You'll see the initial resources configured before hand for your lab.
+8. In the portal above the CloudShell window, navigate to your Company## (## was be suplied by your intstructor). You'll see the initial resources configured before hand for your lab.
 
 ## Application Diagram After this Step is Complete
 
