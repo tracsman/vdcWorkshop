@@ -38,24 +38,14 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
     > **NOTE**
     > A warning about the subscription ID will be shown, we’ll fix this next
 
-7. On the command line open the file "init.txt" in the text editor nano
-    ```bash
-    nano ./Scripts/init.txt
-    ```
-8. In the file, verify the Subscription ID matches the one provided by your instructor and update the RGName to use the resource group name provided by your instructor. It should be something like Company10, where 10 is your assigned number.
-    > **IMPORTANT**
-    >
-    > The script in this workshop pulls critical information from the init.txt file, so it’s important to update this file to reflect the resource group name and subscription you’ll be using for this deployment of the workshop.
-
-    [![3]][3]
-10. Once updated, press CTRL+X, then Y. then the \<ENTER> key to save the updated init.txt file.
-11. Rerun the validation script, ensuring no errors and that the File Variables displayed are as intended.
+7. You will be prompted for a two digit "Company Number", this will be provided by your instructor.
+8. Now you can run the validation script, ensuring no errors and that the initialization variables are set as intended.
 
     ```powershell
     ./Scripts/Validate-Lab.ps1
     ```
 
-12. In the portal above the CloudShell window, navigate to your Company## (## should be suplied by your intstructor). You'll see the initial resources configured before hand for your lab.
+12. In the portal above the CloudShell window, navigate to your Company## (## was be suplied by your intstructor). You'll see the initial resources configured before hand for your lab.
 
 ## Application Diagram After this Step is Complete
 
