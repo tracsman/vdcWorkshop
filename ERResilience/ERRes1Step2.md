@@ -16,6 +16,10 @@ You'll see latency around 6ms, after failing the circuit you see traffic switch 
 1. In the first tab, navigate to the User01 password in the secrets store in your company Key Vault.
 1. In the second tab, navigate to your West Spoke VM, named Cxxw-VNetSpoke1-VM01, where xx = your company number.
 1. In the left nav for the VM, select Help, then Serial Console
+    > **NOTE**
+    > You may get a couple infomation warnings, just click on the enable Azure Serial Console message to enable it
+    > [![2]][2]
+    
 1. Use the username "User01" and the password from the Key Vault to log in
 1. Once at the Linux command line ping your Seattle On-Prem VM (replace the "x" with your Company number)
     ```bash
@@ -43,3 +47,4 @@ Once the peerings are disabled in Seattle, latency should increase significantly
 
 <!--Image References-->
 [1]: ./Media/ERRes1Step2.svg "As built diagram of the environment after step 2"
+[2]: ./Media/ConsoleError.png "Active Serial Console message"
