@@ -49,7 +49,7 @@ switch ($MenuItem.Character) {
     "4" {Write-Host "ExpressRoute Resiliency Part 1 Lab was selected" -ForegroundColor Cyan
          $RGName = "CompanyXX"
          $Files = @()
-         $Files += 'Validate-Lab1.ps1'
+         $Files += 'Validate-Lab.ps1'
          $Files += 'ER1WorkshopStep1.ps1'
          $Files += 'ER2WorkshopStep1.ps1'
          $Files += 'ER2WorkshopStep2.ps1'
