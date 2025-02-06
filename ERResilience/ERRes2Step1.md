@@ -14,6 +14,9 @@ Once you're done with this step, you'll see a second ER Circuit in your resrouce
 
 ## Deployment
 
+> **NOTE**
+> To make finding resrouces easier, you can add "xxz" to the resource group filter field (e.g. 10z for company 10)
+
 1. Change to the Scripts folder
 
     ```powershell

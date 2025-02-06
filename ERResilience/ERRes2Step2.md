@@ -12,6 +12,9 @@ Once you're done with this step, you'll be able to see the on-prem route in your
 
 ## Deployment
 
+> **NOTE**
+> To make finding resrouces easier, you can add "xxz" to the resource group filter field (e.g. 10z for company 10)
+
     > **IMPORTANT**
     > Your metro circuit must be provisioned before proceeding with this step!
     >

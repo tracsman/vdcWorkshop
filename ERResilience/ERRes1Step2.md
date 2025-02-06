@@ -12,6 +12,9 @@ You'll see latency around 6ms, after failing the circuit you see traffic switch 
 
 ## Deployment
 
+> **NOTE**
+> To make finding resrouces easier, you can add "xxe" or "xxw" to the resource group filter field (e.g. 10w for company 10 in the West US 2 region)
+
 1. Open two browser tabs, both pointing to your Company Resource Group
 1. In the first tab, navigate to the User01 password in the secrets store in your company Key Vault.
 1. In the second tab, navigate to your West Spoke VM, named Cxxw-VNetSpoke1-VM01, where xx = your company number.

@@ -26,7 +26,7 @@ Once you're done with this step, you will see your Resource Group with an east a
     ```powershell
     ./ER1WorkshopStep1.ps1
     ```
-4. You may now close the CloudShell if you wish, the remainder of this lab will be completed in the Azure Portal section.
+4. Once the script completes, you may close the CloudShell if you wish, the remainder of this lab will be completed in the Azure Portal section.
 
 ## Validation
 
