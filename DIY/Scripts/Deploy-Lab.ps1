@@ -90,7 +90,7 @@ If (-Not (Test-Path $ScriptPath\init.txt)){
           }
           $RGName = "Company$CompanyID"
           
-          $FileContent = "SubID=e4a176ec-f695-407c-8eeb-185fb94076b8" + "`nRGName=" + $RGName
+          $FileContent = "SubID=ae914730-743d-4abd-98f8-830d8947e2fb" + "`nRGName=" + $RGName
      } else {
           $FileContent = "SubID=00000000-0000-0000-0000-000000000000" + "`nShortRegion=westus2" + "`nRGName=" + $RGName
      }
