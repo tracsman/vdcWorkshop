@@ -37,6 +37,7 @@ Once you're done with this step, you will see your Resource Group with an east a
     ###   West Circuit Route Table
     | VNet       | IP Address Range |
     |------------|------------------|
+    | On-premise | 10.3.xx.0.25     |
     | West Hub   | 10.17.xx.0/24    |
     | West Spoke | 10.18.xx.0/24    |
     | East Hub   | 10.10.xx.0/24    |
