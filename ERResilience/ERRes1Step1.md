@@ -20,7 +20,7 @@ Once you're done with this step, you will see your Resource Group with an east a
     cd ./Scripts/
     ```
 
-2. (Optional) on the GitHub web site you can review the [Step 1][Step1] script before running
+2. (Optional) on the GitHub web site you can review the [Step 1][Step1] script before running.
 3. Run workshop script 1 with the following:
 
     ```powershell

@@ -35,7 +35,7 @@ Else {Write-Warning "init.txt file not found, please change to the directory whe
 # Non-configurable Variable Initialization (ie don't modify these)
 $ShortRegionEU = "westeurope"
 $CompanyID = $RGName.Substring($RGName.Length - 2)
-$VNetName = "C" + $CompanyID + "-VNet"
+$VNetName = "C" + $CompanyID + "z-VNet"
 $CircuitName = "C" + $CompanyID + "z-ER-m"
 $AzureVMIP = "10.17." + $CompanyID + ".4"
 $OnPremVMIP = "10.3." + $CompanyID + ".10"
@@ -75,25 +75,13 @@ Catch {Write-Warning "Private Peering isn't enabled on the ExpressRoute circuit.
 #  3.2 Create the connection between the ER Gateway and the ER Circuit
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Connecting Gateway to ExpressRoute in $($ckt.ServiceProviderProperties.PeeringLocation)" -ForegroundColor Cyan
-Try {Get-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-conn" -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
+Try {Get-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-er-conn-Metro" -ResourceGroupName $RGName -ErrorAction Stop | Out-Null
     Write-Host '  connection exists, skipping'}
-Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetName"-gw" -ResourceGroupName $RGName
-       $NeedSpace = $False
-       $i=0
-       If ($gw.ProvisioningState -eq 'Updating') {Write-Host '  waiting for ER gateway to finish provisioning: ' -NoNewline
-                                                  $NeedSpace=$True
-                                                  Sleep 10}
-       While ($gw.ProvisioningState -eq 'Updating') {
-              $i++
-              If ($i%6) {Write-Host '*' -NoNewline}
-              Else {Write-Host "$($i/6)" -NoNewline}
-              Sleep 10
-              $gw = Get-AzVirtualNetworkGateway -Name $VNetName-gw -ResourceGroupName $RGName}
-       If ($gw.ProvisioningState -eq 'Succeeded') {
-           If ($NeedSpace) {Write-Host}
+Catch {$gw = Get-AzVirtualNetworkGateway -Name $VNetName"-gw-er" -ResourceGroupName $RGName
+      If ($gw.ProvisioningState -eq 'Succeeded') {
            Write-Host '  Gateway is provisioned'
            Write-Host '  Connecting to ExpressRoute'
-           New-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-conn" -ResourceGroupName $RGName -Location $ShortRegionEU `
+           New-AzVirtualNetworkGatewayConnection -Name $VNetName"-gw-er-conn-Metro" -ResourceGroupName $RGName -Location $ShortRegionEU `
                                                  -VirtualNetworkGateway1 $gw -PeerId $ckt.Id -ConnectionType ExpressRoute | Out-Null}
        Else {Write-Warning 'An issue occured with ER gateway provisioning.'
              Write-Host 'Current Gateway Provisioning State' -NoNewLine
