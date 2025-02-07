@@ -26,8 +26,8 @@ The individual steps for this lab are located on GitHub, follow this link to acc
 Activity | Duration
 -------- | ---------
 [Cloud Shell Initialization and Updates][Step0] | 10 minutes
-[Step 1: Create bowtie East-West ER connections][Step1] | 15 minutes
-[Step 2: Discussion configuration and Fail Seattle ER][Step2] | 60 minutes
+[Step 1: Create bowtie East-West ER connections][Step1] | 20 minutes
+[Step 2: Discussion configuration and Fail Seattle ER][Step2] | 50 minutes
 
 [![1]][1]
 

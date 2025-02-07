@@ -4,7 +4,7 @@
 
 ## Abstract
 
-Delete old peering and connection to traffic only flows across the metro peered circuit (no script)
+Delete connection the connectin object to the orginal standard circuit so that traffic only flows across the metro peered circuit (no script)
 
 ## Observations
 
@@ -34,7 +34,7 @@ Once you're done with this step, you'll see a blip of connectivity but no change
 1. Once the delete completes, check out the ping back on the VM console tab, you may see up to 30 seconds of connectivity loss, usually much less.
 
 ## Validation
-Once the connection obect to the standard circuit is deleted, the circuit is now protected from peering site failure!
+Once the connection object to the standard circuit is deleted, the circuit is now protected from peering site failure!
 
 ## Application Diagram After this Step is Complete
 

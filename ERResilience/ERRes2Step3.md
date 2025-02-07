@@ -8,7 +8,7 @@ Create a connection between the ER Gateway and the metro peered ER Circuit in Eu
 
 ## Observations
 
-Now that the circuit is provisioned and BGP is up with On-prem, we can connect it to the VNet. Once you're done with this step, you'll both the on-prem and Azure prefixes in the metro circuit route table.
+Now that the circuit is provisioned and BGP is up with On-prem, we can connect it to the VNet. Once you're done with this step, you'll see both the on-prem (10.3.x.0) and Azure VNet prefix (10.27.x.0) in the metro circuit route table.
 
 ## Deployment
 
