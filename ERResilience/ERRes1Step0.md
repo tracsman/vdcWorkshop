@@ -18,11 +18,14 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 2. Login to https://portal.azure.com
 3. Start Cloud Shell (select or create a storage account if prompted)
 
-    [![1]][1]
-4. Ensure Cloud Shell is set to PowerShell
-
-    [![2]][2]
-5. In Cloud Shell run the following to download the workshop files
+    ![1]
+4. If prompted, select PowerShell, or if the window says "Switch to PowerShell" do so.
+    
+    ![2]
+5. If prompted to select a Storage Account, ensure "No storage account required" is selected, and that you pick the "Tech Connect 2025 ExpressRoute subscription" from the subscription dropdown and then click "Apply"
+    
+    ![3]
+6. In Cloud Shell run the following to download the workshop files
 
     ```powershell
     (IWR aka.ms/1).Content | IEX
@@ -31,14 +34,14 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
     > **NOTE**
     > A warning about the subscription ID will be shown, we’ll fix this next
 
-6. You will be prompted for a two digit "Company Number", this will be provided by your instructor.
-7. Now you can run the validation script, ensuring no errors and that the initialization variables are set as intended.
+7. You will be prompted for a two digit "Company Number", this will be provided by your instructor.
+8. Now you can run the validation script, ensuring no errors and that the initialization variables are set as intended.
 
     ```powershell
     ./Scripts/Validate-Lab.ps1
     ```
 
-8. In the portal above the CloudShell window, navigate to your Company## (## was be suplied by your intstructor). You'll see the initial resources configured before hand for your lab.
+9. In the portal above the CloudShell window, navigate to your Company## (## was be suplied by your intstructor). You'll see the initial resources configured before hand for your lab.
 
 ## Application Diagram After this Step is Complete
 
@@ -52,7 +55,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 [CloudShell]: https://docs.microsoft.com/azure/cloud-shell/overview
 
 <!--Image References-->
-[1]: ./Media/CloudShellLaunch.svg "Launch Cloud Shell Icon"
-[2]: ./Media/CloudShellPowerShell.svg "Set Cloud Shell to PowerShell"
-[3]: ./Media/CloudShellNano.png "Cloud Shell Nano file editor"
+[1]: ./Media/CloudShellIcon.png "Launch Cloud Shell Icon"
+[2]: ./Media/CloudShellPrompt.png "Set Cloud Shell to PowerShell"
+[3]: ./Media/CloudShellStorage.png "Cloud Shell Storage Prompt"
 [4]: ./Media/ERRes1Step0.svg "The initial As built resource group, two hub/spoke in two regions with local ER Circuits"

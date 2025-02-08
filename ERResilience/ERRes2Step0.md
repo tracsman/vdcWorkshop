@@ -18,10 +18,13 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 2. Login to https://portal.azure.com
 3. Start Cloud Shell (select or create a storage account if prompted)
 
-    [![1]][1]
-4. Ensure Cloud Shell is set to PowerShell
-
-    [![2]][2]
+    ![1]
+4. If prompted, select PowerShell, or if the window says "Switch to PowerShell" do so.
+    
+    ![2]
+5. If prompted to select a Storage Account, ensure "No storage account required" is selected, and that you pick the "Tech Connect 2025 ExpressRoute subscription" from the subscription dropdown and then click "Apply"
+    
+    ![3]
 5. In Cloud Shell run the following to download the workshop files
 
     ```powershell
@@ -52,7 +55,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 [CloudShell]: https://docs.microsoft.com/azure/cloud-shell/overview
 
 <!--Image References-->
-[1]: ./Media/CloudShellLaunch.svg "Launch Cloud Shell Icon"
-[2]: ./Media/CloudShellPowerShell.svg "Set Cloud Shell to PowerShell"
-[3]: ./Media/CloudShellEditor.svg "Open Cloud Shell file editor"
+[1]: ./Media/CloudShellIcon.png "Launch Cloud Shell Icon"
+[2]: ./Media/CloudShellPrompt.png "Set Cloud Shell to PowerShell"
+[3]: ./Media/CloudShellStorage.png "Cloud Shell Storage Prompt"
 [4]: ./Media/ERRes2Step0.svg "The initial as built resource group, VNet with standard ER Circuit"
