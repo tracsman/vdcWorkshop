@@ -8,7 +8,7 @@ Fail Seattle ER circuit and validate traffic flows through Ashburn
 
 ## Observations
 
-You'll see latency around 6ms, after failing the circuit you see traffic switch to the DC circuit, this will be indicated by the increased latency.
+You'll see latency around 6ms, after failing the circuit you see traffic switch to the DC circuit, this will be indicated by the increased latency (this step is performed in the portal, there is no script for this one).
 
 ## Deployment
 

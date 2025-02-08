@@ -37,7 +37,7 @@ $ShortRegionEU = "westeurope"
 $CompanyID = $RGName.Substring($RGName.Length - 2)
 $VNetName = "C" + $CompanyID + "z-VNet"
 $CircuitName = "C" + $CompanyID + "z-ER-m"
-$AzureVMIP = "10.17." + $CompanyID + ".4"
+$AzureVMIP = "10.27." + $CompanyID + ".4"
 $OnPremVMIP = "10.3." + $CompanyID + ".10"
 
 # Start nicely
@@ -94,5 +94,5 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Step 3 completed successfully" -ForegroundColor Green
 Write-Host "  Review your route table on the Private Peering again."
 Write-Host "  You should now see your VNet routes from Azure."
-Write-Host "  Now try pinging the Azure VM ($AzureVMIP) from the on-prem VM ($OnPremVMIP)"
+Write-Host "  Now try pinging the on-prem VM ($OnPremVMIP) from the Azure VM ($AzureVMIP)"
 Write-Host

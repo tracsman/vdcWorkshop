@@ -15,7 +15,9 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 ## Deployment
 
 1. Connect to the internet
-2. Login to https://portal.azure.com
+2. Login to https://portal.azure.com using the @LODSPRODMCA account and password in the Resource section of workshop portal.
+3. In the "Search Resrouces" seach box, search and select "Resource Groups".
+4. You should see a Resource Group entitled CompanyXX (where XX is a two digit number between 12 and 32). Remember this number, it's used many times in many places throughout this workshop!
 3. Start Cloud Shell (select or create a storage account if prompted)
 
     ![1]
@@ -34,14 +36,14 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
     > **NOTE**
     > A warning about the subscription ID will be shown, we’ll fix this next
 
-6. You will be prompted for a two digit "Company Number", this will be provided by your instructor.
+6. You will be prompted for a two digit "Company Number", this is the number discovered in Step 3 above.
 7. Now you can run the validation script, ensuring no errors and that the initialization variables are set as intended.
 
     ```powershell
     ./Scripts/Validate-Lab.ps1
     ```
 
-8. In the portal above the CloudShell window, navigate to your Company## (## was be suplied by your intstructor). You'll see the initial resources configured before hand for your lab.
+8. In the portal above the CloudShell window, navigate to your Company## (## was discovered in Step 3 above). You'll see the initial resources configured before hand for your lab.
 
 ## Application Diagram After this Step is Complete
 

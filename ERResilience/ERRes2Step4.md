@@ -4,7 +4,7 @@
 
 ## Abstract
 
-Delete connection the connectin object to the orginal standard circuit so that traffic only flows across the metro peered circuit (no script)
+Delete connection the connection object to the orginal standard circuit so that traffic only flows across the metro peered circuit (this step is performed in the portal, there is no script for this one).
 
 ## Observations
 
