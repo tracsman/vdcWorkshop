@@ -15,19 +15,19 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 ## Deployment
 
 1. Connect to the internet
-2. Login to https://portal.azure.com using the @LODSPRODMCA account and password in the Resource section of workshop portal.
-3. In the "Search Resrouces" seach box, search and select "Resource Groups".
-4. You should see a Resource Group entitled CompanyXX (where XX is a two digit number between 12 and 32). Remember this number, it's used many times in many places throughout this workshop!
-3. Start Cloud Shell (select or create a storage account if prompted)
+1. Login to <https://portal.azure.com> using the @LODSPRODMCA account and password in the Resource section of workshop portal.
+1. In the "Search Resources" search box, search and select "Resource Groups".
+1. You should see a Resource Group entitled CompanyXX (where XX is a two digit number between 12 and 32). Remember this number, it's used many times in many places throughout this workshop!
+1. Start Cloud Shell (select or create a storage account if prompted)
 
     ![1]
-4. If prompted, select PowerShell, or if the window says "Switch to PowerShell" do so.
-    
+1. If prompted, select PowerShell, or if the window says "Switch to PowerShell" do so.
+
     ![2]
-5. If prompted to select a Storage Account, ensure "No storage account required" is selected, and that you pick the "Tech Connect 2025 ExpressRoute subscription" from the subscription dropdown and then click "Apply"
-    
+1. If prompted to select a Storage Account, ensure "No storage account required" is selected, and that you pick the "Tech Connect 2025 ExpressRoute subscription" from the subscription dropdown and then click "Apply"
+
     ![3]
-6. In Cloud Shell run the following to download the workshop files
+1. In Cloud Shell run the following to download the workshop files
 
     ```powershell
     (IWR aka.ms/1).Content | IEX
@@ -36,14 +36,14 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
     > **NOTE**
     > A warning about the subscription ID will be shown, we’ll fix this next
 
-7. You will be prompted for a two digit "Company Number", this is the number discovered in Step 3 above.
-8. Now you can run the validation script, ensuring no errors and that the initialization variables are set as intended.
+1. You will be prompted for a two digit "Company Number", this is the number discovered in Step 3 above.
+1. Now you can run the validation script, ensuring no errors and that the initialization variables are set as intended.
 
     ```powershell
     ./Scripts/Validate-Lab.ps1
     ```
 
-9. In the portal above the CloudShell window, navigate to your Company## (## was discovered in Step 3 above). You'll see the initial resources configured before hand for your lab.
+1. In the portal above the CloudShell window, navigate to your Company## (## was discovered in Step 3 above). You'll see the initial resources configured before hand for your lab.
 
 ## Application Diagram After this Step is Complete
 
