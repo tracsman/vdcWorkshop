@@ -82,7 +82,7 @@ If (-Not (Test-Path $ScriptPath)){New-Item -ItemType Directory -Force -Path $Scr
 Write-Host
 Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Init File" -ForegroundColor Cyan
-If (-Not (Test-Path $ScriptPath\init.txt)){
+#If (-Not (Test-Path $ScriptPath\init.txt)){
      if ($MenuItem -eq "4") {
           $resourceGroups = Get-AzResourceGroup
           $CompanyID = 0
@@ -111,7 +111,7 @@ If (-Not (Test-Path $ScriptPath\init.txt)){
           $FileContent = "SubID=00000000-0000-0000-0000-000000000000" + "`nShortRegion=westus2" + "`nRGName=" + $RGName
      }
     Out-File -FilePath "$ScriptPath\init.txt" -Encoding ascii -InputObject $FileContent -Force
-}
+#}
 
 # Download lab files
 Write-Host
