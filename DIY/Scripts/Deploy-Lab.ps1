@@ -54,9 +54,9 @@ switch ($MenuItem) {
          $Files = @()
          $Files += 'Validate-Lab.ps1'
          $Files += 'ER1WorkshopStep1.ps1'
-         $Files += 'ER2WorkshopStep1.ps1'
-         $Files += 'ER2WorkshopStep2.ps1'
-         $Files += 'ER2WorkshopStep3.ps1'
+         #$Files += 'ER2WorkshopStep1.ps1'
+         #$Files += 'ER2WorkshopStep2.ps1'
+         #$Files += 'ER2WorkshopStep3.ps1'
          $uri = 'https://raw.githubusercontent.com/tracsman/vdcWorkshop/main/ERResilience/Scripts/'}         
     "0" {Write-Host "Exiting" -ForegroundColor Cyan
          Write-Host
