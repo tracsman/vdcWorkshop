@@ -84,7 +84,7 @@ Write-Host (Get-Date)' - ' -NoNewline
 Write-Host "Creating Init File" -ForegroundColor Cyan
 #If (-Not (Test-Path $ScriptPath\init.txt)){
      if ($MenuItem -eq "4") {
-          $resourceGroups = Get-AzResourceGroup
+          $resourceGroups = Get-AzResourceGroup -Name Company*
           $CompanyID = 0
 
           if ($resourceGroups.Count -eq 0) {
