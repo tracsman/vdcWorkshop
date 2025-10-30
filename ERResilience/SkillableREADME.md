@@ -135,10 +135,10 @@ Once you're done with this step, you will see your Resource Group with an east a
     | VNet       | IP Address Range |
     |------------|------------------|
     | On-premise | 10.3.xx.0.25     |
-    | West Hub   | 10.17.xx.0/24    |
-    | West Spoke | 10.18.xx.0/24    |
     | East Hub   | 10.10.xx.0/24    |
     | East Spoke | 10.11.xx.0/24    |
+    | West Hub   | 10.17.xx.0/24    |
+    | West Spoke | 10.18.xx.0/24    |
 
     This shows that we now have reachability across country if either edge site fails. A similar route table can be seen on the East Circuit Route Table.
 
@@ -160,7 +160,7 @@ Review routes and resiliency status in "Resilience Insights", then use "Resilien
 ## Observations
 
 1. Initially, you'll see latency around 6ms
-1. You'll notice in "Resiliency Insights" a route mismatch in the DC Circuit. Clicking on Route Set-1, you'll see the on-prem route healthy coming from both circuits. But Route Set-2 shows some routes that are only coming from the DC Circuit.
+1. On the West ER Gateway, in the Maintenance area, you'll notice in "Resiliency Insights" a route mismatch in the DC Circuit. Clicking on Route Set-1, you'll see the on-prem route healthy coming from both circuits. But Route Set-2 shows some routes that are only coming from the DC Circuit.
 1. Once the "Resiliency Validation" test is started, failing the Seattle circuit, you'll see traffic switch to the DC circuit, this will be indicated by the increased latency.
 
 ## Deployment
@@ -185,7 +185,7 @@ Review routes and resiliency status in "Resilience Insights", then use "Resilien
 
 1. This will run a constant ping, make note of the latency as this will change when we fail the Seattle Circuit
 1. In the other Azure Portal Tab, navigate to the West US 2 ExpressRoute Gateway (cXXw-VNetHub-gw-er)
-1. On the left nav, Click into "Resiliency Insights". Review the data presented.
+1. On the left nav under Monitoring, click into "Resiliency Insights". Review the data presented.
 1. To test resiliency, on the left nav, click "Resiliency Validation".
 1. On the row for the Seattle circuit, click "Configure New Test", note the data presented for confirmation. Seeing the "Route Redundancy" section is green says when we fail over, the traffic should continue to work.
 
@@ -194,12 +194,12 @@ Review routes and resiliency status in "Resilience Insights", then use "Resilien
 
 12. Read and acknowledge both warnings (ie check both  boxes) and enter the full name of the gateway in the text box. Click the "Start Simulation."
 1. Change back to the other browser tab and watch the ping latency, after about a minute, the circuit will be down and latency should jump significantly.
-1. Shortly both legs of the Seattle circuit will not longer have BGP running, this simulates a total outage of the Seattle edge site. Back at the Linux VM you should now see the ping successful but with a much larger latency as traffic is now going from West US 2 to Washington DC and then back to Seattle on-prem (via the CompanyXX WAN outside of Azure)
+1. This simulates a total site outage of the Seattle edge site, but only for this one ExpressRoute circuit. Back at the Linux VM you should now see the ping successful but with a much larger latency as traffic is now going from West US 2 to Washington DC and then back to Seattle on-prem (via the CompanyXX WAN outside of Azure).
 
 ### Optional Steps
 
 1. On the Resiliency Validation tab, click stop simulation.
-1. Watch the VM latency go back up after about a minute.
+1. Watch the VM latency go back down after about a minute.
 1. Return to the "Resiliency Insights" blade, and note the failover readiness now has a completed readiness test for one of the two circuits.
 
 ## Validation
