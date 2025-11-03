@@ -17,7 +17,7 @@ If (-not ([environment]::GetEnvironmentVariable("AZUREPS_HOST_ENVIRONMENT") -mat
     Return
 }
 
-<# Write-Host "Please select the lab you wish to deploy to your cloud shell:"
+Write-Host "Please select the lab you wish to deploy to your cloud shell:"
 Write-Host
 Write-Host "   1. Firewall"
 Write-Host "   2. TBD"
@@ -29,9 +29,8 @@ Write-Host "  Waiting for your selection [0-4]: " -NoNewline
 $UserPrompt = $Host.UI.RawUI.ReadKey()
 $MenuItem = $UserPrompt.Character
 Write-Host
-Write-Host #>
+Write-Host
 
-$MenuItem = "4" # Force the ER Resiliency lab
 switch ($MenuItem) {
     "1" {Write-Host "Firewall Lab was selected" -ForegroundColor Cyan
          $RGName = "FWLab"
