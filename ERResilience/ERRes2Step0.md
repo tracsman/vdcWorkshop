@@ -30,7 +30,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
 5. In Cloud Shell run the following to download the workshop files
 
     ```powershell
-    (IWR aka.ms/1).Content | IEX
+    (IWR aka.ms/LabPS).Content | IEX
     ```
 
     > **NOTE**

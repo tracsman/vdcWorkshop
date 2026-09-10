@@ -27,7 +27,7 @@ Once you're done with this step, you'll know more about the Azure Cloud Shell an
    and follow the instructions. Login using your Azure Portal credentials
 6. In Cloud Shell run the following to download the workshop files
     ```powershell 
-    (IWR aka.ms/1).Content | IEX
+    (IWR aka.ms/LabPS).Content | IEX
     ```
     > **NOTE**
     > A warning about the subscription ID will be shown, we’ll fix this next
